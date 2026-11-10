@@ -58,9 +58,12 @@ class Config:
     require_connected_network: bool = True
     routing_sample_km: float = 5
     terrain_search_limit: int = 15000
+    water_track_cost_per_km: float = 120_000_000  # Short-crossing baseline; EUR/km
+    water_cost_growth_km: float = 25  # Exponential e-folding length of a continuous crossing
+    water_routing_sample_km: float = 0.25  # Narrow rivers below this can still be missed
     terrain_cost_position: float = 0.5
     terrain_cost_ranges_million: dict = field(default_factory=lambda: {
-        "bridge": [20, 50], "hilly": [15, 25],
+        "hilly": [15, 25],
         "moderate_mountains": [25, 40], "difficult_mountains": [40, 70],
         "very_difficult": [70, 120],
     })
@@ -142,7 +145,25 @@ class Config:
     # Solver and output settings
     # Control solver seconds, relative optimality gap, reproducibility and model size.
     # Snapshots count solver progress callbacks; GIF frame duration is milliseconds.
-    solver_method: str = 'heuristic'  # heuristic or milp
+    solver_method: str = 'annealing'  # annealing, heuristic or milp
+    annealing_proposal_cost_exponent: float = 1  # Demand / estimated corridor capital ** exponent
+    annealing_growth_probability: float = 0  # Extra probability of choosing a corridor addition
+    annealing_coverage_metric: str = 'needs'  # needs, markets, population, or legacy demand
+    annealing_consolidation_coverage: float = 0.75
+    annealing_integration_coverage: float = 0.30
+    annealing_connectivity_target: float = 0.90
+    annealing_connectivity_penalty: float = 10
+    annealing_network_effect_weight: float = 1
+    annealing_exploration_radius_km: float = 250
+    annealing_retained_ridership: float = 0.98
+    annealing_journey_time_allowance: float = 0.05
+    annealing_consolidation_candidates: int = 80
+    annealing_budget_mode: str = 'goals'  # goals: finish stages; bounded: enforce total budgets
+    annealing_iterations: int = 1000
+    annealing_start_temperature: float = 1.0
+    annealing_end_temperature: float = 0.01
+    annealing_initial_financial_weight: float = 0.1
+    annealing_coverage_penalty: float = 20.0
     heuristic_iterations: int = 100
     heuristic_through_lines: int = 12
     heuristic_demand_connections: int = 2
@@ -151,6 +172,8 @@ class Config:
     random_seed: int = 42
     maximum_model_variables: int = 2_000_000
     snapshot_every: int = 5
+    demand_map_top_percent: float = 10  # Strongest undirected city pairs; always omit at least one pair.
+    demand_map_min_trips_per_hour: float = 0
     gif_frame_ms: int = 500
 
     @classmethod
@@ -163,6 +186,8 @@ class Config:
         return config
 
     def validate(self):
+        if not 0 < self.demand_map_top_percent <= 100:
+            raise ValueError("demand_map_top_percent must be in (0, 100]")
         for definition in fields(self):
             value = getattr(self, definition.name)
             if definition.type in (int, float):
@@ -187,7 +212,8 @@ class Config:
                 raise ValueError(f'{key} must be a positive integer')
         for key in ('market_radius_km', 'train_speed_kmh', 'access_speed_kmh', 'distance_floor_km',
                     'access_normalization_floor_km', 'access_optimizer_tolerance_km', 'solver_time_limit',
-                    'gravity_beta', 'uptake_alpha', 'maximum_edge_km', 'routing_sample_km',
+                    'gravity_beta', 'uptake_alpha', 'maximum_edge_km', 'routing_sample_km', 'water_track_cost_per_km',
+                    'water_cost_growth_km', 'water_routing_sample_km',
                     'maximum_journey_hours', 'maximum_trip_distance_km', 'served_weight', 'minimum_horizon_profit'):
             if getattr(self, key) <= 0:
                 raise ValueError(f'{key} must be positive')
@@ -225,10 +251,38 @@ class Config:
             raise ValueError('maximum_shared_track_detour must be at least 1')
         if type(self.maximum_alignment_variants_per_line) is not int or self.maximum_alignment_variants_per_line < 2:
             raise ValueError('maximum_alignment_variants_per_line must be an integer >= 2')
-        if self.solver_method not in ('heuristic', 'milp'):
-            raise ValueError('solver_method must be heuristic or milp')
+        if self.solver_method not in ('annealing', 'heuristic', 'milp'):
+            raise ValueError('solver_method must be annealing, heuristic or milp')
         if 0 < self.maximum_journey_detour_ratio < 1:
             raise ValueError('maximum_journey_detour_ratio must be zero or at least 1')
+        if not 0 <= self.annealing_proposal_cost_exponent <= 4:
+            raise ValueError('annealing_proposal_cost_exponent must be in [0, 4]')
+        if not 0 <= self.annealing_growth_probability <= 1:
+            raise ValueError('annealing_growth_probability must be in [0, 1]')
+        if self.annealing_coverage_metric not in ('needs', 'markets', 'population', 'demand'):
+            raise ValueError('annealing_coverage_metric must be needs, markets, population, or demand')
+        if self.annealing_budget_mode not in ('goals', 'bounded'):
+            raise ValueError('annealing_budget_mode must be goals or bounded')
+        if not 0 < self.annealing_integration_coverage <= 1:
+            raise ValueError('annealing_integration_coverage must be in (0, 1]')
+        if not 0 <= self.annealing_connectivity_target <= 1:
+            raise ValueError('annealing_connectivity_target must be in [0, 1]')
+        if self.annealing_exploration_radius_km <= 0:
+            raise ValueError('annealing_exploration_radius_km must be positive')
+        if not 0 < self.annealing_consolidation_coverage <= 1:
+            raise ValueError('annealing_consolidation_coverage must be in (0, 1]')
+        if not 0 < self.annealing_retained_ridership <= 1:
+            raise ValueError('annealing_retained_ridership must be in (0, 1]')
+        if self.annealing_consolidation_candidates < 1:
+            raise ValueError('annealing_consolidation_candidates must be positive')
+        if self.annealing_iterations < 2:
+            raise ValueError('annealing_iterations must be at least 2')
+        if not 0 < self.annealing_end_temperature <= self.annealing_start_temperature:
+            raise ValueError('annealing temperatures must satisfy 0 < end <= start')
+        if not 0 < self.annealing_initial_financial_weight <= 1:
+            raise ValueError('annealing_initial_financial_weight must be in (0, 1]')
+        if self.annealing_coverage_penalty <= 0:
+            raise ValueError('annealing_coverage_penalty must be positive')
         if self.heuristic_iterations < 1:
             raise ValueError('heuristic_iterations must be positive')
         if self.center_method not in ('peak', 'circle', 'access') or self.demand_model not in ('gravity', 'production'):
@@ -243,6 +297,8 @@ class Config:
 
         if not isinstance(self.terrain_cost_ranges_million, dict):
             raise ValueError('terrain_cost_ranges_million must be an object')
+        if 'bridge' in self.terrain_cost_ranges_million:
+            raise ValueError('bridge terrain class was removed; use water for crossings')
         for name, bounds in self.terrain_cost_ranges_million.items():
             if (not isinstance(bounds, list) or len(bounds) != 2
                     or any(not isinstance(v, (int, float)) or not math.isfinite(v) or v < 0 for v in bounds)

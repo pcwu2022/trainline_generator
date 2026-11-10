@@ -14,7 +14,7 @@ import numpy as np
 from PIL import Image
 
 from train_optimizer.config import Config
-from train_optimizer.outputs import LiveState, Reporter, draw_map, map_projector, map_viewport
+from train_optimizer.outputs import LiveState, Reporter, draw_map, map_figure_size, map_projector, map_viewport, segment_satisfaction, demand_connections
 
 
 def example_map():
@@ -31,6 +31,32 @@ def example_map():
 
 
 class MapOutputTests(unittest.TestCase):
+    def test_transfer_flows_use_full_demand_on_each_leg(self):
+        problem = SimpleNamespace(demand=[dict(id=0, volume=3000)])
+        result = dict(lines=[dict(id=1), dict(id=2)], passenger_flows=[
+            dict(od=0, line=line, board_stop=0, alight_stop=1, trips_per_hour=2000)
+            for line in (1, 2)])
+        self.assertEqual(segment_satisfaction(problem, result), {(1, 0): 2/3, (2, 0): 2/3})
+
+    def test_demand_filter_combines_directions_and_omits_complete_graph(self):
+        problem = SimpleNamespace(demand=[
+            dict(origin=0, destination=1, volume=60),
+            dict(origin=1, destination=0, volume=60),
+            dict(origin=0, destination=2, volume=100),
+            dict(origin=1, destination=2, volume=10)])
+        config = Config.from_dict(dict(demand_map_top_percent=50))
+        self.assertEqual(demand_connections(problem, config), [((0, 1), 120), ((0, 2), 100)])
+        config.demand_map_top_percent = 100
+        self.assertEqual(len(demand_connections(problem, config)), 2)
+        config.demand_map_min_trips_per_hour = 110
+        self.assertEqual(demand_connections(problem, config), [((0, 1), 120)])
+
+    def test_canvas_scales_with_square_root_of_physical_span(self):
+        self.assertEqual(map_figure_size((0, 1000, 0, 500)), (10, 10))
+        self.assertEqual(map_figure_size((0, 4000, 0, 2000)), (20, 20))
+        self.assertEqual(map_figure_size((0, 500, 0, 1000)), (10, 10))
+        self.assertEqual(map_figure_size((0, 10, 0, 20)), (8, 8))
+
     def test_viewport_contains_complete_cells_corridors_and_catchments(self):
         config, problem, _ = example_map()
         xmin, xmax, ymin, ymax = map_viewport(config, problem)
@@ -68,7 +94,8 @@ class MapOutputTests(unittest.TestCase):
                         path = Path(directory)/f'frame{i}.png'
                         draw_map(path, config, data, state, viewport=viewport)
                         with Image.open(path) as image:
-                            self.assertEqual(image.size, (1300, 1300))
+                            side = int(map_figure_size(viewport)[0] * 130)
+                            self.assertEqual(image.size, (side, side))
             for actual in captures[1:]:
                 for a, b in zip(captures[0], actual):
                     np.testing.assert_allclose(a, b, atol=1e-12)

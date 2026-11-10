@@ -17,7 +17,7 @@
   "max_cities": 20,
   "market_radius_km": 25,
   "minimum_city_population": 50000,
-  "density_threshold": 100,
+  "density_threshold": 500,
   "population_subdivision": 0,
 
   "center_method": "access",
@@ -43,11 +43,10 @@
   "routing_sample_km": 5,
   "terrain_search_limit": 15000,
   "terrain_cost_position": 0.5,
+  "water_track_cost_per_km": 120000000,
+  "water_cost_growth_km": 25,
+  "water_routing_sample_km": 0.25,
   "terrain_cost_ranges_million": {
-    "bridge": [
-      20,
-      50
-    ],
     "hilly": [
       15,
       25
@@ -121,9 +120,22 @@
   "cost_weight": 0.001,
   "profit_shortfall_weight": 0.25,
 
-  "solver_method": "heuristic",
+  "solver_method": "annealing",
+  "annealing_coverage_metric": "needs",
+  "annealing_consolidation_coverage": 0.75,
+  "annealing_integration_coverage": 0.30,
+  "annealing_connectivity_target": 0.90,
+  "annealing_connectivity_penalty": 10,
+  "annealing_network_effect_weight": 1,
+  "annealing_exploration_radius_km": 250,
+  "annealing_proposal_cost_exponent": 1,
+  "annealing_budget_mode": "goals",
+  "annealing_iterations": 1000,
+  "annealing_start_temperature": 1.0,
+  "annealing_end_temperature": 0.01,
+  "annealing_initial_financial_weight": 0.1,
+  "annealing_coverage_penalty": 20.0,
   "heuristic_iterations": 100,
-  "solver_time_limit": 120,
   "mip_relative_gap": 0.01,
   "random_seed": 42,
   "maximum_model_variables": 2000000,

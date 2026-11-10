@@ -9,6 +9,16 @@ from train_optimizer.runner import main
 
 
 class RunnerCliTests(unittest.TestCase):
+    def test_standard_regional_profiles_inherit_the_python_time_default(self):
+        from train_optimizer.config import Config
+        for region in ['europe', 'france', 'netherlands', 'uk']:
+            with self.subTest(region=region), tempfile.TemporaryDirectory() as folder:
+                with patch('train_optimizer.runner.Reporter', side_effect=RuntimeError('stop before preparation')) as reporter:
+                    with self.assertRaisesRegex(RuntimeError, 'stop before preparation'):
+                        main(['--config', f'configs/{region}.json', '--output', str(Path(folder)/'run')])
+                loaded = reporter.call_args.args[1]
+                self.assertEqual(loaded.solver_time_limit, Config().solver_time_limit)
+
     def test_overwrite_clears_old_output_before_reporter(self):
         with tempfile.TemporaryDirectory() as temporary:
             output = Path(temporary) / 'run'

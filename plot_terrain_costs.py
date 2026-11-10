@@ -13,7 +13,7 @@ import numpy as np
 
 from train_optimizer.config import Config
 from train_optimizer.geography import Router
-from train_optimizer.outputs import map_projector
+from train_optimizer.outputs import city_label_indices, map_projector
 
 
 def plot_costs(config, output):
@@ -64,28 +64,23 @@ def plot_costs(config, output):
     # Label major nearby cities without requiring country outlines or downloads.
     cities = (json.loads(Path(config.cities_file).read_text())
               if config.cities_file and Path(config.cities_file).exists() else [])
-    selected = []
-    for city in sorted(cities, key=lambda x: -int(x['pop'])):
-        lon, lat = float(city['lon']), float(city['lat'])
-        if not (west <= lon <= east and south <= lat <= north):
-            continue
-        point = project([(lon, lat)])[0]
-        if any(np.linalg.norm(point - other) < 38 for other in selected):
-            continue
-        selected.append(point)
+    cities = [city for city in cities
+              if west <= float(city['lon']) <= east and south <= float(city['lat']) <= north]
+    labeled_cities = city_label_indices(cities)
+    for city_index, city in enumerate(cities):
+        point = project([(float(city['lon']), float(city['lat']))])[0]
         for ax in axes:
             ax.plot(*point, 'o', ms=3, color='#12354a')
-            ax.annotate(city['name'], point, xytext=(4, 4), textcoords='offset points',
-                        fontsize=8, color='#12354a', bbox=dict(facecolor='white', alpha=.8, edgecolor='none', pad=1))
-        if len(selected) >= 10:
-            break
+            if city_index in labeled_cities:
+                ax.annotate(city['name'], point, xytext=(4, 4), textcoords='offset points',
+                            fontsize=8, color='#12354a', bbox=dict(facecolor='white', alpha=.8, edgecolor='none', pad=1))
     fig.suptitle('Rail construction cost by map tile', fontsize=22, fontweight='bold', y=.96)
     fig.text(.5, .915, f'H3 resolution {resolution} • {len(polygons):,} tiles • {west:g}° to {east:g}° E, {south:g}° to {north:g}° N',
              ha='center', fontsize=11, color='#42556a')
     fig.subplots_adjust(left=.07, right=.86, top=.86, bottom=.15, wspace=.22)
     cax = fig.add_axes([.89, .25, .018, .5])
     fig.colorbar(collection, cax=cax, label='Construction cost (million €/km)')
-    fig.text(.07, .075, 'RGB relief colors approximate terrain; no measured slopes or engineering feasibility. Water uses bridge cost.',
+    fig.text(.07, .075, 'RGB relief colors approximate terrain; no measured slopes or engineering feasibility. Water uses its dedicated crossing cost.',
              fontsize=10, color='#42556a')
     fig.text(.07, .045, 'Missing population: zero surcharge assumed. Gray tiles: excluded or outside terrain coverage. Costs sampled at H3 centers.',
              fontsize=10, color='#42556a')

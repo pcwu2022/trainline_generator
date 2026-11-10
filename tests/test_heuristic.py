@@ -14,6 +14,8 @@ from train_optimizer.outputs import LiveState
 
 def problem():
     p = example()
+    p.config.annealing_budget_mode = 'bounded'
+    p.config.annealing_coverage_metric = 'markets'
     return Problem(p.config, [], p.cities, p.locations, p.stations, p.edges, p.demand, [])
 
 
@@ -149,7 +151,7 @@ class HeuristicTests(unittest.TestCase):
         cities = [dict(id=i, center=(lon, 50), population=population)
                   for i, (lon, population) in enumerate([(0, 1000000), (.1, 1000),
                                                         (3, 1000000), (3.1, 1000)])]
-        config = Config(neighbors_per_city=1, maximum_edge_km=500,
+        config = Config(solver_method="heuristic", neighbors_per_city=1, maximum_edge_km=500,
                         heuristic_demand_connections=1)
         self.assertNotIn((0, 2), candidate_market_pairs(cities, replace(config, solver_method='milp')))
         self.assertIn((0, 2), candidate_market_pairs(cities, config))

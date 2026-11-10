@@ -1,0 +1,13 @@
+{
+  "bbox": [6.5, 35.4, 18.6, 47.2],
+  "countries": ["IT"],
+  "uptake_reference_radius_km": 25,
+  "minimum_seed_spacing_km": 25,
+  "max_cities": 30,
+  "neighbors_per_city": 5,
+  "maximum_edge_km": 500,
+  "maximum_trip_distance_km": 1000,
+  "solver_time_limit": 600,
+  "annealing_budget_mode": "bounded",
+  "annealing_iterations": 1000000
+}

@@ -1,8 +1,61 @@
 # Population-driven railway optimizer
 
-## Fast heuristic solver (default)
+## Annealing search (default)
 
-The default `solver_method="heuristic"` chooses one station per discovered market
+The default `solver_method="annealing"` starts empty and changes the network one
+proposal at a time. It routes corridors only when needed and caches them. Moves
+add, extend, remove, join, split, reroute, or change the frequency of services;
+they can also move station sites, close stations, and reuse track through hubs.
+Early exploration seeds useful regional services in new areas. At 30% passenger-need satisfaction,
+integration prioritizes bridges whose onward journeys connect existing regional
+networks. At 75% satisfaction, a validated network and sufficient connectivity allow
+cost consolidation. Final connected-network requirements remain enforced;
+exploratory components can be separate. Set `annealing_coverage_metric` to
+`needs` (the default), `markets`, `population`, or legacy `demand` to choose
+the measure. Needs satisfaction is completed trips divided by fixed rail-eligible
+demand, accounting for uptake, station access, and best-case journey limits.
+Opening stations alone does not satisfy needs. The share of all potential trips
+served is reported separately.
+
+Default `annealing_budget_mode="goals"` continues until those stages finish or
+Ctrl+C is pressed. `--time-limit 120` selects a bounded 120-second search;
+`--budget-mode goals` explicitly selects goal-driven stopping. In goal mode,
+`solver_time_limit` caps individual passenger LPs and the proposal cap is ignored.
+After the target is reached, the search tests shared-track rerouting,
+station relocations, intermediate station branches, through services, and lower
+frequencies to cut lifecycle cost while preserving at least 98% of baseline
+ridership globally and per origin, with at most 5% higher mean journey time.
+Worse proposals can be accepted during growth. The live map shows labelled
+exploratory networks before coverage targets are met; validated results remain
+in `best_feasible.json` and `checkpoint.npz`. The final map shows the selected
+validated result when available. `exploration.png` and `exploration.json`
+preserve the broader developing network when its components are not yet joined.
+
+```sh
+.venv/bin/python optimize.py --config configs/netherlands.json --solver annealing --output runs/annealing
+```
+
+Corridor addition proposals are weighted by demand divided by an estimate of
+construction capital. `annealing_proposal_cost_exponent=1` applies this cost
+preference; zero restores demand-only sampling. The estimate uses sparse terrain
+samples and never substitutes for actual routing or validation.
+
+`annealing_iterations` defaults to 1000 proposals in bounded mode. `--time-limit` includes lazy
+routing and passenger evaluation; population preparation is additional. See
+[ALGORITHM.md](ALGORITHM.md) for the complete formula, settings, constraints,
+checkpoint behavior, and limitations. Existing run outputs are not modified.
+
+Settings are loaded in order: `Config` defaults in `train_optimizer/config.py`,
+then `config.json`, then the selected regional JSON, then CLI overrides. The
+standard Europe, France, Netherlands–Belgium, and UK profiles inherit the Python
+time default (currently 3,600 seconds). An explicit regional override, such as
+the Italy profile, still takes precedence. Startup logs and `manifest.json`'s
+`run_settings` record the effective limit and whether it applies to the total
+search or individual passenger LPs.
+
+## Earlier heuristic solver
+
+The optional `solver_method="heuristic"` chooses one station per discovered market
 by capture fraction, breaking ties by access time. It adds demand-ranked corridors
 to the nearest-neighbor graph and searches direct and through services. Guided
 moves add shortcuts, replace shuttles with through trains, bypass intermediate
@@ -36,6 +89,16 @@ a soft objective, so a validated network can still lose money.
 The full MILP remains available with `--solver milp`. It searches station
 alternatives and a larger through-service pool. Checkpoints require an identical
 generated model; use a new output directory after these candidate-pool changes.
+
+## UK profile
+
+`configs/uk.json` discovers up to 20 UK markets, including Northern Ireland.
+Separate rail components are allowed. The profile supplies a 120-second LP/bounded-search setting
+and the default 75% rail-eligible need-satisfaction target.
+
+```sh
+.venv/bin/python optimize.py --config configs/uk.json --output runs/uk
+```
 
 ## Regional coverage scenario
 
@@ -185,7 +248,7 @@ default), or high (1) end of these configurable ranges:
 
 | Terrain class | Range (M€/km) | Default (M€/km) |
 | --- | ---: | ---: |
-| `bridge` | 20–50 | 35 |
+| `water` (mapped crossings) | continuous-crossing exponential | 120 × exp(L / 25) |
 | `hilly` | 15–25 | 20 |
 | `moderate_mountains` | 25–40 | 32.5 |
 | `difficult_mountains` | 40–70 | 55 |
@@ -194,7 +257,7 @@ default), or high (1) end of these configurable ranges:
 The 120 upper value is editable for more expensive base tunnels. Assign classes
 in `terrain_file`, e.g. `{"terrain_class": "hilly"}` for an H3 cell; optional
 `multiplier` then scales the combined terrain/urban cost. Missing classes use
-conventional costs. No bridge or mountain classes are inferred without data.
+conventional costs. No water or mountain classes are inferred without data.
 The supplied scenario uses `data/exportImage.tiff` for approximate terrain costs;
 it has no separate land exclusion mask.
 
@@ -489,14 +552,15 @@ from train_optimizer.terrain import TerrainCostMap
 
 rail_cost = TerrainCostMap("data/exportImage.tiff")
 rail_cost(4.9, 52.37)                  # Amsterdam: 10_000_000 currency/km
-rail_cost(3.0, 54.0)                  # North Sea: 35_000_000 currency/km
+rail_cost(3.0, 54.0)                  # North Sea: 120_000_000 currency/km (local baseline only)
 rail_cost(8.0, 46.5)                  # Alps: 32_500_000 currency/km
 rail_cost(4.9, 52.37, density=100)     # Includes 500_000/km urban surcharge
-rail_cost.terrain_class(3.0, 54.0)     # "bridge"
+rail_cost.terrain_class(3.0, 54.0)     # "water"
 ```
 
 Pass `config=your_config` to use custom costs. With the supplied euro assumptions,
-normal land uses €10M/km, blue water uses the `bridge` range (€35M/km midpoint),
+normal land uses €10M/km and blue water uses the separate
+`water_track_cost_per_km` short-crossing baseline (€120M/km by default),
 and brown mountain shading uses `moderate_mountains` (€32.5M/km midpoint).
 The classifier uses blue dominance (`B > 1.12R` and `B > 1.04G`) for water,
 then brown dominance (`R > 1.05G` and `R > 1.15B`) for mountains; other valid
@@ -504,11 +568,48 @@ pixels use normal costs. These are approximate visual rules for this map.
 Hillshade, coastlines and mixed pixels can be misclassified. Smooth high
 plateaus may be brown; green mountains may be missed. The image cannot provide
 slope, water depth, crossing feasibility or reliable mountain severity, so no
-more expensive mountain categories are inferred. Open sea also receives the
-bridge scenario rate; that rate does not establish engineering feasibility.
+more expensive mountain categories are inferred. Water crossings use a length-dependent scenario function, not a bridge/tunnel design.
 
-The router samples these costs at H3 cell centers and includes the population
-surcharge. Coordinates outside raster coverage raise `ValueError` in the mapping
+For each continuous sampled water run of length **L km**, the router multiplies
+its integrated local cost (including urban surcharges and JSON multipliers) by
+**exp(L / water_cost_growth_km)**. Defaults give **C(L) = €120M × L × exp(L/25)**
+without surcharges. Water runs continue across polyline vertices and reset on
+sampled land. Separate rivers are priced separately. Local point-cost maps and
+cheap proposal estimates show the baseline; full alignments receive the premium.
+The exponential is capped at exp(100) to keep arithmetic finite.
+
+Reference projects inform rounded scenario targets, rather than a currency- and
+inflation-adjusted statistical fit:
+
+- [Walton Bridge](https://www.gov.uk/government/news/go-ahead-for-new-bridge-over-river-thames-in-surrey):
+  the UK government approved £32.3M for this Thames crossing in 2010. A representative
+  0.25 km river crossing costs €30.3M in this model. This is an illustrative width,
+  not a claim about Walton's exact water span or a conversion of its project cost.
+- [Sydney Harbour Bridge](https://www.transport.nsw.gov.au/system/files/media/documents/2023/harbour-bridge-history.pdf):
+  1.149 km including approaches, historical cost £6.25M. Its scale motivates a
+  roughly €144M model allowance at 1.149 km; historical pounds are not current euros,
+  and approach length is not the same as mapped water width.
+- [Channel Tunnel (Bechtel)](https://www.bechtel.com/projects/channel-tunnel-chunnel/):
+  about 51 km overall and $14.7B reported project cost. A representative 38 km
+  underwater run gives €20.8B. These scopes differ; the model intentionally assigns
+  a conservative megaproject-scale allowance to the water section alone.
+
+The €120M/km baseline puts a 0.25 km river at about €30M; the 25 km e-folding
+length raises a 38 km crossing to about €21B. A 100 km crossing costs €655B;
+500 km costs €2.91e19. Small rivers therefore have modest absolute cost while
+long sea crossings become prohibitive. The old explicit `bridge` terrain class
+is removed; use `water` for water crossings.
+
+Sampling uses the smaller of `routing_sample_km`, `water_routing_sample_km`
+(default 0.25 km), and the H3-derived spacing. Rivers narrower than the sampling
+interval or absent from the relief map can still be missed. Water depth and
+geology are unavailable. The finite any-angle search uses local segment costs
+as a heuristic; the completed alignment is repriced as continuous crossings,
+so search is not guaranteed to find the globally cheapest nonlinear route.
+
+The router samples raster costs at points on each alignment, using H3 cells
+for the population surcharge. This avoids pricing a coastal water sample as
+land merely because its hexagon center lies inland. Coordinates outside raster coverage raise `ValueError` in the mapping
 function and are excluded by the router. No separate terrain generation or
 download is needed. Existing saved runs retain their previous cost assumptions;
 rerun the optimizer to apply the configured map. An explicit `land_file` can
@@ -540,7 +641,7 @@ the population data:
   "h3_resolution": 6,
   "cells": {
     "861969687ffffff": {"terrain_class": "hilly"},
-    "86196968fffffff": {"terrain_class": "bridge", "multiplier": 1.2},
+    "86196968fffffff": {"terrain_class": "water", "multiplier": 1.2},
     "861969697ffffff": {"blocked": true}
   }
 }
@@ -625,3 +726,13 @@ asset renewal schedules, residual values and annual cash flows;
 `discount_rate_sensitivity` repeats the appraisal at each requested rate. Changing
 the sensitivity rates does not reoptimize the network at those rates. The default
 rate alone determines selection. Existing checkpoints require a fresh run.
+
+Network map colors use the `viridis` colormap (0–1) for passenger throughput
+divided by full demand for the OD pairs using each service segment, including
+transfer legs. Width continues to show train frequency per direction.
+`demand.png` is generated before solving, using the same population background
+and fixed viewport. It combines both directions of each candidate city pair;
+width is proportional to demand in trips/hour. Set `demand_map_top_percent`
+(default 10) and `demand_map_min_trips_per_hour` (default 0) to filter connections.
+At least one pair is omitted to avoid displaying the complete graph. The dashboard
+links to this map. If evaluated demand changes, the demand map is regenerated.

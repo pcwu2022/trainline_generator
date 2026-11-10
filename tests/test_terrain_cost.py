@@ -36,9 +36,9 @@ class TerrainCostTests(unittest.TestCase):
             config = Config(terrain_file=str(path))
             terrain = TerrainCostMap(path, config)
             self.assertEqual([terrain.terrain_class(x, .5) for x in [.5, 1.5, 2.5]],
-                             ['normal', 'bridge', 'moderate_mountains'])
+                             ['normal', 'water', 'moderate_mountains'])
             self.assertEqual([terrain(x, .5) for x in [.5, 1.5, 2.5]],
-                             [10_000_000, 35_000_000, 32_500_000])
+                             [10_000_000, 120_000_000, 32_500_000])
             self.assertEqual(terrain(.5, .5, density=100), 10_000_000)
             self.assertEqual(terrain(.5, .5, density=5000), 10_000_000)
             self.assertEqual(terrain(.5, .5, density=6000), 15_000_000)
@@ -46,7 +46,7 @@ class TerrainCostTests(unittest.TestCase):
             cell = h3.latlng_to_cell(.5, 1.5, 6)
             router = Router(config, [{'h3': cell, 'density': 100}])
             self.assertTrue(router.allowed(cell))
-            self.assertEqual(router.cost(cell), 35_000_000)
+            self.assertEqual(router.cost(cell), 120_000_000)
             outside = h3.latlng_to_cell(30, 30, 6)
             self.assertFalse(router.allowed(outside))
             for lon, lat in [(3, .5), (-1, .5), (float('nan'), .5), (0, 91)]:
@@ -55,12 +55,12 @@ class TerrainCostTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 terrain(.5, .5, density=-1)
             config.terrain_cost_position = 1
-            self.assertEqual(terrain(1.5, .5), 50_000_000)
+            self.assertEqual(terrain(1.5, .5), 120_000_000)
 
     def test_supplied_map_land_water_and_mountains(self):
         terrain = TerrainCostMap()
         self.assertEqual(terrain(4.9, 52.37), 10_000_000)
-        self.assertEqual(terrain(3, 54), 35_000_000)
+        self.assertEqual(terrain(3, 54), 120_000_000)
         self.assertEqual(terrain(8, 46.5), 32_500_000)
 
 

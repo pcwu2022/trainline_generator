@@ -6,6 +6,7 @@ import highspy
 import numpy as np
 from scipy.sparse import coo_matrix
 from .lines import generate_lines
+from .needs import rail_need_bound
 from .finance import annuity_factor, asset_pv_factor, lifecycle_report
 
 
@@ -91,13 +92,14 @@ def add(terms, index, value):
 
 
 class NetworkModel(LinearModel):
-    def __init__(self, problem, progress=lambda message: None):
+    def __init__(self, problem, progress=lambda message: None, lines=None, capture_upper_bound=None, protection=None, needs_upper_bound=None):
         super().__init__()
         self.problem = problem
+        self.needs_upper_bound = rail_need_bound(problem) if needs_upper_bound is None else needs_upper_bound
         c = problem.config
         self.x, self.y, self.z, self.q, self.flow = {}, {}, {}, {}, {}
         progress('Generating candidate service lines')
-        self.lines = generate_lines(problem)
+        self.lines = generate_lines(problem) if lines is None else lines
         progress(f'Generated {len(self.lines):,} service lines; building variables and constraints')
         required_cities = math.ceil(c.minimum_city_served_fraction * len(problem.cities) - 1e-10)
         if c.require_connected_network and required_cities:
@@ -121,10 +123,18 @@ class NetworkModel(LinearModel):
                                  f'candidate track component contains only {largest}; expand candidate '
                                  'corridors (neighbors_per_city / maximum_edge_km) or revise the study region')
         station_counts = {city['id']: sum(s['city'] == city['id'] for s in problem.stations) for city in problem.cities}
-        estimate = (1 + len(problem.demand) * len(c.frequencies_per_hour)
-                    * sum(len(line['stops'])*(len(line['stops'])-1) for line in self.lines)
+        active_od_count = sum(bool(station_counts[d['origin']] and station_counts[d['destination']])
+                              for d in problem.demand)
+        service_choices = sum(sum(f >= c.minimum_service_frequency
+                                 for f in line.get('frequencies', c.frequencies_per_hour))
+                              for line in self.lines)
+        ride_choices = sum(len(line['stops'])*(len(line['stops'])-1)
+                           * sum(f >= c.minimum_service_frequency
+                                 for f in line.get('frequencies', c.frequencies_per_hour))
+                           for line in self.lines)
+        estimate = (1 + active_od_count * ride_choices
                     + sum(station_counts[d['origin']]*station_counts[d['destination']] for d in problem.demand)
-                    + len(problem.stations) + len(problem.edges) + len(self.lines)*len(c.frequencies_per_hour))
+                    + len(problem.stations) + len(problem.edges) + service_choices)
         if c.require_connected_network:
             estimate += 2*len(problem.locations) + 2*len(problem.edges)
         if estimate > c.maximum_model_variables:
@@ -137,6 +147,8 @@ class NetworkModel(LinearModel):
         maximum_capture = {city['id']: max((s['capture_fraction'] for s in problem.stations if s['city'] == city['id']), default=0)
                            for city in problem.cities}
         self.capture_upper_bound = sum(d['volume']*maximum_capture[d['origin']]*maximum_capture[d['destination']] for d in problem.demand)
+        if capture_upper_bound is not None:
+            self.capture_upper_bound = capture_upper_bound
         # Normalize rider/time objectives by a fixed optimistic capture bound,
         # rather than by millions of inaccessible potential trips. Otherwise small
         # center-location penalties can overwhelm all achievable rider benefit.
@@ -175,7 +187,7 @@ class NetworkModel(LinearModel):
         service_patterns = {}
         for line in self.lines:
             choices = {}
-            for frequency in sorted(f for f in c.frequencies_per_hour if f >= c.minimum_service_frequency):
+            for frequency in sorted(f for f in line.get('frequencies', c.frequencies_per_hour) if f >= c.minimum_service_frequency):
                 index = self.var(f'line_{line["id"]}_f{frequency}', upper=1, integer=True)
                 self.z[line['id'], frequency] = index
                 choices[index] = 1
@@ -251,27 +263,28 @@ class NetworkModel(LinearModel):
                     journey[index] = self.time[index] - limit
                     self.cost[index] = (-c.served_weight + c.time_weight*self.time[index]) / normalization
             self.row(served, upper=od['volume'])
-            for line in self.lines:
-                for frequency in sorted(f for f in c.frequencies_per_hour if f >= c.minimum_service_frequency):
-                    # A ride can board and alight at any ordered stop pair on
-                    # this line. Staying aboard incurs no extra waiting/transfer.
-                    for board in range(len(line['stops'])):
-                        for alight in range(len(line['stops'])):
-                            if board == alight:
-                                continue
-                            index = self.var(f'flow_{od["id"]}_{line["id"]}_{frequency}_{board}_{alight}', upper=od['volume'])
-                            self.flow[od['id'], line['id'], frequency, board, alight] = index
-                            add(conservation[line['stops'][board]], index, 1)
-                            add(conservation[line['stops'][alight]], index, -1)
-                            lo, hi = sorted((board, alight))
-                            km = sum(line['segment_km'][lo:hi])
-                            dwell = (hi-lo-1)*c.dwell_minutes/60
-                            self.time[index] = km/c.train_speed_kmh + dwell + 0.5/frequency + c.transfer_minutes/60
-                            journey[index] = self.time[index]
-                            self.cost[index] = c.time_weight * self.time[index] / normalization
-                            direction = int(board > alight)
-                            for segment in range(lo, hi):
-                                capacities.setdefault((line['id'], frequency, segment, direction), {})[index] = 1
+            if served:
+                for line in self.lines:
+                    for frequency in sorted(f for f in line.get('frequencies', c.frequencies_per_hour) if f >= c.minimum_service_frequency):
+                        # A ride can board and alight at any ordered stop pair on
+                        # this line. Staying aboard incurs no extra waiting/transfer.
+                        for board in range(len(line['stops'])):
+                            for alight in range(len(line['stops'])):
+                                if board == alight:
+                                    continue
+                                index = self.var(f'flow_{od["id"]}_{line["id"]}_{frequency}_{board}_{alight}', upper=od['volume'])
+                                self.flow[od['id'], line['id'], frequency, board, alight] = index
+                                add(conservation[line['stops'][board]], index, 1)
+                                add(conservation[line['stops'][alight]], index, -1)
+                                lo, hi = sorted((board, alight))
+                                km = sum(line['segment_km'][lo:hi])
+                                dwell = (hi-lo-1)*c.dwell_minutes/60
+                                self.time[index] = km/c.train_speed_kmh + dwell + 0.5/frequency + c.transfer_minutes/60
+                                journey[index] = self.time[index]
+                                self.cost[index] = c.time_weight * self.time[index] / normalization
+                                direction = int(board > alight)
+                                for segment in range(lo, hi):
+                                    capacities.setdefault((line['id'], frequency, segment, direction), {})[index] = 1
             for terms in conservation.values():
                 if terms:
                     self.row(terms, lower=0, upper=0)
@@ -310,6 +323,26 @@ class NetworkModel(LinearModel):
             self.row({i: value/1e6 for i, value in self.capital.items()}, upper=c.upfront_budget/1e6)
         if c.maximum_annual_subsidy:
             self.row(subsidy, upper=c.maximum_annual_subsidy/1000)
+        if protection:
+            # Keep the service floor fixed at the start of consolidation.
+            self.row({i: 1 for i in self.q.values()}, lower=protection['minimum_trips'])
+            for origin, minimum in protection['minimum_by_origin'].items():
+                terms = {index: 1 for (od, a, b), index in self.q.items()
+                         if problem.demand[od]['origin'] == int(origin)}
+                self.row(terms, lower=minimum)
+            if 'minimum_coverage' in protection:
+                metric = protection['coverage_metric']
+                if metric == 'markets':
+                    terms = {i: 1 for i in self.x.values()}
+                elif metric == 'population':
+                    terms = {self.x[s['id']]: s.get('covered_population', 0) for s in problem.stations}
+                else:
+                    terms = {i: 1 for i in self.q.values()}
+                self.row(terms, lower=protection['minimum_coverage']*protection['coverage_denominator'])
+            journey = dict(self.time)
+            for index in self.q.values():
+                add(journey, index, -protection['maximum_mean_hours'])
+            self.row(journey, upper=0)
         self.finalize()
 
     def _connectivity(self):
@@ -414,6 +447,10 @@ class NetworkModel(LinearModel):
                                      for (od, line, frequency, board, alight), volume in active_flows],
                     od_pairs=pairs, metrics=dict(
                         objective=self.objective(v), potential_trips_per_hour=self.total_demand,
+                        rail_eligible_needs_per_hour=self.needs_upper_bound,
+                        satisfied_needs_per_hour=served,
+                        unmet_rail_needs_per_hour=max(0, self.needs_upper_bound-served),
+                        needs_satisfaction_fraction=served/self.needs_upper_bound if self.needs_upper_bound > 0 else None,
                         served_trips_per_hour=served, unmet_trips_per_hour=max(0, self.total_demand-served),
                         accessible_trips_per_hour=accessible,
                         unserved_accessible_trips_per_hour=max(0, accessible-served),
@@ -429,6 +466,8 @@ class NetworkModel(LinearModel):
                         subsidy_per_passenger=max(0, -lifecycle['equivalent_annual_net_value'])/(served*c.annual_hours) if served else None,
                         passenger_hours_per_hour=time, mean_journey_hours=time/served if served else None,
                         total_track_km=sum(track['km'] for track in tracks),
+                        total_water_track_km=sum(track.get('water_km', 0) for track in tracks),
+                        water_track_capital=sum(track.get('water_capital', 0) for track in tracks),
                         fleet_trainsets=sum(line['fleet'] for line in lines),
                         annual_train_km=sum(line['annual_train_km'] for line in lines),
                         annual_revenue=revenue, annual_operating_cost=opex, capital_cost=capex,

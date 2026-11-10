@@ -55,6 +55,7 @@ def access_statistics(points, people, station, config):
 class Router:
     def __init__(self, config, cells):
         self.config = config
+        self.check = lambda: None
         self.density = {c['h3']: c['density'] for c in cells}
         self.resolution = h3.get_resolution(cells[0]['h3'])
         self.terrain = {}
@@ -71,7 +72,7 @@ class Router:
             for key, value in self.terrain.items():
                 if not h3.is_valid_cell(key) or h3.get_resolution(key) != self.resolution:
                     raise ValueError(f'invalid terrain H3 cell: {key}')
-                if value.get('terrain_class') is not None and value['terrain_class'] not in config.terrain_cost_ranges_million:
+                if value.get('terrain_class') is not None and value['terrain_class'] not in {*config.terrain_cost_ranges_million, 'water'}:
                     raise ValueError(f'Unknown terrain_class: {value["terrain_class"]}')
                 factor = value.get('multiplier', 1)
                 if not math.isfinite(factor) or factor < 1:
@@ -102,7 +103,9 @@ class Router:
             lat, lon = h3.cell_to_latlng(cell)
             return self.terrain_map.cost_per_km(lon, lat, density)
         baseline = c.base_track_cost_per_km
-        if terrain.get('terrain_class'):
+        if terrain.get('terrain_class') == 'water':
+            baseline = max(baseline, c.water_track_cost_per_km)
+        elif terrain.get('terrain_class'):
             low, high = c.terrain_cost_ranges_million[terrain['terrain_class']]
             baseline = max(baseline, (low + c.terrain_cost_position * (high-low)) * 1_000_000)
         return (baseline + c.urban_cost_coefficient * max(0, density - c.urban_density_threshold)) * terrain.get('multiplier', 1)
@@ -110,28 +113,62 @@ class Router:
     def alignment(self, points):
         """Integrate costs along geodesic segments, rather than grid directions."""
         geod = Geod(ellps='WGS84')
-        spacing = min(self.config.routing_sample_km,
+        spacing = min(self.config.routing_sample_km, self.config.water_routing_sample_km,
                       h3.average_hexagon_edge_length(self.resolution, unit='km') / 3)
         geometry, length, cost = [], 0.0, 0.0
+        water_km, water_capital = 0.0, 0.0
+        crossing_km, crossing_base = 0.0, 0.0
+
+        def finish_crossing():
+            nonlocal cost, water_capital, crossing_km, crossing_base
+            # Cap the exponent only for numeric stability. The cap is still
+            # astronomically above any feasible construction budget.
+            premium = crossing_base * math.expm1(min(100, crossing_km / self.config.water_cost_growth_km))
+            cost += premium
+            water_capital += premium
+            crossing_km, crossing_base = 0.0, 0.0
         for a, b in zip(points, points[1:]):
             km = geod.inv(*a, *b)[2] / 1000
             count = max(1, math.ceil(km / spacing))
             samples = [list(a)] + (geod.npts(*a, *b, count-1) if count > 1 else []) + [list(b)]
             if self.land is not None and not self.land.covers(LineString(samples)):
                 return None
+            self.check()
             for point in samples:
                 if not self.allowed(h3.latlng_to_cell(point[1], point[0], self.resolution)):
                     return None
             for x, y in zip(samples, samples[1:]):
+                self.check()
                 segment_km = geod.inv(*x, *y)[2] / 1000
                 midpoint = geod.npts(*x, *y, 1)[0] if segment_km > 0 else x
                 cell = h3.latlng_to_cell(midpoint[1], midpoint[0], self.resolution)
                 if not self.allowed(cell):
                     return None
                 length += segment_km
-                cost += segment_km * self.cost(cell)
+                if self.terrain_map is not None:
+                    # H3 centers can fall on the opposite side of a coastline.
+                    # Price the sampled alignment itself, using H3 only for density.
+                    try:
+                        terrain_class = self.terrain_map.terrain_class(*midpoint)
+                        unit_cost = self.terrain_map.cost_per_km(*midpoint, self.density.get(cell, 0))
+                    except ValueError:
+                        return None
+                else:
+                    terrain_class = self.terrain.get(cell, {}).get('terrain_class')
+                    unit_cost = self.cost(cell)
+                segment_cost = segment_km * unit_cost
+                cost += segment_cost
+                if terrain_class == 'water':
+                    water_km += segment_km
+                    water_capital += segment_cost
+                    crossing_km += segment_km
+                    crossing_base += segment_cost
+                else:
+                    finish_crossing()
             geometry.extend(samples if not geometry else samples[1:])
-        return dict(km=length, track_capital=cost, geometry=geometry)
+        finish_crossing()
+        return dict(km=length, track_capital=cost, geometry=geometry,
+                    water_km=water_km, water_capital=water_capital)
 
     def routes(self, a, b):
         """Direct plus a weighted Theta* any-angle construction-cost alternative."""
@@ -162,6 +199,7 @@ class Router:
             visited.add(current)
             if current == end:
                 break
+            self.check()
             for neighbor in sorted(h3.grid_disk(current, 1)):
                 if neighbor == current or neighbor in visited or not self.allowed(neighbor):
                     continue
@@ -247,7 +285,7 @@ def prepare(config, progress=lambda message: None, publish=lambda problem: None)
     if not config.terrain_file or not config.land_file:
         warnings.append('Missing terrain and/or land mask: corridors may cross water or unsuitable land.')
     if config.terrain_file and Path(config.terrain_file).suffix.lower() in {'.tif', '.tiff'}:
-        warnings.append('RGB relief-map colors approximate normal land, water and mountains; no measured elevations or slopes. Water uses bridge scenario costs, including open sea.')
+        warnings.append('RGB relief-map colors approximate normal land, water and mountains; no measured elevations or slopes. Water uses exponential continuous-crossing scenario costs, including open sea.')
     if not config.terrain_file:
         warnings.append('No elevation, gradient, curve, bridge or tunnel engineering constraints are available.')
     west, south, east, north = config.bbox
@@ -379,8 +417,10 @@ def prepare(config, progress=lambda message: None, publish=lambda problem: None)
     # routing, so the reporter can show useful geography when requested.
     publish(Problem(config, cells, cities, locations, stations, [], [], warnings))
     progress('Initializing terrain router and candidate market pairs')
-    router = Router(config, cells)
-    pairs = candidate_market_pairs(cities, config)
+    router = Router(config, cells) if config.solver_method != 'annealing' else None
+    pairs = candidate_market_pairs(cities, config) if router is not None else set()
+    if router is None:
+        progress('Deferring terrain routing until annealing proposes a corridor')
     edges = []
     for pair_number, (i, j) in enumerate(sorted(pairs), 1):
         progress(f'Routing candidate market pair {pair_number}/{len(pairs)} ({i+1}–{j+1})')
@@ -408,7 +448,7 @@ def prepare(config, progress=lambda message: None, publish=lambda problem: None)
                 volume = config.trips_per_person_hour * origin['population'] * weight / denominator
             if volume > 1e-8:
                 demand.append(dict(id=len(demand), origin=i, destination=j, km=km, volume=volume))
-    if not demand or not stations or not edges:
+    if not demand or not stations or (not edges and config.solver_method != 'annealing'):
         raise ValueError('No candidate demand, stations or corridors; inspect region/threshold/terrain settings')
     progress(f'{len(cities)} markets, {len(stations)} station options, {len(edges)} corridors, {len(demand)} directed OD pairs')
     return Problem(config, cells, cities, locations, stations, edges, demand, warnings)

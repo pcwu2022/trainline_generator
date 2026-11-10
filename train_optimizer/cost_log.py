@@ -5,7 +5,9 @@ def cost_breakdown_log(result):
     rows = ['Rail network cost breakdown (EUR)',
             f"Updated: {result['utc_time']} | phase: {result['phase']}",
             f"Solver status: {result.get('solver', {}).get('status', 'pending')}"]
-    if not result.get('feasible'):
+    if result.get('exploratory'):
+        rows.append('Exploratory network: final coverage requirements may be unmet.')
+    if not result.get('feasible') and not result.get('exploratory'):
         return '\n'.join(rows + ['No feasible incumbent; costs are unavailable.']) + '\n'
     c, m = result['assumptions'], result['metrics']
     def amount(label, value):
@@ -15,6 +17,9 @@ def cost_breakdown_log(result):
     for kind, label in [('track', 'Track construction'), ('station', 'Stations'), ('fleet', 'Train fleet')]:
         amount(label, m['lifecycle']['assets'][kind]['initial_capital'])
     amount('Total initial capital', m['capital_cost'])
+    if m.get('total_water_track_km', 0):
+        rows.append(f"Mapped water track length: {m['total_water_track_km']:,.2f} km")
+        amount('Mapped water construction (included in track capital)', m['water_track_capital'])
     rows += ['', 'ANNUAL OPERATIONS']
     amount('Track maintenance', sum(t['annual_maintenance'] for t in result['tracks']))
     amount('Station operations', len(result['stations']) * c['station_annual_cost'])
@@ -25,6 +30,10 @@ def cost_breakdown_log(result):
     amount('Annual operating surplus', m['annual_revenue'] - m['annual_operating_cost'])
     amount('Lifecycle equivalent annual subsidy', m['equivalent_annual_subsidy'])
     rows.append(f"Fare recovery ratio (revenue / operating cost): {m['fare_recovery_ratio']}")
+    if m.get('needs_satisfaction_fraction') is not None:
+        rows.append(f"Rail-eligible passenger needs satisfied: {m['needs_satisfaction_fraction']:.1%}")
+        rows.append(f"Completed trips / fixed eligible needs per hour: {m['served_trips_per_hour']:,.2f} / {m['rail_eligible_needs_per_hour']:,.2f}")
+        rows.append(f"All potential trips served: {m['served_fraction']:.1%}")
     rows.append(f"Served markets: {m['served_cities']} / {m['candidate_cities']}")
     if m['subsidy_per_passenger'] is not None:
         amount('Lifecycle subsidy per passenger trip', m['subsidy_per_passenger'])

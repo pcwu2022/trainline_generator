@@ -275,7 +275,7 @@ baselines are supplied in `terrain_cost_ranges_million`:
 
 | `terrain_class` | Low–high (M€/km) | Midpoint (M€/km) |
 | --- | ---: | ---: |
-| `bridge` | 20–50 | 35 |
+| `water` (mapped crossings) | exponential by continuous length L | 120 × exp(L/25) |
 | `hilly` | 15–25 | 20 |
 | `moderate_mountains` | 25–40 | 32.5 |
 | `difficult_mountains` | 40–70 | 55 |
@@ -494,3 +494,12 @@ under `runs/archive_previous/`.
 Future extensions include observed OD calibration, road-based station access,
 explicit national masks, engineering alignments, express services, multiple train
 types, shared fleets, timetable/queue models and scenario-based financial checks.
+
+Mapped water uses `water_track_cost_per_km` (default EUR 120M/km) as its
+local baseline. Each continuous sampled water run of L km costs its integrated
+baseline times exp(min(100, L / water_cost_growth_km)); the growth scale defaults
+to 25 km. Runs continue across alignment vertices and reset on sampled land.
+The explicit bridge terrain category is removed. Sampling is at most 0.25 km by
+default. Water capital is included once in track capital and participates in
+maintenance and lifecycle appraisal. See README.md for reference projects,
+calibration assumptions, and limitations. This is a scenario estimate.

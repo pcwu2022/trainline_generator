@@ -45,19 +45,21 @@ class TerrainCostMap:
             raise ValueError(f'No terrain coverage at ({longitude}, {latitude})')
         r, g, b = (int(v) for v in self.rgb[:, row, col])
         if b > r * 1.12 and b > g * 1.04:
-            return 'bridge'
+            return 'water'
         if r > g * 1.05 and r > b * 1.15:
             return 'moderate_mountains'
         return 'normal'
 
     def cost_per_km(self, longitude, latitude, density=0):
-        """Return construction cost/km, including the configured urban surcharge."""
+        """Return local baseline/km with urban surcharge; Router adds crossing-length growth."""
         if not math.isfinite(density) or density < 0:
             raise ValueError('Population density must be finite and nonnegative')
         terrain = self.terrain_class(longitude, latitude)
         c = self.config
         baseline = c.base_track_cost_per_km
-        if terrain != 'normal':
+        if terrain == 'water':
+            baseline = max(baseline, c.water_track_cost_per_km)
+        elif terrain != 'normal':
             low, high = c.terrain_cost_ranges_million[terrain]
             baseline = max(baseline, (low + c.terrain_cost_position * (high-low)) * 1_000_000)
         return baseline + c.urban_cost_coefficient * max(0, density - c.urban_density_threshold)

@@ -1,11 +1,24 @@
 {
-  "bbox": [-25, 34, 45, 72],
+  "bbox": [
+    -25,
+    34,
+    45,
+    72
+  ],
   "countries": [],
-  "max_cities": 30,
+  "max_cities": 100,
   "uptake_reference_radius_km": 25,
   "minimum_seed_spacing_km": 25,
-  "neighbors_per_city": 5,
-  "maximum_edge_km": 1500,
+  "neighbors_per_city": 20,
+  "maximum_edge_km": 1000,
   "maximum_trip_distance_km": 2000,
-  "solver_time_limit": 120
+  "terrain_search_limit": 500,
+  "served_weight": 50,
+  "population_weight": 2,
+  "profit_shortfall_weight": 0.1,
+  "minimum_service_frequency": 2,
+  "annealing_growth_probability": 0.65,
+  "annealing_start_temperature": 0.15,
+  "annealing_end_temperature": 0.01,
+  "annealing_initial_financial_weight": 0.05
 }

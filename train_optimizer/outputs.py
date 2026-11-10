@@ -14,7 +14,8 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib.collections import PolyCollection
-from matplotlib.colors import LogNorm
+from matplotlib.colors import LogNorm, Normalize
+from matplotlib.cm import ScalarMappable
 from matplotlib.patches import Circle
 import numpy as np
 from PIL import GifImagePlugin, Image
@@ -53,6 +54,12 @@ def network_geojson(result):
         features.append(dict(type='Feature', geometry=dict(type='LineString', coordinates=line['geometry']),
                              properties=dict(feature_kind='service_line', **{k: v for k, v in line.items() if k != 'geometry'})))
     return dict(type='FeatureCollection', features=features)
+
+
+def city_label_indices(cities):
+    """Label the twenty largest cities, preserving all city markers."""
+    return set(sorted(range(len(cities)),
+                      key=lambda i: -float(cities[i].get('population', cities[i].get('pop', 0))))[:20])
 
 
 def map_projector(config):
@@ -101,11 +108,59 @@ def map_viewport(config, problem):
             float(lower[1]-margin), float(upper[1]+margin))
 
 
-def draw_map(path, config, problem, result, viewport=None):
+def map_figure_size(viewport):
+    """Square canvas growing with sqrt of the longest projected span in km.
+
+    A 1,000 km span uses 10 inches; an 8-inch floor keeps labels legible.
+    Use the fixed viewport so solution changes cannot resize animation frames.
+    """
+    xmin, xmax, ymin, ymax = viewport
+    side = max(8.0, 10.0 * math.sqrt(max(xmax-xmin, ymax-ymin) / 1000.0))
+    return side, side
+
+
+def segment_satisfaction(problem, result):
+    """Full OD demand behind each used segment, counting each OD once.
+
+    Flow records include transfer legs. Sum both travel directions consistently
+    in numerator and denominator; unused segments have zero satisfaction.
+    """
+    demand = {od['id']: od['volume'] for od in problem.demand}
+    lines = {line['id']: line for line in result.get('lines', [])}
+    loads, markets = {}, {}
+    for flow in result.get('passenger_flows', []):
+        if flow['line'] not in lines:
+            continue
+        for segment in range(*sorted((flow['board_stop'], flow['alight_stop']))):
+            key = (flow['line'], segment)
+            loads[key] = loads.get(key, 0) + flow['trips_per_hour']
+            markets.setdefault(key, set()).add(flow['od'])
+    return {key: loads[key] / sum(demand[od] for od in ods)
+            for key, ods in markets.items() if sum(demand[od] for od in ods) > 0}
+
+
+def demand_connections(problem, config):
+    pairs = {}
+    for od in problem.demand:
+        key = tuple(sorted((od['origin'], od['destination'])))
+        pairs[key] = pairs.get(key, 0) + od['volume']
+    ranked = sorted(pairs.items(), key=lambda item: (-item[1], item[0]))
+    # Never draw the complete graph, even when the configured percentile is 100.
+    limit = min(max(0, len(ranked)-1), math.ceil(len(ranked)*config.demand_map_top_percent/100))
+    return [(pair, volume) for pair, volume in ranked[:limit]
+            if volume > 0 and volume >= config.demand_map_min_trips_per_hour]
+
+
+def draw_demand_map(path, config, problem, viewport=None):
+    draw_map(path, config, problem, {}, viewport=viewport, demand_only=True)
+
+
+def draw_map(path, config, problem, result, viewport=None, demand_only=False):
     project = map_projector(config)
+    viewport = viewport if viewport is not None else map_viewport(config, problem)
     # Explicit axes prevent the colorbar from stealing space from the map.
     # Disable automatic layout/cropping even when enabled in local matplotlibrc.
-    figure = plt.figure(figsize=(10, 10), layout='none')
+    figure = plt.figure(figsize=map_figure_size(viewport), layout='none')
     ax = figure.add_axes([0.09, 0.11, 0.72, 0.77])
     color_axis = figure.add_axes([0.85, 0.28, 0.025, 0.46])
     color_axis.set_visible(problem is not None)
@@ -117,43 +172,70 @@ def draw_map(path, config, problem, result, viewport=None):
             polygons.append(project(boundary))
             values.append(max(0.1, cell['density']))
         collection = PolyCollection(polygons, array=np.asarray(values), cmap='YlOrRd',
-                                    norm=LogNorm(vmin=1, vmax=max(10, max(values))),
+                                    norm=LogNorm(vmin=1, vmax=max([10] + values)),
                                     edgecolors='#ffffff', linewidths=0.2, alpha=0.65)
         ax.add_collection(collection)
         figure.colorbar(collection, cax=color_axis,
                         label='Population density (people/km², log scale)')
-        for city in problem.cities:
+        labeled_cities = city_label_indices(problem.cities)
+        for city_index, city in enumerate(problem.cities):
             xy = project([city['center']])[0]
             ax.plot(*xy, marker='+', color='#5d6370', markersize=7, zorder=3)
-            ax.annotate(city['name'], xy, xytext=(4, 5), textcoords='offset points', fontsize=8, zorder=6)
-        if result.get('feasible'):
-            palette = ['#1265bb', '#8c39a8', '#e17a16', '#008a83', '#b34e66']
-            for line_number, line in enumerate(result['lines']):
-                xy = project(line['geometry'])
+            if city_index in labeled_cities:
+                ax.annotate(city['name'], xy, xytext=(4, 5), textcoords='offset points', fontsize=8, zorder=6)
+        if demand_only:
+            connections = demand_connections(problem, config)
+            maximum = max((volume for _, volume in connections), default=1)
+            for (a, b), volume in connections:
+                xy = project([problem.cities[a]['center'], problem.cities[b]['center']])
+                ax.plot(xy[:, 0], xy[:, 1], color='#215c98', alpha=0.6,
+                        linewidth=6*volume/maximum, zorder=2)
+            for fraction in (0.25, 0.5, 1):
+                ax.plot([], [], color='#215c98', linewidth=6*fraction,
+                        label=f'{maximum*fraction:,.0f} trips/h')
+            ax.legend(title='Two-way demand', loc='lower left', fontsize=8)
+        elif result.get('feasible') or result.get('exploratory'):
+            ratios = segment_satisfaction(problem, result) if hasattr(problem, 'demand') else {}
+            cmap, norm = plt.get_cmap('viridis'), Normalize(0, 1)
+            ratio_axis = figure.add_axes([0.85, 0.08, 0.025, 0.13])
+            figure.colorbar(ScalarMappable(norm=norm, cmap=cmap), cax=ratio_axis,
+                            label='Throughput / demand')
+            for line in result['lines']:
                 frequency = line['frequency_per_hour_per_direction']
-                color = palette[line_number % len(palette)]
-                ax.plot(xy[:, 0], xy[:, 1], color=color, linewidth=1.7+frequency*0.6, zorder=4)
+                edges = line.get('edges', [])
+                geometries = [problem.edges[edge]['geometry'] for edge in edges] or [line['geometry']]
+                for segment, geometry in enumerate(geometries):
+                    xy = project(geometry)
+                    ax.plot(xy[:, 0], xy[:, 1], color=cmap(norm(ratios.get((line['id'], segment), 0))),
+                            linewidth=1.7+frequency*0.6, zorder=4)
             for station in result['stations']:
                 xy = project([station['coordinate']])[0]
                 ax.add_patch(Circle(xy, station['radius_km'], fill=False, color='#217c55',
                                     linewidth=1, linestyle='--', alpha=0.6, zorder=3))
                 ax.plot(*xy, marker='o', markerfacecolor='white', markeredgecolor='#124625',
                         markeredgewidth=2, markersize=7, zorder=5)
-    xmin, xmax, ymin, ymax = viewport if viewport is not None else map_viewport(config, problem)
+    xmin, xmax, ymin, ymax = viewport
     ax.set_xlim(xmin, xmax)
     ax.set_ylim(ymin, ymax)
     ax.set_aspect('equal')
     ax.grid(alpha=0.15)
     ax.set_xlabel('East of regional center (km)')
     ax.set_ylabel('North of regional center (km)')
-    phase_label = result['phase'].replace('_', ' ').capitalize()
+    if demand_only:
+        result = dict(phase='fixed demand', elapsed_seconds=0, iterations=0, snapshot=0)
+    phase_label = ('Exploratory — coverage targets may be unmet' if result.get('exploratory')
+                   else result['phase'].replace('_', ' ').capitalize())
+    if not result.get('exploratory') and result.get('solver', {}).get('stage'):
+        phase_label += ' / ' + result['solver']['stage']
     subtitle = (f"{phase_label} · {result['elapsed_seconds']:.1f}s · "
                 f"progress step {result['iterations']:,} · update {result['snapshot']}")
-    if result.get('feasible'):
+    if result.get('feasible') or result.get('exploratory'):
         metrics = result['metrics']
         subtitle += (f"\n{metrics['served_trips_per_hour']:,.0f} trips/h served "
                      f"({metrics['served_fraction']:.1%}) · {metrics['total_track_km']:.0f} km track · "
                      f"{config.accounting_years}-year profit {metrics['horizon_profit']/1e6:,.1f}M")
+        if metrics.get('needs_satisfaction_fraction') is not None:
+            subtitle += f"\nRail-eligible passenger needs satisfied: {metrics['needs_satisfaction_fraction']:.1%}"
         if 'lifecycle' in metrics:
             appraisal = metrics['lifecycle']
             subtitle += f" · {appraisal['years']}-year NPV {appraisal['npv']/1e6:,.1f}M"
@@ -164,11 +246,17 @@ def draw_map(path, config, problem, result, viewport=None):
     else:
         subtitle += '\nLoading population data — animation begins when the map is ready'
         ax.text(0.5, 0.5, 'Preparing map…', transform=ax.transAxes, ha='center', va='center', fontsize=16)
-    ax.set_title('Rail network optimization\n' + subtitle, fontsize=11)
+    if demand_only:
+        subtitle = (f'{len(connections)} strongest city pairs · top {config.demand_map_top_percent:g}% · '
+                    f'minimum {config.demand_map_min_trips_per_hour:g} trips/h')
+    ax.set_title(('Candidate city demand' if demand_only else 'Rail network optimization') + '\n' + subtitle, fontsize=11)
     footer = ('Colored lines: all-stop services (frequency per direction) · White dots: stations · Dashed green: catchments\n'
               'Scenario estimates; coarse population. Missing terrain/land data permits unsuitable alignments.'
               if not config.terrain_file or not config.land_file else
               'Scenario estimates; H3 terrain routing is coarse and is not an engineering alignment.')
+    footer = ('Width: total two-way demand (trips/hour). Demand is fixed before network selection.' if demand_only else
+              'Color: carried passengers / full OD demand using each segment (including transfers).\n'
+              'Width: trains/hour/direction · White dots: stations · Dashed green: catchments')
     figure.supxlabel(footer, fontsize=8)
     try:
         with matplotlib.rc_context({'savefig.bbox': None}):
@@ -188,6 +276,7 @@ class LiveState:
     def __init__(self):
         self.lock = threading.Lock()
         self.problem = self.model = self.vector = None
+        self.preview = None
         self.phase = 'preparing'
         self.message = 'Loading population and city data'
         self.solver = {}
@@ -213,6 +302,20 @@ class LiveState:
         with self.lock:
             solver = dict(self.solver, iterations=self.iterations, iteration_unit=self.iteration_unit)
             return self.problem, self.model, self.vector, self.phase, self.message, solver
+
+    def report_snapshot(self):
+        """Atomically pair the live exploration view with its saved incumbent."""
+        with self.lock:
+            solver = dict(self.solver, iterations=self.iterations, iteration_unit=self.iteration_unit)
+            incumbent = self.problem, self.model, self.vector
+            exploratory = self.preview is not None and (self.phase == 'solving' or self.vector is None)
+            if exploratory:
+                problem, model, vector, deficit = self.preview
+            else:
+                problem, model, vector = incumbent
+                deficit = 0
+            return ((problem, model, vector, self.phase, self.message, solver),
+                    exploratory, deficit, incumbent)
 
 
 class ProgressGif:
@@ -271,13 +374,13 @@ class ProgressGif:
 DASHBOARD = '''<!doctype html><html><head><meta charset="utf-8"><title>Rail optimizer</title>
 <style>body{font:16px system-ui;margin:24px;background:#f2f5f8;color:#203047}img{max-width:100%;background:white}
 pre{white-space:pre-wrap;background:white;padding:16px}a{color:#1265bb}</style></head><body>
-<h1>Rail optimizer — live incumbent</h1><p id="status">Waiting for first update…</p>
-<p><a href="latest.json">Full solution</a> · <a href="latest.geojson">GeoJSON</a> ·
+<h1>Rail optimizer — live search</h1><p id="status">Waiting for first update…</p>
+<p><a href="latest.json">Current network</a> · <a href="best_feasible.json">Best feasible network</a> · <a href="exploration.png">Latest exploration map</a> · <a href="latest.geojson">GeoJSON</a> ·
 <a href="latest_stations.csv">Stations CSV</a> · <a href="latest_lines.csv">Lines CSV</a> ·
-<a href="progress.gif">Progress animation</a></p>
+<a href="demand.png">Candidate demand map</a> · <a href="progress.gif">Progress animation</a></p>
 <img id="map" src="latest.png" alt="Current rail network"><pre id="metrics"></pre>
 <script>window.updateRail=function(d){document.getElementById('status').textContent=
-d.phase+' | progress step '+d.iterations+' | '+d.elapsed_seconds.toFixed(1)+'s | update '+d.snapshot+' | '+d.message;
+(d.exploratory?'Exploratory | ':'')+d.phase+(d.solver.stage?' / '+d.solver.stage:'')+' | progress step '+d.iterations+' | '+d.elapsed_seconds.toFixed(1)+'s | update '+d.snapshot+' | '+d.message;
 document.getElementById('metrics').textContent=JSON.stringify(d.metrics||{feasible:false,warnings:d.warnings},null,2);
 if(window.railUpdateVersion!==d.utc_time){document.getElementById('map').src='latest.png?t='+encodeURIComponent(d.utc_time);
 window.railUpdateVersion=d.utc_time;}};
@@ -296,11 +399,15 @@ class Reporter:
         self.counter = json.loads(latest.read_text())['snapshot'] if latest.exists() else 0
         self.animation = ProgressGif(self.output/'progress.gif', gif_frame_ms)
         self.viewport = None
+        self.demand_signature = None
         self.started = time.monotonic()
         self.stop = threading.Event()
         self.requested = threading.Event()
+        self.render_lock = threading.Lock()
         self.cadence_lock = threading.Lock()
         self.last_requested_bucket = 0
+        self.growth_frames = []
+        self.growth_line_counts = set()
         self.failure = None
         self.thread = threading.Thread(target=self._loop, name='rail-snapshots', daemon=True)
         atomic_text(self.output/'index.html', DASHBOARD)
@@ -321,6 +428,26 @@ class Reporter:
                 self.last_requested_bucket = bucket
                 self.requested.set()
 
+    def capture_growth(self):
+        """Preserve the first one-, two- and three-service frames despite coalescing."""
+        snapshot = self.state.report_snapshot()
+        view, exploratory, deficit, incumbent = snapshot
+        model = view[1]
+        count = len(model.lines) if exploratory and model is not None else 0
+        with self.cadence_lock:
+            if 1 <= count <= 3 and count not in self.growth_line_counts:
+                self.growth_line_counts.add(count)
+                self.growth_frames.append(snapshot)
+                self.requested.set()
+
+    def capture_exploration(self):
+        """Preserve the last full exploratory view before selecting a final incumbent."""
+        snapshot = self.state.report_snapshot()
+        if snapshot[1]:
+            with self.cadence_lock:
+                self.growth_frames.append(snapshot)
+                self.requested.set()
+
     def _loop(self):
         while True:
             self.requested.wait()
@@ -329,6 +456,9 @@ class Reporter:
                 return
             try:
                 self.write()
+                with self.cadence_lock:
+                    if self.growth_frames:
+                        self.requested.set()
             except Exception as error:
                 self.failure = error
                 return
@@ -339,11 +469,28 @@ class Reporter:
         self.thread.join()
         if self.failure:
             raise RuntimeError(f'Snapshot writer failed: {self.failure}') from self.failure
+        while self.growth_frames:
+            self.write()
         self.write()
 
     def write(self):
-        problem, model, vector, phase, message, solver = self.state.snapshot()
+        with self.render_lock:
+            self._write()
+
+    def _write(self):
+        with self.cadence_lock:
+            snapshot = self.growth_frames.pop(0) if self.growth_frames else None
+        view, exploratory, deficit, incumbent = snapshot or self.state.report_snapshot()
+        problem, model, vector, phase, message, solver = view
         result = model.describe(vector) if model is not None and vector is not None else dict(feasible=False)
+        best_problem, best_model, best_vector = incumbent
+        best_result = (best_model.describe(best_vector) if best_model is not None and best_vector is not None else None)
+        if exploratory:
+            result.update(feasible=False, exploratory=True, coverage_deficit=deficit,
+                          final_requirements_met=False)
+        result['exploratory'] = exploratory
+        result['service_lines'] = len(result.get('lines', []))
+        result['best_feasible_available'] = bool(best_result and best_result.get('feasible'))
         self.counter += 1
         result.update(snapshot=self.counter, iterations=solver['iterations'], iteration_unit=solver['iteration_unit'], phase=phase, message=message,
                       elapsed_seconds=time.monotonic()-self.started,
@@ -356,6 +503,7 @@ class Reporter:
                                            candidate_stations=len(problem.stations), candidate_tracks=len(problem.edges),
                                            candidate_lines=len(model.lines), potential_trips_per_hour=model.total_demand,
                                            capture_upper_bound_trips_per_hour=model.capture_upper_bound,
+                                           rail_eligible_needs_per_hour=model.needs_upper_bound,
                                            minimum_required_trips_per_hour=self.config.minimum_served_fraction*model.total_demand)
         atomic_text(self.output/'latest.geojson', json.dumps(clean(network_geojson(result)), allow_nan=False))
         station_rows = [dict(s, longitude=s['coordinate'][0], latitude=s['coordinate'][1]) for s in result.get('stations', [])]
@@ -380,23 +528,42 @@ class Reporter:
             map_temp = self.output/'latest.tmp.png'
             if self.viewport is None:
                 self.viewport = map_viewport(self.config, problem)
+            if getattr(problem, 'demand', []):
+                signature = tuple((od['origin'], od['destination'], od['volume']) for od in problem.demand)
+                if signature != self.demand_signature:
+                    demand_temp = self.output/'demand.tmp.png'
+                    draw_demand_map(demand_temp, self.config, problem, viewport=self.viewport)
+                    demand_temp.replace(self.output/'demand.png')
+                    self.demand_signature = signature
             draw_map(map_temp, self.config, problem, result, viewport=self.viewport)
             map_temp.replace(self.output/'latest.png')
             self.animation.append(self.output/'latest.png')
         result['animation_frames'] = self.animation.frames
         atomic_text(self.output/'latest.json', json.dumps(result, indent=2, allow_nan=False))
+        if exploratory:
+            atomic_text(self.output/'exploration.json', json.dumps(result, indent=2, allow_nan=False))
+            shutil.copyfile(self.output/'latest.png', self.output/'exploration.png')
         atomic_text(self.output/'cost_breakdown.log', cost_breakdown_log(result))
         atomic_text(self.output/'latest.js', 'window.updateRail('+json.dumps(result, allow_nan=False)+');')
-        if vector is not None and result.get('feasible'):
+        if best_result and best_result.get('feasible'):
+            atomic_text(self.output/'best_feasible.json', json.dumps(clean(best_result), indent=2, allow_nan=False))
             temporary = self.output/'checkpoint.npz.tmp'
             with temporary.open('wb') as stream:
-                np.savez_compressed(stream, vector=vector, fingerprint=model.fingerprint())
+                np.savez_compressed(stream, vector=best_vector, fingerprint=best_model.fingerprint(),
+                                    **({'annealing': best_model.annealing_checkpoint}
+                                       if hasattr(best_model, 'annealing_checkpoint') else {}))
             temporary.replace(self.output/'checkpoint.npz')
         with (self.output/'progress.jsonl').open('a', encoding='utf8') as stream:
-            stream.write(json.dumps({k: result[k] for k in ('snapshot', 'iterations', 'animation_frames', 'phase', 'elapsed_seconds', 'feasible', 'solver')})+'\n')
-        print(f"[{result['elapsed_seconds']:7.1f}s] update {self.counter}, progress step {result['iterations']:,}: {phase}; "
+            stream.write(json.dumps({k: result[k] for k in ('snapshot', 'iterations', 'animation_frames', 'phase', 'elapsed_seconds', 'feasible', 'exploratory', 'service_lines', 'solver')})+'\n')
+        phase_display = phase + (' / '+solver['stage'] if solver.get('stage') else '')
+        if 'coverage_fraction' in solver:
+            label = 'passenger needs satisfied' if solver['coverage_metric'] == 'needs' else solver['coverage_metric']+' coverage'
+            phase_display += f" ({solver['coverage_fraction']:.1%}/{solver['coverage_target']:.0%} {label})"
+        if 'component_count' in solver:
+            phase_display += f"; {solver['component_count']} components, {solver['largest_component_population_share']:.0%} population in largest"
+        print(f"[{result['elapsed_seconds']:7.1f}s] update {self.counter}, progress step {result['iterations']:,}: {phase_display}; "
               + (f"{result['metrics']['served_trips_per_hour']:,.1f} trips/h, "
-                 f"profit {result['metrics']['horizon_profit']/1e6:,.2f}M" if result.get('feasible') else ('search ended without a validated network' if phase in
+                 f"profit {result['metrics']['horizon_profit']/1e6:,.2f}M" if result.get('metrics') else ('search ended without a validated network' if phase in
                      ('search_exhausted', 'no_feasible_solution', 'infeasible') else
                      'constructing and evaluating networks')),
               flush=True)
