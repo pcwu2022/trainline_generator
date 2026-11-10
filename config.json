@@ -21,7 +21,7 @@
   "population_subdivision": 0,
 
   "center_method": "access",
-  "center_coefficient": 0.1,
+  "center_coefficient": 0.16136,
   "locations_per_city": 2,
   "station_offset_km": 12,
   "access_normalization_floor_km": 0.001,
@@ -83,6 +83,7 @@
   "turnaround_minutes": 5,
   "access_speed_kmh": 25,
   "transfer_minutes": 5,
+  "maximum_journey_detour_ratio": 2,
   "maximum_journey_hours": 5,
 
   "operating_start_hour": 6,
@@ -120,6 +121,8 @@
   "cost_weight": 0.001,
   "profit_shortfall_weight": 0.25,
 
+  "solver_method": "heuristic",
+  "heuristic_iterations": 100,
   "solver_time_limit": 120,
   "mip_relative_gap": 0.01,
   "random_seed": 42,

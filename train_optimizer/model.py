@@ -96,7 +96,9 @@ class NetworkModel(LinearModel):
         self.problem = problem
         c = problem.config
         self.x, self.y, self.z, self.q, self.flow = {}, {}, {}, {}, {}
+        progress('Generating candidate service lines')
         self.lines = generate_lines(problem)
+        progress(f'Generated {len(self.lines):,} service lines; building variables and constraints')
         required_cities = math.ceil(c.minimum_city_served_fraction * len(problem.cities) - 1e-10)
         if c.require_connected_network and required_cities:
             adjacency = {loc['id']: set() for loc in problem.locations}
@@ -240,7 +242,13 @@ class NetworkModel(LinearModel):
                     # Arc time includes a transfer penalty per boarding; remove
                     # one penalty here because the initial boarding is not a transfer.
                     self.time[index] = sa['access_hours'] + sb['access_hours'] - c.transfer_minutes / 60
-                    journey[index] = self.time[index] - c.maximum_journey_hours
+                    limit = c.maximum_journey_hours
+                    if c.maximum_journey_detour_ratio:
+                        minimum_frequency = min(f for f in c.frequencies_per_hour if f >= c.minimum_service_frequency)
+                        direct_limit = (sa['access_hours'] + sb['access_hours'] + .5/minimum_frequency
+                                        + c.maximum_journey_detour_ratio*od['km']/c.train_speed_kmh)
+                        limit = min(limit, direct_limit)
+                    journey[index] = self.time[index] - limit
                     self.cost[index] = (-c.served_weight + c.time_weight*self.time[index]) / normalization
             self.row(served, upper=od['volume'])
             for line in self.lines:

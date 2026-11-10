@@ -9,6 +9,7 @@ import signal
 import shutil
 import sys
 import threading
+import time
 
 import highspy
 import numpy as np
@@ -16,6 +17,7 @@ import numpy as np
 from .config import Config
 from .geography import prepare
 from .model import NetworkModel
+from .heuristic import heuristic_problem, solve_heuristic
 from .outputs import LiveState, Reporter, atomic_text, clean
 
 
@@ -86,6 +88,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description='Optimize stations, corridors, all-stop services and passenger flows.')
     parser.add_argument('--config', default='config.json', help='JSON assumptions (default: config.json)')
     parser.add_argument('--output', default='runs/netherlands')
+    parser.add_argument('--solver', choices=['heuristic', 'milp'], help='Override solver_method')
     parser.add_argument('--time-limit', type=float, default=None, help='Solver seconds (data preparation is additional)')
     parser.add_argument('--snapshot-every', type=int, default=None,
                         help='Solver progress steps between frames: native progress callbacks (default: 5)')
@@ -104,6 +107,8 @@ def main(argv=None):
         data = json.loads(Path('config.json').read_text())
         if Path(args.config).resolve() != Path('config.json').resolve():
             data.update(json.loads(Path(args.config).read_text()))
+        if args.solver:
+            data['solver_method'] = args.solver
         config = Config.from_dict(data)
     except (ValueError, OSError) as error:
         parser.error(str(error))
@@ -141,22 +146,40 @@ def main(argv=None):
     for name in (signal.SIGINT, signal.SIGTERM):
         previous_handlers[name] = signal.signal(name, request_stop)
     reporter.start()
+    startup_started = time.monotonic()
+    startup_done = threading.Event()
+    def startup_heartbeat():
+        while not startup_done.wait(15):
+            _, _, _, phase, message, solver = state.snapshot()
+            if solver['iterations']:
+                return
+            print(f'[{time.monotonic()-startup_started:7.1f}s] Still working ({phase}): {message}', flush=True)
+    heartbeat = threading.Thread(target=startup_heartbeat, daemon=True)
+    heartbeat.start()
     exit_code = 1
     try:
         def preparation_progress(message):
             state.update(message=message)
+            print(f'[{time.monotonic()-startup_started:7.1f}s] {message}', flush=True)
             if interrupted.is_set():
                 raise InterruptedError('Stopped during preparation')
             if reporter.failure:
                 raise RuntimeError(f'Snapshot writer failed: {reporter.failure}')
+        preparation_progress(f'Preparing {args.config} with {config.solver_method} solver')
         problem = prepare(config, preparation_progress, lambda problem: state.update(problem=problem))
-        state.update(problem=problem, phase='building', message='Building mixed-integer network model')
+        if config.solver_method == 'heuristic':
+            preparation_progress('Selecting heuristic station options and corridors')
+            problem = heuristic_problem(problem)
+        state.update(problem=problem, phase='building', message=f'Building {config.solver_method} network model')
+        preparation_progress(f'Building {config.solver_method} network model')
         reporter.requested.set()  # Publish the first complete map before solving.
         model = NetworkModel(problem, preparation_progress)
         state.update(model=model)
+        preparation_progress('Fingerprinting model and input files; writing manifest')
         manifest = dict(config=asdict(config), model_fingerprint=model.fingerprint(),
                         progress=dict(snapshot_every_iterations=args.snapshot_every,
-                                      iteration_unit='solver_progress_callback', gif_frame_ms=args.gif_frame_ms),
+                                      iteration_unit=('heuristic_design_evaluation' if config.solver_method == 'heuristic'
+                                                      else 'solver_progress_callback'), gif_frame_ms=args.gif_frame_ms),
                         variables=len(model.names), constraints=len(model.row_lower),
                         input_sha256={path: hashlib.sha256(Path(path).read_bytes()).hexdigest()
                                       for path in (config.population_file, config.cities_file, config.country_boundaries_file, config.terrain_file, config.land_file) if path and Path(path).exists()},
@@ -166,18 +189,25 @@ def main(argv=None):
         print(f"Model: {len(model.names):,} variables, {len(model.row_lower):,} constraints", flush=True)
         if interrupted.is_set():
             raise InterruptedError('Stopped before solve')
-        status = solve(model, state, args.time_limit, interrupted, args.resume, reporter)
+        solve_method = solve_heuristic if config.solver_method == 'heuristic' else solve
+        preparation_progress('Initializing solver and first network evaluation (including presolve)')
+        status = solve_method(model, state, args.time_limit, interrupted, args.resume, reporter)
         vector = state.snapshot()[2]
         feasible = vector is not None and model.describe(vector).get('feasible')
         if interrupted.is_set():
             phase, exit_code = 'interrupted', 130
         elif feasible:
-            phase, exit_code = ('optimal' if status == 'Optimal' else 'time_limit_with_incumbent'), 0
+            phase, exit_code = ('heuristic_feasible' if config.solver_method == 'heuristic' else
+                                'optimal' if status == 'Optimal' else 'time_limit_with_incumbent'), 0
         elif status == 'Infeasible':
             phase, exit_code = 'infeasible', 2
         else:
-            phase, exit_code = 'no_feasible_solution', 3
-        state.update(phase=phase, message=f'HiGHS: {status}. Optimality applies only to the generated candidate model.')
+            phase, exit_code = ('search_exhausted' if config.solver_method == 'heuristic'
+                                else 'no_feasible_solution'), 3
+        message = (f'{status}. Heuristic results have no optimality guarantee; failure to find a network does not prove infeasibility.'
+                   if config.solver_method == 'heuristic' else
+                   f'HiGHS: {status}. Optimality applies only to the generated candidate model.')
+        state.update(phase=phase, message=message)
     except InterruptedError as error:
         state.update(phase='interrupted', message=str(error))
         exit_code = 130
@@ -186,6 +216,8 @@ def main(argv=None):
         print(f'Error: {error}', file=sys.stderr)
         exit_code = 1
     finally:
+        startup_done.set()
+        heartbeat.join()
         try:
             reporter.finish()
         finally:

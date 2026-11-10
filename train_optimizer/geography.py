@@ -190,6 +190,31 @@ class Router:
         return min(self.routes(a, b), key=lambda route: route['track_capital'], default=None)
 
 
+def candidate_market_pairs(cities, config):
+    """Local corridors plus a bounded pool of demand-driven longer links."""
+    pairs = set()
+    for i, city in enumerate(cities):
+        others = sorted((haversine(city['center'], other['center']), j) for j, other in enumerate(cities) if i != j)
+        for distance, j in others[:config.neighbors_per_city]:
+            if distance <= config.maximum_edge_km:
+                pairs.add(tuple(sorted((i, j))))
+    if config.solver_method == 'heuristic':
+        # Nearest-neighbor corridors can strand large OD markets behind small
+        # intermediate towns. Reserve additional pairs by potential fare volume.
+        existing = set(pairs)
+        for i, city in enumerate(cities):
+            options = []
+            for j, other in enumerate(cities):
+                pair = tuple(sorted((i, j)))
+                km = haversine(city['center'], other['center'])
+                if i == j or pair in existing or km > min(config.maximum_edge_km, config.maximum_trip_distance_km):
+                    continue
+                potential = city['population']*other['population']*km / max(km, config.distance_floor_km)**config.gravity_beta
+                options.append((-potential, j, pair))
+            pairs.update(pair for _, _, pair in sorted(options)[:config.heuristic_demand_connections])
+    return pairs
+
+
 def country_mask(config):
     """Prepared country union, or None for bbox-only discovery."""
     if not config.countries:
@@ -226,8 +251,10 @@ def prepare(config, progress=lambda message: None, publish=lambda problem: None)
     if not config.terrain_file:
         warnings.append('No elevation, gradient, curve, bridge or tunnel engineering constraints are available.')
     west, south, east, north = config.bbox
+    progress(f'Reading population data: {config.population_file}')
     raw = json.loads(Path(config.population_file).read_text())
     cells = []
+    progress('Loading country boundaries and filtering population cells')
     region = country_mask(config)
     for feature in raw['features']:
         lon, lat = feature['geometry']['coordinates'][:2]
@@ -248,7 +275,9 @@ def prepare(config, progress=lambda message: None, publish=lambda problem: None)
         raise ValueError('Population data must have one H3 resolution')
     progress(f'Loaded {len(cells)} population cells')
     from .seeds import population_seeds, label_markets, market_membership
+    progress('Finding population market seeds')
     seeds = population_seeds(cells, config)
+    progress(f'Found {len(seeds)} market seeds; subdividing population cells')
     if len(seeds) < 2:
         raise ValueError('At least two separated population markets are needed; change bbox or screening settings')
     # Local azimuthal equidistant projection; centered on the selected region.
@@ -276,6 +305,7 @@ def prepare(config, progress=lambda message: None, publish=lambda problem: None)
     if not len(xy):
         raise ValueError('No population samples inside bbox')
     tree = cKDTree(xy)
+    progress(f'Built {len(xy):,} population samples; selecting station locations')
     cities, locations = [], []
     for city_id, seed in enumerate(seeds):
         sx, sy = forward.transform(*seed['coordinate'])
@@ -312,6 +342,7 @@ def prepare(config, progress=lambda message: None, publish=lambda problem: None)
                                       xy=point.tolist(), center_offset_km=float(np.linalg.norm(point-center))))
                 if len(accepted) == config.locations_per_city:
                     break
+    progress(f'Labeling {len(cities)} markets and assigning population catchments')
     label_markets(cities, config.cities_file, countries=config.countries)
     # Fixed origin zones use population seeds; labels never move their boundaries.
     seed_points = np.array([np.array(forward.transform(*s['coordinate'])) / 1000 for s in seeds])
@@ -338,24 +369,28 @@ def prepare(config, progress=lambda message: None, publish=lambda problem: None)
                                  access_hours=access, mean_access_km=mean_access_km,
                                  access_multiplier=access_multiplier))
     live_locations = {s['location'] for s in stations}
+    if config.solver_method == 'heuristic':
+        # Route only the station options the heuristic will actually evaluate.
+        # Preparing every discarded location multiplies terrain searches.
+        live_locations = {max((s for s in stations if s['city'] == city['id']),
+                              key=lambda s: (s['capture_fraction'], -s.get('access_hours', 0), -s['id']))['location']
+                          for city in cities if any(s['city'] == city['id'] for s in stations)}
     # Publish a read-only population/city view before potentially lengthy terrain
     # routing, so the reporter can show useful geography when requested.
     publish(Problem(config, cells, cities, locations, stations, [], [], warnings))
+    progress('Initializing terrain router and candidate market pairs')
     router = Router(config, cells)
-    pairs = set()
-    for i, city in enumerate(cities):
-        others = sorted((haversine(city['center'], other['center']), j) for j, other in enumerate(cities) if i != j)
-        for distance, j in others[:config.neighbors_per_city]:
-            if distance <= config.maximum_edge_km:
-                pairs.add(tuple(sorted((i, j))))
+    pairs = candidate_market_pairs(cities, config)
     edges = []
-    for i, j in sorted(pairs):
+    for pair_number, (i, j) in enumerate(sorted(pairs), 1):
+        progress(f'Routing candidate market pair {pair_number}/{len(pairs)} ({i+1}–{j+1})')
         for a, b in itertools.product([l for l in locations if l['city'] == i and l['id'] in live_locations],
                                       [l for l in locations if l['city'] == j and l['id'] in live_locations]):
             for route in router.routes(a['coordinate'], b['coordinate']):
                 if 0 < route['km'] <= config.maximum_edge_km:
                     edges.append(dict(id=len(edges), a=a['id'], b=b['id'], **route))
         progress(f'Routed candidate market pair {i+1}–{j+1}')
+    progress('Computing directed passenger demand')
     demand = []
     for i, origin in enumerate(cities):
         weights = {}

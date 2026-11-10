@@ -21,8 +21,8 @@ class Config:
     # Legacy city setting names now apply to population-derived markets.
     minimum_seed_spacing_km: float = 0  # Zero uses market_radius_km, independent of adaptive radius
     max_cities: int = 100
-    market_radius_km: float = 15  # Maximum scoring and density-adaptive market radius
-    minimum_city_population: int = 50000  # Target eligible population for adaptive radius; minimum seed score
+    market_radius_km: float = 25  # Seed scoring neighborhood radius; does not limit catchments
+    minimum_city_population: int = 50000  # Minimum eligible population for seed selection
     density_threshold: float = 100
     population_subdivision: int = 0
 
@@ -30,7 +30,7 @@ class Config:
     # Generate station positions and catchment radii (km) around each city.
     # Access normalization and tolerance control the station-location calculation.
     center_method: str = 'access'
-    center_coefficient: float = 0.1  # Legacy metadata; unified market radius replaces it
+    center_coefficient: float = 0.16136  # radius_km = coefficient * sqrt(seed density in people/km²)
     locations_per_city: int = 5
     station_offset_km: float = 12
     access_normalization_floor_km: float = 0.1
@@ -81,6 +81,7 @@ class Config:
     turnaround_minutes: float = 5
     access_speed_kmh: float = 25
     transfer_minutes: float = 5
+    maximum_journey_detour_ratio: float = 0  # Zero disables OD-average rail-time detour cap
     maximum_journey_hours: float = 5
 
     # Operating calendar
@@ -141,7 +142,11 @@ class Config:
     # Solver and output settings
     # Control solver seconds, relative optimality gap, reproducibility and model size.
     # Snapshots count solver progress callbacks; GIF frame duration is milliseconds.
-    solver_time_limit: float = 600
+    solver_method: str = 'heuristic'  # heuristic or milp
+    heuristic_iterations: int = 100
+    heuristic_through_lines: int = 12
+    heuristic_demand_connections: int = 2
+    solver_time_limit: float = 3600
     mip_relative_gap: float = 0.01
     random_seed: int = 42
     maximum_model_variables: int = 2_000_000
@@ -220,6 +225,12 @@ class Config:
             raise ValueError('maximum_shared_track_detour must be at least 1')
         if type(self.maximum_alignment_variants_per_line) is not int or self.maximum_alignment_variants_per_line < 2:
             raise ValueError('maximum_alignment_variants_per_line must be an integer >= 2')
+        if self.solver_method not in ('heuristic', 'milp'):
+            raise ValueError('solver_method must be heuristic or milp')
+        if 0 < self.maximum_journey_detour_ratio < 1:
+            raise ValueError('maximum_journey_detour_ratio must be zero or at least 1')
+        if self.heuristic_iterations < 1:
+            raise ValueError('heuristic_iterations must be positive')
         if self.center_method not in ('peak', 'circle', 'access') or self.demand_model not in ('gravity', 'production'):
             raise ValueError('invalid center_method or demand_model')
         if (not self.frequencies_per_hour or any(type(f) is not int or f < 1 for f in self.frequencies_per_hour)

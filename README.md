@@ -1,5 +1,42 @@
 # Population-driven railway optimizer
 
+## Fast heuristic solver (default)
+
+The default `solver_method="heuristic"` chooses one station per discovered market
+by capture fraction, breaking ties by access time. It adds demand-ranked corridors
+to the nearest-neighbor graph and searches direct and through services. Guided
+moves add shortcuts, replace shuttles with through trains, bypass intermediate
+markets, prune services and adjust frequencies. Dense networks and trees provide
+initial designs; the final network can contain cycles. Each design fixes every
+discrete decision; HiGHS solves continuous passenger assignment and connectivity.
+Acceptance uses the full lifecycle, ridership and passenger-time objective, with
+all hard constraints checked. No optimality guarantee is reported. An unsuccessful
+search does not prove infeasibility; the final status is `search_exhausted`.
+
+```sh
+.venv/bin/python optimize.py --config configs/netherlands.json --solver heuristic --output runs/heuristic
+```
+
+`heuristic_iterations` (default 100) limits proposed designs, and `--time-limit`
+limits solver/search time after preparation and model construction. Increase
+iterations for a longer search. `random_seed` controls reproducible proposals.
+The heuristic fixes one station location per market and includes up to
+`heuristic_through_lines` (default 12) three-stop through-service patterns, ranked
+by endpoint demand and bounded by the configured line and detour limits.
+`heuristic_demand_connections` (default 2 per market) adds candidate corridors
+ranked by potential passenger-km. Construction and service costs are charged in
+full; no small-city detour receives an artificial saving.
+
+`maximum_journey_detour_ratio` limits OD-average travel time relative to direct
+rail running time, plus access and one initial wait. The root config sets 2;
+zero disables this cap. `maximum_journey_hours` remains an additional limit.
+The objective's `time_weight` controls further travel-time preference. Profit is
+a soft objective, so a validated network can still lose money.
+
+The full MILP remains available with `--solver milp`. It searches station
+alternatives and a larger through-service pool. Checkpoints require an identical
+generated model; use a new output directory after these candidate-pool changes.
+
 ## Regional coverage scenario
 
 Shared-track services have a dedicated candidate budget:
@@ -287,9 +324,10 @@ legacy names for the population-derived market count and target population.
    after each pick, rescore using only population outside previously selected
    scoring neighborhoods. Require at least `minimum_city_population` new population
    per pick. Enforce `minimum_seed_spacing_km` (zero uses `market_radius_km`), up to
-   `max_cities`. Expand each seed's radius to reach the target population, capped
-   at `market_radius_km` and floored at the nearest eligible cell's equivalent disk
-   radius (also capped). Use this radius for center calculation and catchments.
+   `max_cities`. Set radius to `center_coefficient * sqrt(seed density)` using
+   density in people/km², with no floor or cap. The default coefficient 0.16136
+   gives Brussels approximately 20 km. Use this radius for center calculation
+   and catchments.
    Seeds remain fixed while the solver chooses markets and connections.
 2. **Fixed origin zones.** Assign eligible samples to their nearest population
    seed, capped at that seed’s adaptive radius. Overlaps have one owner. Samples

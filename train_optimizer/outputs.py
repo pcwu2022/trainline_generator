@@ -158,7 +158,9 @@ def draw_map(path, config, problem, result, viewport=None):
             appraisal = metrics['lifecycle']
             subtitle += f" · {appraisal['years']}-year NPV {appraisal['npv']/1e6:,.1f}M"
     elif problem is not None:
-        subtitle += '\nNo feasible network found — city markers are candidates, not selected stations'
+        subtitle += ('\nSearch ended without a validated network — review the service and budget requirements'
+                     if result['phase'] in ('search_exhausted', 'no_feasible_solution', 'infeasible') else
+                     '\nConstructing and evaluating networks — markers show candidate markets')
     else:
         subtitle += '\nLoading population data — animation begins when the map is ready'
         ax.text(0.5, 0.5, 'Preparing map…', transform=ax.transAxes, ha='center', va='center', fontsize=16)
@@ -190,6 +192,7 @@ class LiveState:
         self.message = 'Loading population and city data'
         self.solver = {}
         self.iterations = 0
+        self.iteration_unit = 'solver_progress_callback'
 
     def advance_iteration(self):
         """Count a native solver progress callback, including MIP root search.
@@ -208,7 +211,7 @@ class LiveState:
 
     def snapshot(self):
         with self.lock:
-            solver = dict(self.solver, iterations=self.iterations, iteration_unit='solver_progress_callback')
+            solver = dict(self.solver, iterations=self.iterations, iteration_unit=self.iteration_unit)
             return self.problem, self.model, self.vector, self.phase, self.message, solver
 
 
@@ -346,7 +349,7 @@ class Reporter:
                       elapsed_seconds=time.monotonic()-self.started,
                       utc_time=datetime.now(timezone.utc).isoformat(), solver=solver,
                       assumptions=asdict(self.config),
-                      warnings=problem.warnings if problem else ['Preparing model; no feasible network yet.'])
+                      warnings=problem.warnings if problem else ['Preparing candidate markets and tracks.'])
         result = clean(result)
         if model is not None:
             result['model_summary'] = dict(variables=len(model.names), constraints=len(model.row_lower),
@@ -393,5 +396,7 @@ class Reporter:
             stream.write(json.dumps({k: result[k] for k in ('snapshot', 'iterations', 'animation_frames', 'phase', 'elapsed_seconds', 'feasible', 'solver')})+'\n')
         print(f"[{result['elapsed_seconds']:7.1f}s] update {self.counter}, progress step {result['iterations']:,}: {phase}; "
               + (f"{result['metrics']['served_trips_per_hour']:,.1f} trips/h, "
-                 f"profit {result['metrics']['horizon_profit']/1e6:,.2f}M" if result.get('feasible') else 'no feasible incumbent'),
+                 f"profit {result['metrics']['horizon_profit']/1e6:,.2f}M" if result.get('feasible') else ('search ended without a validated network' if phase in
+                     ('search_exhausted', 'no_feasible_solution', 'infeasible') else
+                     'constructing and evaluating networks')),
               flush=True)

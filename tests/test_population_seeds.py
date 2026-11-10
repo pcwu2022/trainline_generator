@@ -9,7 +9,7 @@ from train_optimizer.seeds import population_seeds, label_markets, market_member
 
 class PopulationSeedTests(unittest.TestCase):
     def test_population_scores_spacing_and_order(self):
-        config = Config(bbox=[0, 49, 3, 52], minimum_city_population=100,
+        config = Config(bbox=[0, 49, 3, 52], market_radius_km=15, minimum_city_population=100,
                         density_threshold=10, max_cities=3)
         cells = [dict(h3='a', lon=0, lat=50, population=600, density=20),
                  dict(h3='b', lon=.1, lat=50, population=500, density=20),
@@ -58,21 +58,29 @@ class PopulationSeedTests(unittest.TestCase):
         self.assertLess(seed['coordinate'][0], .1)
         self.assertEqual(seed['seed_population'], 600)
 
-    def test_dense_population_reaches_target_at_smaller_radius(self):
-        config = Config(bbox=[0, 49, 3, 52], market_radius_km=25,
-                        minimum_city_population=100, density_threshold=10, max_cities=1)
-        def radius(spacing):
-            cells = [dict(h3=str(i), lon=1 + i*spacing, lat=50,
-                          population=40, density=1000) for i in range(3)]
+    def test_radius_proportional_to_square_root_density_without_limits(self):
+        config = Config(max_cities=1, market_radius_km=1, center_coefficient=2,
+                        minimum_city_population=1, density_threshold=0)
+        def radius(density, population):
+            cells = [dict(h3='a', lon=4.35, lat=50.85,
+                          population=population, density=density)]
             return population_seeds(cells, config)[0]['radius_km']
-        self.assertLess(radius(.01), radius(.1))
-        self.assertLessEqual(radius(.1), config.market_radius_km)
+        self.assertEqual(radius(100, 100), 20)  # Exceeds scoring radius.
+        self.assertEqual(radius(400, 100), 40)
+        self.assertEqual(radius(100, 1000000), 20)  # No population/area floor.
+        self.assertEqual(radius(0, 100), 0)
 
     def test_membership_uses_owner_radius(self):
         owner, eligible = market_membership([[3, 0], [7, 0], [19, 0]],
                                             [[0, 0], [20, 0]], [100]*3,
                                             Config(), radii=[5, 2])
         self.assertEqual(eligible.tolist(), [True, False, True])
+
+    def test_brussels_density_calibrates_to_twenty_km(self):
+        cells = [dict(h3='a', lon=4.35551, lat=50.8476, population=477544,
+                      density=15362.67057748953)]
+        self.assertAlmostEqual(population_seeds(cells, Config(max_cities=1))[0]['radius_km'],
+                               20, places=3)
 
     def test_labels_are_optional_and_do_not_move_markets(self):
         cities = [dict(id=0, name='Market 1', country='', center=(4.3, 50.8),

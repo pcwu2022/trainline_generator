@@ -44,7 +44,17 @@ def generate_lines(problem):
         return (km/max(direct, 1), -len(pattern), km, pattern)
     # Favor through lines with little detour. All two-stop corridors remain
     # available even when the optional multi-stop candidate budget is zero.
-    patterns.update(sorted(extra, key=efficiency)[:config.maximum_extra_lines])
+    if config.solver_method == 'heuristic':
+        volumes = {(d['origin'], d['destination']): d['volume'] for d in problem.demand}
+        def through_priority(pattern):
+            a, b = (problem.locations[pattern[i]]['city'] for i in (0, -1))
+            demand = volumes.get((a, b), 0) + volumes.get((b, a), 0)
+            return (-demand, efficiency(pattern))
+        eligible_extra = [pattern for pattern in extra
+                          if efficiency(pattern)[0] <= config.maximum_shared_track_detour]
+        patterns.update(sorted(eligible_extra, key=through_priority)[:config.maximum_extra_lines])
+    else:
+        patterns.update(sorted(extra, key=efficiency)[:config.maximum_extra_lines])
     # Reserve a separate pool for hub services. Generic low-detour ranking can
     # discard these before the MILP ever gets to evaluate shared infrastructure.
     # Score is an optimistic saving if one spoke is already built for another

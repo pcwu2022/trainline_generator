@@ -1,8 +1,13 @@
 # Railway network algorithm (simple version)
 
 The program searches for a railway network within a finite set of candidate
-stations, tracks and services. It uses a mixed-integer linear program (MILP),
-solved by HiGHS.
+stations, tracks and services. The default heuristic chooses one station per
+market and searches demand-ranked direct and through services, with shortcuts,
+bypasses, pruning and frequency changes. Trees are only initial designs. It fixes all discrete choices and uses HiGHS for continuous passenger
+assignment, retaining hard feasibility checks without guaranteeing optimality.
+`--solver milp` runs the original full mixed-integer search. The steps below
+cover the full model; heuristic mode uses a bounded three-stop service pool and
+keeps its chosen station location fixed. `heuristic_iterations` limits candidate designs.
 
 1. **Read settings and geography.** Load `config.json`, apply the selected regional
    configuration and command-line options, and read population cells and cities.
@@ -12,8 +17,9 @@ solved by HiGHS.
    population within `market_radius_km`, weighted by a Gaussian with scale
    `market_radius_km / 3` to favor dense urban centers. Rescore after each pick. Enforce
    independent `minimum_seed_spacing_km` (zero uses the maximum market radius).
-   Expand each market radius until reaching the target population, with a cell-size
-   floor and `market_radius_km` cap. Use this adaptive radius for center evaluation
+   Set radius to `center_coefficient * sqrt(seed density in people/km²)`,
+   with no floor or cap. The default coefficient 0.16136 gives Brussels about
+   20 km. Use this radius for center evaluation
    and catchments. Assign residents to their nearest seed within its radius. Final
    assigned populations can fall below the target. Attach optional city labels
    afterward. Seeds and demand stay fixed while the solver chooses connections.

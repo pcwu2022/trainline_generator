@@ -13,7 +13,7 @@
 
   "uptake_reference_radius_km": 25,
   "minimum_seed_spacing_km": 25,
-  "max_cities": 10,
+  "max_cities": 20,
   "density_threshold": 100,
   "population_subdivision": 0,
 

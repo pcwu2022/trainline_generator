@@ -5,6 +5,42 @@ This document describes the algorithm implemented in `train_optimizer/`.
 [config.json](../config.json) holds the current assumptions. The optimizer is a
 strategic scenario model with a finite set of station and line candidates.
 
+## Solver modes
+
+`solver_method="heuristic"` is the default. Choose the station with greatest
+capture fraction in each market, breaking ties by lowest access time and ID.
+Route only those station sites. Add up to `heuristic_demand_connections` extra
+corridors per market, ranked by potential passenger-km, within the existing
+edge/trip distance limits. Generate direct lines and up to
+`heuristic_through_lines` three-stop lines (also respecting maximum_extra_lines,
+maximum_line_stops and the shared-track detour limit), prioritizing endpoint OD
+demand. Alignment variants remain bounded. Use dense networks and cheap/short
+trees as starting points. Rank neighborhood proposals using all-pairs generalized
+travel times weighted by captured demand, then evaluate using the full LP
+objective. Moves include shortcuts, through-service replacements, small-city
+bypasses, pruning, frequency changes and alignment replacements. A tree is not
+required for the final network.
+
+Every station, track, service and connectivity-root binary is fixed for each LP.
+Published vectors pass the full row, bound and integrality checks. Fixed stations
+and the finite through-service pool can still miss better or feasible designs.
+The heuristic has no dual bound or optimality guarantee. `heuristic_iterations`
+limits proposals and `random_seed` controls restarts; interruption preserves the
+incumbent. Failure to find a design is not proof of infeasibility.
+
+When `maximum_journey_detour_ratio > 0`, the OD-average time limit is the smaller
+of `maximum_journey_hours` and `access_a + access_b + 0.5/minimum_allowed_frequency
++ maximum_journey_detour_ratio * direct_OD_km / train_speed_kmh`. This includes
+waiting and transfers in actual journey time. The root config uses ratio 2;
+zero disables the relative cap. It applies to both solver modes. Financial
+shortfall remains a soft penalty, not a guarantee of profitability.
+
+`--solver milp` (or JSON `solver_method="milp"`) retains the full formulation,
+station alternatives and line patterns, and the existing HiGHS incumbent search.
+Checkpoints are fingerprinted against each generated model, so switching modes
+normally requires a fresh output directory. Preparation and construction time
+are additional to the solver time limit in both modes.
+
 ## 1. Configuration, data and units
 
 Run from the project directory:
@@ -72,12 +108,12 @@ unweighted population. H3 IDs break ties deterministically. Retain up to `max_ci
 separated by `minimum_seed_spacing_km` (zero means `market_radius_km`). Spacing
 is independent of the smaller density-adaptive catchment radius.
 
-For each selected seed, expand its radius until eligible cell-center population
-reaches `minimum_city_population`, capped at `market_radius_km` and floored at
-the nearest eligible cell's equivalent disk radius (also capped). Dense areas
-usually reach the target sooner. Scoring neighborhoods measure geographic
-representation; they are not the final demand zones. At least two markets are
-required. City names are optional labels attached only after centers are fixed.
+For each selected seed, set `radius_km = center_coefficient * sqrt(seed density)`
+using the seed population cell density in people/km², with no minimum or maximum.
+The default coefficient 0.16136 gives Brussels approximately 20 km at a seed
+density of 15,362.67 people/km². `market_radius_km` controls seed scoring only;
+`minimum_city_population` screens seeds, without setting their radius.
+At least two markets are required. City names are optional labels.
 
 The MILP chooses which candidate markets to serve. Seeds are fixed during a solve:
 moving them would change origin populations and demand and invalidate comparisons

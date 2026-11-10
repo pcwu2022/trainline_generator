@@ -1,0 +1,11 @@
+{
+  "bbox": [-25, 34, 45, 72],
+  "countries": [],
+  "max_cities": 30,
+  "uptake_reference_radius_km": 25,
+  "minimum_seed_spacing_km": 25,
+  "neighbors_per_city": 5,
+  "maximum_edge_km": 1500,
+  "maximum_trip_distance_km": 2000,
+  "solver_time_limit": 120
+}

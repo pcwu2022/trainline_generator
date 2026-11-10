@@ -1,11 +1,11 @@
 """Population-discovered market seeds with marginal coverage."""
 import json
-import math
 from pathlib import Path
 
 import numpy as np
 from pyproj import Transformer
 from scipy.spatial import cKDTree
+from rail_model import center_radius
 
 
 def population_seeds(cells, config):
@@ -54,12 +54,8 @@ def population_seeds(cells, config):
             break
         point = positions[i]
         near = neighborhoods[i]
-        ordered = sorted(near, key=lambda j: (float(np.linalg.norm(xy[j]-point)), eligible[j]['h3']))
-        cumulative = np.cumsum(population[ordered])
-        target = min(int(np.searchsorted(cumulative, config.minimum_city_population)), len(ordered)-1)
-        nearest = ordered[0]
-        cell_radius = math.sqrt(eligible[nearest]['population'] / eligible[nearest]['density'] / math.pi)
-        radius = min(config.market_radius_km, max(cell_radius, float(np.linalg.norm(xy[ordered[target]]-point))))
+        nearest = i  # Candidates and eligible cells share the same order.
+        radius = center_radius(eligible[nearest]['density'], config.center_coefficient)
         seed = dict(candidates[i])
         seed.update(name=seed['name'] or f'Market {len(seeds)+1}',
                     seed_population=float(totals[i]), seed_score=float(scores[i]),
