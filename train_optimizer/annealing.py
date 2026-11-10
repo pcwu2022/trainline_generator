@@ -183,7 +183,7 @@ def coverage_deficit(model, vector, config):
 
 
 def evaluate(problem, pool, design, financial_weight, remaining, interrupted, final=False, protection=None, network_pressure=0):
-    """Only the proposed network enters the LP; all discrete decisions are fixed."""
+    """Fix the proposed network; optimize train technology and passenger assignment."""
     c = problem.config
     live = {site for stops, ids, f in design for site in stops}
     # One site per market; station moves must replace every incident service.
@@ -223,18 +223,19 @@ def evaluate(problem, pool, design, financial_weight, remaining, interrupted, fi
     fixed = np.zeros(len(model.names))
     for station in p.stations:
         fixed[model.x[station['id']]] = int(station['location'] in live)
-    for line, (_, ids, frequency) in enumerate(local):
-        fixed[model.z[line, frequency]] = 1
+    for _, ids, _ in local:
         for edge in ids:
             fixed[model.y[edge]] = 1
     if model.problem.config.require_connected_network:
         fixed[model.names.index(f'root_{min(live)}')] = 1
-    indices = np.flatnonzero(model.integer).astype(np.int32)
+    technology = set(model.z.values()) | set(model.hsr_tracks.values())
+    indices = np.array([i for i in np.flatnonzero(model.integer) if i not in technology], dtype=np.int32)
     if remaining() <= 0 or interrupted.is_set():
         raise InterruptedError('Annealing search stopped')
     solver = model.solver(c, max(.001, remaining()))
     solver.cbSimplexInterrupt.subscribe(lambda event: event.interrupt() if interrupted.is_set() else None)
     solver.cbIpmInterrupt.subscribe(lambda event: event.interrupt() if interrupted.is_set() else None)
+    solver.cbMipInterrupt.subscribe(lambda event: event.interrupt() if interrupted.is_set() else None)
     solver.changeColsBounds(len(indices), indices, fixed[indices], fixed[indices])
     columns = np.arange(len(costs), dtype=np.int32)
     solver.changeColsCost(len(costs), columns, costs)

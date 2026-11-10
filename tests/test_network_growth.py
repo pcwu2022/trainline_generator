@@ -145,7 +145,7 @@ class NetworkGrowthTests(unittest.TestCase):
         self.assertEqual(state.snapshot()[-1]['coverage_fraction'], .5)
 
     def test_new_hyperparameters_are_validated(self):
-        from train_optimizer.config import Config
+        from train_optimizer.settings import Config
         for values in [dict(annealing_integration_coverage=0), dict(annealing_connectivity_target=1.1),
                        dict(annealing_connectivity_penalty=-1), dict(annealing_network_effect_weight=-1),
                        dict(annealing_exploration_radius_km=0)]:

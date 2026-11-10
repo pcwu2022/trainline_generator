@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 from test_heuristic import problem
 from train_optimizer.annealing import solve_annealing
-from train_optimizer.config import Config
+from train_optimizer.settings import Config
 from train_optimizer.outputs import LiveState
 from train_optimizer.runner import main
 
@@ -57,7 +57,8 @@ class GoalStoppingTests(unittest.TestCase):
     def test_cli_time_limit_selects_bounded_mode_and_explicit_goals_wins(self):
         for options, expected in [([], 'goals'), (['--time-limit', '5'], 'bounded'),
                                   (['--time-limit', '5', '--budget-mode', 'goals'], 'goals')]:
-            with patch('train_optimizer.runner.Config.from_dict', side_effect=ValueError('stop after config')) as config:
+            baseline = Config()
+            with patch('train_optimizer.runner.load_config', return_value=baseline), patch('train_optimizer.runner.Config.from_dict', side_effect=ValueError('stop after config')) as config:
                 with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
                     main(options)
             self.assertEqual(config.call_args.args[0]['annealing_budget_mode'], expected)

@@ -14,7 +14,7 @@ import time
 import highspy
 import numpy as np
 
-from .config import Config
+from .settings import Config, DEFAULT_CONFIG_PATH, load_config
 from .geography import prepare
 from .model import NetworkModel
 from .heuristic import heuristic_problem, solve_heuristic
@@ -87,7 +87,8 @@ def solve(model, state, time_limit, interrupted, checkpoint=None, reporter=None)
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description='Optimize stations, corridors, all-stop services and passenger flows.')
-    parser.add_argument('--config', default='config.json', help='JSON assumptions (default: config.json)')
+    parser.add_argument('--config', default=str(DEFAULT_CONFIG_PATH), help='Optional external JSON overrides')
+    parser.add_argument('--profile', help='Named profile from config.json (europe, exploratory, france, italy, netherlands, uk)')
     parser.add_argument('--output', default='runs/netherlands')
     parser.add_argument('--solver', choices=['annealing', 'heuristic', 'milp'], help='Override solver_method')
     parser.add_argument('--time-limit', type=float, default=None, help='Total search seconds; selects bounded annealing unless --budget-mode goals is given')
@@ -103,13 +104,8 @@ def main(argv=None):
                          help='Delete the output directory contents before starting a fresh run')
     parser.add_argument('--write-default-config', metavar='PATH', help='Write every configurable assumption and exit')
     args = parser.parse_args(argv)
-    if args.write_default_config:
-        Path(args.write_default_config).write_text(json.dumps(asdict(Config()), indent=2)+'\n')
-        return 0
     try:
-        data = json.loads(Path('config.json').read_text())
-        if Path(args.config).resolve() != Path('config.json').resolve():
-            data.update(json.loads(Path(args.config).read_text()))
+        data = asdict(load_config(args.config, args.profile))
         if args.solver:
             data['solver_method'] = args.solver
         if args.budget_mode:
@@ -119,6 +115,9 @@ def main(argv=None):
         config = Config.from_dict(data)
     except (ValueError, OSError) as error:
         parser.error(str(error))
+    if args.write_default_config:
+        Path(args.write_default_config).write_text(json.dumps(asdict(config), indent=2)+'\n')
+        return 0
     args.time_limit = args.time_limit if args.time_limit is not None else config.solver_time_limit
     args.snapshot_every = args.snapshot_every if args.snapshot_every is not None else config.snapshot_every
     args.gif_frame_ms = args.gif_frame_ms if args.gif_frame_ms is not None else config.gif_frame_ms
@@ -253,5 +252,5 @@ def main(argv=None):
         finally:
             for name, handler in previous_handlers.items():
                 signal.signal(name, handler)
-    print(f'Current map: {(output/"latest.png").resolve()}\nLive dashboard: {(output/"index.html").resolve()}\nCost breakdown: {(output/"cost_breakdown.log").resolve()}', flush=True)
+    print(f'Current map: {(output/"latest.png").resolve()}\nProgress charts: {(output/"progress.png").resolve()}\nCost breakdown: {(output/"cost_breakdown.log").resolve()}', flush=True)
     return exit_code

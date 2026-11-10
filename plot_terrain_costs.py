@@ -1,6 +1,5 @@
 """Render terrain and total construction costs on the router's H3 map tiles."""
 import argparse
-import json
 from pathlib import Path
 
 import h3
@@ -11,7 +10,7 @@ from matplotlib.collections import PolyCollection
 from matplotlib.colors import Normalize
 import numpy as np
 
-from train_optimizer.config import Config
+from train_optimizer.settings import DEFAULT_CONFIG_PATH, load_config
 from train_optimizer.geography import Router
 from train_optimizer.outputs import city_label_indices, map_projector
 
@@ -94,16 +93,16 @@ def plot_costs(config, output):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--config', type=Path, default=Path('config.json'))
+    parser.add_argument('--config', type=Path, default=DEFAULT_CONFIG_PATH)
+    parser.add_argument('--profile', help='Named profile in config.json')
     parser.add_argument('--bbox', type=float, nargs=4, metavar=('WEST', 'SOUTH', 'EAST', 'NORTH'))
     parser.add_argument('--output', type=Path, default=Path('runs/terrain_cost_tiles.png'))
     args = parser.parse_args()
-    data = json.loads(Path('config.json').read_text())
-    if args.config.resolve() != Path('config.json').resolve():
-        data.update(json.loads(args.config.read_text()))
+    config = load_config(args.config, args.profile)
     if args.bbox:
-        data['bbox'] = args.bbox
-    plot_costs(Config.from_dict(data), args.output)
+        config.bbox = args.bbox
+        config.validate()
+    plot_costs(config, args.output)
 
 
 if __name__ == '__main__':

@@ -8,7 +8,7 @@ import numpy as np
 
 from test_heuristic import problem
 from train_optimizer.annealing import RoutePool, evaluate, financial_cost, propose, solve_annealing
-from train_optimizer.config import Config
+from train_optimizer.settings import Config
 from train_optimizer.outputs import LiveState
 
 

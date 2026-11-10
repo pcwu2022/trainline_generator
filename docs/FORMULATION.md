@@ -49,10 +49,13 @@ Run from the project directory:
 .venv/bin/python optimize.py --output runs/my-scenario
 ```
 
-The CLI loads `config.json`, then applies any file passed with `--config` as
-top-level overrides. CLI solver-duration and animation options override JSON.
+The CLI loads the `defaults` in `config.json`, applies any file passed with `--config` as
+top-level overrides, then applies the named `--profile` from the same file.
+CLI solver-duration and animation options override JSON.
 Paths resolve relative to the working directory. `--write-default-config PATH`
-exports the built-in `Config` defaults, rather than the currently edited JSON.
+exports the current effective defaults, including the selected profile.
+`train_optimizer/settings.py` holds the schema and validation; configuration
+values live only in `config.json`, under `defaults` and `profiles`.
 Unknown keys and invalid parameter values are rejected.
 
 Money is in euros, length in km, time in hours, density in people/km² and demand

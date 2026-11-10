@@ -2,12 +2,14 @@
 from types import SimpleNamespace
 import unittest
 
-from train_optimizer.config import Config
+from train_optimizer.settings import Config
 from train_optimizer.model import NetworkModel
 
 
 def example(weight=1):
-    c = Config.from_dict(dict(ticket_per_km=0, profit_shortfall_weight=weight,
+    c = Config.from_dict(dict(train_types=['CR'], ticket_per_km=0,
+                              maximum_line_stops=20, maximum_journey_detour_ratio=0,
+                              annealing_initial_financial_weight=.1, annealing_proposal_cost_exponent=1, profit_shortfall_weight=weight,
                               frequencies_per_hour=[1], maximum_extra_lines=0))
     locations = [dict(id=i, city=i, xy=(i*100, 0), coordinate=(i, 51), center_offset_km=0)
                  for i in range(2)]

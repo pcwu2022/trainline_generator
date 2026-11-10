@@ -3,7 +3,7 @@ import unittest
 
 from test_heuristic import problem
 from train_optimizer.annealing import RoutePool, evaluate, network_coverage, solve_annealing
-from train_optimizer.config import Config
+from train_optimizer.settings import Config
 from train_optimizer.consolidation import service_protection
 from train_optimizer.needs import rail_need_bound
 from train_optimizer.outputs import LiveState

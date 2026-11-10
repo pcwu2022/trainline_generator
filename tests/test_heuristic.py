@@ -146,7 +146,7 @@ class HeuristicTests(unittest.TestCase):
 
     def test_demand_corridors_connect_hubs_beyond_nearest_towns(self):
         from dataclasses import replace
-        from train_optimizer.config import Config
+        from train_optimizer.settings import Config
         from train_optimizer.geography import candidate_market_pairs
         cities = [dict(id=i, center=(lon, 50), population=population)
                   for i, (lon, population) in enumerate([(0, 1000000), (.1, 1000),
@@ -157,7 +157,7 @@ class HeuristicTests(unittest.TestCase):
         self.assertIn((0, 2), candidate_market_pairs(cities, config))
 
     def test_invalid_solver_configuration(self):
-        from train_optimizer.config import Config
+        from train_optimizer.settings import Config
         for data in [dict(solver_method='unknown'), dict(heuristic_iterations=0),
                      dict(maximum_journey_detour_ratio=.5)]:
             with self.assertRaises(ValueError):

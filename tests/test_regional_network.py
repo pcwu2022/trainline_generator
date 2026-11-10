@@ -1,7 +1,7 @@
 import unittest
 
 from test_soft_profit import example
-from train_optimizer.config import Config
+from train_optimizer.settings import Config
 from train_optimizer.model import NetworkModel
 
 

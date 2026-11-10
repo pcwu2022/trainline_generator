@@ -1,144 +1,302 @@
 {
-  "population_file": "data/europe_3km.geojson",
-  "cities_file": "data/cities50000.json",
-  "terrain_file": "data/exportImage.tiff",
-  "land_file": "",
-  "bbox": [
-    2.5,
-    49.4,
-    7.5,
-    53.7
-  ],
-  "countries": [
-    "NL",
-    "BE"
-  ],
-
-  "max_cities": 20,
-  "market_radius_km": 25,
-  "minimum_city_population": 50000,
-  "density_threshold": 500,
-  "population_subdivision": 0,
-
-  "center_method": "access",
-  "center_coefficient": 0.16136,
-  "locations_per_city": 2,
-  "station_offset_km": 12,
-  "access_normalization_floor_km": 0.001,
-  "access_optimizer_tolerance_km": 0.0001,
-
-  "demand_model": "production",
-  "trips_per_person_hour": 0.005,
-  "gravity_scale": 2e-05,
-  "gravity_beta": 2,
-  "distance_floor_km": 10,
-  "maximum_trip_distance_km": 400,
-  "p_max": 0.6,
-  "uptake_a": 0.1,
-  "uptake_alpha": 1,
-
-  "neighbors_per_city": 3,
-  "maximum_edge_km": 180,
-  "require_connected_network": true,
-  "routing_sample_km": 5,
-  "terrain_search_limit": 15000,
-  "terrain_cost_position": 0.5,
-  "water_track_cost_per_km": 120000000,
-  "water_cost_growth_km": 25,
-  "water_routing_sample_km": 0.25,
-  "terrain_cost_ranges_million": {
-    "hilly": [
-      15,
-      25
+  "defaults": {
+    "population_file": "data/europe_3km.geojson",
+    "cities_file": "data/cities50000.json",
+    "country_boundaries_file": "data/country_boundaries.geojson",
+    "terrain_file": "data/exportImage.tiff",
+    "land_file": "",
+    "bbox": [
+      2.5,
+      49.4,
+      7.5,
+      53.7
     ],
-    "moderate_mountains": [
-      25,
-      40
+    "countries": [
+      "NL",
+      "BE"
     ],
-    "difficult_mountains": [
-      40,
-      70
+    "minimum_seed_spacing_km": 0,
+    "max_cities": 20,
+    "market_radius_km": 25,
+    "minimum_city_population": 50000,
+    "density_threshold": 500,
+    "population_subdivision": 0,
+    "center_method": "access",
+    "center_coefficient": 0.16136,
+    "locations_per_city": 2,
+    "station_offset_km": 12,
+    "access_normalization_floor_km": 0.001,
+    "access_optimizer_tolerance_km": 0.0001,
+    "demand_model": "production",
+    "trips_per_person_hour": 0.005,
+    "gravity_scale": 2e-05,
+    "gravity_beta": 2,
+    "distance_floor_km": 10,
+    "maximum_trip_distance_km": 400,
+    "p_max": 0.6,
+    "uptake_a": 0.1,
+    "uptake_alpha": 1,
+    "uptake_reference_radius_km": 0,
+    "neighbors_per_city": 3,
+    "maximum_edge_km": 180,
+    "require_connected_network": true,
+    "routing_sample_km": 5,
+    "terrain_search_limit": 15000,
+    "water_track_cost_per_km": 120000000,
+    "water_cost_growth_km": 25,
+    "water_routing_sample_km": 0.25,
+    "terrain_cost_position": 0.5,
+    "terrain_cost_ranges_million": {
+      "hilly": [
+        15,
+        25
+      ],
+      "moderate_mountains": [
+        25,
+        40
+      ],
+      "difficult_mountains": [
+        40,
+        70
+      ],
+      "very_difficult": [
+        70,
+        120
+      ]
+    },
+    "maximum_line_stops": 3,
+    "maximum_extra_lines": 40,
+    "maximum_shared_track_lines": 40,
+    "maximum_shared_track_detour": 1.35,
+    "maximum_alignment_variants_per_line": 16,
+    "frequencies_per_hour": [
+      1,
+      2,
+      4
     ],
-    "very_difficult": [
-      70,
-      120
-    ]
+    "track_trains_per_hour_per_direction": 12,
+    "train_seats": 500,
+    "train_speed_kmh": 120,
+    "train_types": [
+      "CR",
+      "HSR"
+    ],
+    "hsr_capex_ratio": 3.75,
+    "hsr_opex_ratio": 1.65,
+    "hsr_speed_ratio": 3.0,
+    "hsr_fare_ratio": 4.0,
+    "dwell_minutes": 2,
+    "turnaround_minutes": 5,
+    "access_speed_kmh": 25,
+    "transfer_minutes": 10,
+    "maximum_journey_detour_ratio": 2,
+    "maximum_journey_hours": 5,
+    "operating_start_hour": 6,
+    "operating_end_hour": 22,
+    "operating_days_per_year": 365,
+    "base_track_cost_per_km": 10000000,
+    "urban_cost_coefficient": 5000,
+    "urban_density_threshold": 5000,
+    "station_capital_cost": 10000000,
+    "station_annual_cost": 400000,
+    "train_capital_cost": 5000000,
+    "train_cost_per_km": 15,
+    "train_cost_per_departure": 0,
+    "maintenance_fraction": 0.02,
+    "ticket_per_km": 0.2,
+    "accounting_years": 10,
+    "appraisal_years": 30,
+    "discount_rate": 0.04,
+    "discount_rates": [
+      0.02,
+      0.04,
+      0.06
+    ],
+    "asset_lives_years": {
+      "track": 40,
+      "station": 50,
+      "fleet": 25
+    },
+    "financial_margin": 0.05,
+    "minimum_horizon_profit": 1,
+    "upfront_budget": 0,
+    "maximum_annual_subsidy": 0,
+    "minimum_served_fraction": 0.001,
+    "minimum_origin_served_fraction": 0,
+    "minimum_city_served_fraction": 0,
+    "minimum_selected_origin_served_fraction": 0,
+    "minimum_service_frequency": 1,
+    "population_weight": 1,
+    "served_weight": 10,
+    "time_weight": 0.5,
+    "center_weight": 0.0001,
+    "access_weight": 0.05,
+    "cost_weight": 0.001,
+    "profit_shortfall_weight": 0.25,
+    "solver_method": "annealing",
+    "annealing_proposal_cost_exponent": 0.5,
+    "annealing_growth_probability": 0,
+    "annealing_coverage_metric": "needs",
+    "annealing_consolidation_coverage": 0.75,
+    "annealing_integration_coverage": 0.3,
+    "annealing_connectivity_target": 0.9,
+    "annealing_connectivity_penalty": 10,
+    "annealing_network_effect_weight": 1,
+    "annealing_exploration_radius_km": 250,
+    "annealing_retained_ridership": 0.98,
+    "annealing_journey_time_allowance": 0.05,
+    "annealing_consolidation_candidates": 80,
+    "annealing_budget_mode": "goals",
+    "annealing_iterations": 1000,
+    "annealing_start_temperature": 2.0,
+    "annealing_end_temperature": 0.01,
+    "annealing_initial_financial_weight": 0.02,
+    "annealing_coverage_penalty": 20.0,
+    "heuristic_iterations": 100,
+    "heuristic_through_lines": 12,
+    "heuristic_demand_connections": 2,
+    "solver_time_limit": 3600,
+    "mip_relative_gap": 0.01,
+    "random_seed": 42,
+    "maximum_model_variables": 2000000,
+    "snapshot_every": 5,
+    "demand_map_top_percent": 10,
+    "demand_map_min_trips_per_hour": 0,
+    "gif_frame_ms": 500
   },
-
-  "maximum_line_stops": 3,
-  "maximum_extra_lines": 40,
-  "maximum_shared_track_lines": 40,
-  "maximum_shared_track_detour": 1.35,
-  "maximum_alignment_variants_per_line": 16,
-  "frequencies_per_hour": [
-    1,
-    2,
-    4
-  ],
-  "track_trains_per_hour_per_direction": 12,
-  "train_seats": 500,
-  "train_speed_kmh": 120,
-  "dwell_minutes": 2,
-  "turnaround_minutes": 5,
-  "access_speed_kmh": 25,
-  "transfer_minutes": 5,
-  "maximum_journey_detour_ratio": 2,
-  "maximum_journey_hours": 5,
-
-  "operating_start_hour": 6,
-  "operating_end_hour": 22,
-  "operating_days_per_year": 365,
-
-  "base_track_cost_per_km": 10000000,
-  "urban_cost_coefficient": 5000,
-  "urban_density_threshold": 5000,
-  "station_capital_cost": 10000000,
-  "station_annual_cost": 400000,
-  "train_capital_cost": 5000000,
-  "train_cost_per_km": 15,
-  "train_cost_per_departure": 0,
-  "maintenance_fraction": 0.02,
-
-  "ticket_per_km": 0.2,
-  "accounting_years": 10,
-  "appraisal_years": 30,
-  "discount_rate": 0.04,
-  "discount_rates": [0.02, 0.04, 0.06],
-  "asset_lives_years": {"track": 40, "station": 50, "fleet": 25},
-  "financial_margin": 0.05,
-  "minimum_horizon_profit": 1,
-  "upfront_budget": 0,
-
-  "minimum_served_fraction": 0.001,
-  "minimum_origin_served_fraction": 0,
-
-  "population_weight": 1,
-  "served_weight": 10,
-  "time_weight": 0.5,
-  "center_weight": 0,
-  "access_weight": 0.05,
-  "cost_weight": 0.001,
-  "profit_shortfall_weight": 0.25,
-
-  "solver_method": "annealing",
-  "annealing_coverage_metric": "needs",
-  "annealing_consolidation_coverage": 0.75,
-  "annealing_integration_coverage": 0.30,
-  "annealing_connectivity_target": 0.90,
-  "annealing_connectivity_penalty": 10,
-  "annealing_network_effect_weight": 1,
-  "annealing_exploration_radius_km": 250,
-  "annealing_proposal_cost_exponent": 1,
-  "annealing_budget_mode": "goals",
-  "annealing_iterations": 1000,
-  "annealing_start_temperature": 1.0,
-  "annealing_end_temperature": 0.01,
-  "annealing_initial_financial_weight": 0.1,
-  "annealing_coverage_penalty": 20.0,
-  "heuristic_iterations": 100,
-  "mip_relative_gap": 0.01,
-  "random_seed": 42,
-  "maximum_model_variables": 2000000,
-  "snapshot_every": 5,
-  "gif_frame_ms": 500
+  "profiles": {
+    "europe": {
+      "bbox": [
+        -25,
+        34,
+        45,
+        72
+      ],
+      "countries": [],
+      "max_cities": 500,
+      "uptake_reference_radius_km": 25,
+      "minimum_seed_spacing_km": 25,
+      "neighbors_per_city": 20,
+      "maximum_edge_km": 1000,
+      "maximum_trip_distance_km": 2000,
+      "terrain_search_limit": 500,
+      "served_weight": 50,
+      "population_weight": 2,
+      "profit_shortfall_weight": 0.1,
+      "minimum_service_frequency": 2,
+      "annealing_growth_probability": 0.65,
+      "annealing_start_temperature": 0.15,
+      "annealing_end_temperature": 0.01,
+      "annealing_initial_financial_weight": 0.05
+    },
+    "exploratory": {
+      "bbox": [
+        2.5,
+        50.0,
+        7.5,
+        53.7
+      ],
+      "countries": [
+        "NL",
+        "BE"
+      ],
+      "max_cities": 20,
+      "demand_model": "production",
+      "trips_per_person_hour": 0.01,
+      "maximum_line_stops": 3,
+      "maximum_extra_lines": 40,
+      "base_track_cost_per_km": 500000,
+      "urban_cost_coefficient": 10000,
+      "station_capital_cost": 2000000,
+      "station_annual_cost": 100000,
+      "train_capital_cost": 1000000,
+      "train_cost_per_km": 5,
+      "ticket_per_km": 0.3,
+      "minimum_served_fraction": 0.001
+    },
+    "france": {
+      "bbox": [
+        -5.2,
+        42.3,
+        8.3,
+        51.1
+      ],
+      "countries": [
+        "FR"
+      ],
+      "uptake_reference_radius_km": 25,
+      "minimum_seed_spacing_km": 25,
+      "max_cities": 100,
+      "neighbors_per_city": 5,
+      "maximum_edge_km": 500,
+      "maximum_trip_distance_km": 1000
+    },
+    "italy": {
+      "bbox": [
+        6.5,
+        35.4,
+        18.6,
+        47.2
+      ],
+      "countries": [
+        "IT"
+      ],
+      "uptake_reference_radius_km": 25,
+      "minimum_seed_spacing_km": 25,
+      "max_cities": 30,
+      "neighbors_per_city": 5,
+      "maximum_edge_km": 500,
+      "maximum_trip_distance_km": 1000,
+      "solver_time_limit": 600,
+      "annealing_budget_mode": "bounded",
+      "annealing_iterations": 1000000
+    },
+    "netherlands": {
+      "population_file": "data/europe_3km.geojson",
+      "bbox": [
+        2.5,
+        49.4,
+        7.5,
+        53.7
+      ],
+      "countries": [
+        "NL",
+        "BE"
+      ],
+      "uptake_reference_radius_km": 25,
+      "minimum_seed_spacing_km": 25,
+      "max_cities": 20,
+      "density_threshold": 100,
+      "population_subdivision": 0,
+      "center_method": "access",
+      "neighbors_per_city": 5,
+      "maximum_edge_km": 250,
+      "maximum_extra_lines": 120,
+      "operating_start_hour": 6,
+      "operating_end_hour": 22,
+      "accounting_years": 10,
+      "minimum_served_fraction": 0.1,
+      "minimum_city_served_fraction": 0.75,
+      "minimum_selected_origin_served_fraction": 0.05,
+      "minimum_service_frequency": 2
+    },
+    "uk": {
+      "bbox": [
+        -8.7,
+        49.8,
+        2.0,
+        61.0
+      ],
+      "countries": [
+        "GB"
+      ],
+      "uptake_reference_radius_km": 25,
+      "minimum_seed_spacing_km": 25,
+      "max_cities": 20,
+      "neighbors_per_city": 5,
+      "maximum_edge_km": 500,
+      "maximum_trip_distance_km": 1000,
+      "require_connected_network": false
+    }
+  }
 }

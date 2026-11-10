@@ -3,7 +3,7 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from train_optimizer.config import Config
+from train_optimizer.settings import Config
 from train_optimizer.seeds import population_seeds, label_markets, market_membership
 
 
@@ -73,7 +73,7 @@ class PopulationSeedTests(unittest.TestCase):
     def test_membership_uses_owner_radius(self):
         owner, eligible = market_membership([[3, 0], [7, 0], [19, 0]],
                                             [[0, 0], [20, 0]], [100]*3,
-                                            Config(), radii=[5, 2])
+                                            Config(density_threshold=100), radii=[5, 2])
         self.assertEqual(eligible.tolist(), [True, False, True])
 
     def test_brussels_density_calibrates_to_twenty_km(self):

@@ -15,7 +15,7 @@ from rasterio.transform import rowcol
 class TerrainCostMap:
     def __init__(self, path='data/exportImage.tiff', config=None):
         if config is None:
-            from .config import Config
+            from .settings import Config
             config = Config()
         self.config = config
         config.validate()

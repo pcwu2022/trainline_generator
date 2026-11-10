@@ -32,7 +32,7 @@ validated result when available. `exploration.png` and `exploration.json`
 preserve the broader developing network when its components are not yet joined.
 
 ```sh
-.venv/bin/python optimize.py --config configs/netherlands.json --solver annealing --output runs/annealing
+.venv/bin/python optimize.py --profile netherlands --solver annealing --output runs/annealing
 ```
 
 Corridor addition proposals are weighted by demand divided by an estimate of
@@ -45,11 +45,15 @@ routing and passenger evaluation; population preparation is additional. See
 [ALGORITHM.md](ALGORITHM.md) for the complete formula, settings, constraints,
 checkpoint behavior, and limitations. Existing run outputs are not modified.
 
-Settings are loaded in order: `Config` defaults in `train_optimizer/config.py`,
-then `config.json`, then the selected regional JSON, then CLI overrides. The
-standard Europe, France, Netherlands–Belgium, and UK profiles inherit the Python
-time default (currently 3,600 seconds). An explicit regional override, such as
-the Italy profile, still takes precedence. Startup logs and `manifest.json`'s
+`config.json` is the single source of configuration: `defaults` contains every
+setting, and `profiles` contains named scenario overrides. Select a scenario with
+`--profile europe`, `--profile france`, `--profile italy`, `--profile netherlands`,
+`--profile uk`, or `--profile exploratory`. All profiles inherit CR/HSR choices
+and their scaling ratios from `defaults`. Python contains only the schema and
+validation, with no separate default values. Optional external JSON overrides
+(`--config PATH`) apply over defaults; a selected profile then applies over those
+values, followed by CLI overrides. The default search limit is 3,600 seconds;
+Italy retains its 600-second bounded run. Startup logs and `manifest.json`'s
 `run_settings` record the effective limit and whether it applies to the total
 search or individual passenger LPs.
 
@@ -67,7 +71,7 @@ all hard constraints checked. No optimality guarantee is reported. An unsuccessf
 search does not prove infeasibility; the final status is `search_exhausted`.
 
 ```sh
-.venv/bin/python optimize.py --config configs/netherlands.json --solver heuristic --output runs/heuristic
+.venv/bin/python optimize.py --profile netherlands --solver heuristic --output runs/heuristic
 ```
 
 `heuristic_iterations` (default 100) limits proposed designs, and `--time-limit`
@@ -92,12 +96,12 @@ generated model; use a new output directory after these candidate-pool changes.
 
 ## UK profile
 
-`configs/uk.json` discovers up to 20 UK markets, including Northern Ireland.
-Separate rail components are allowed. The profile supplies a 120-second LP/bounded-search setting
+The `uk` profile in `config.json` discovers up to 20 UK markets, including Northern Ireland.
+Separate rail components are allowed. The profile inherits the default search limit
 and the default 75% rail-eligible need-satisfaction target.
 
 ```sh
-.venv/bin/python optimize.py --config configs/uk.json --output runs/uk
+.venv/bin/python optimize.py --profile uk --output runs/uk
 ```
 
 ## Regional coverage scenario
@@ -130,7 +134,7 @@ retains a softer financial penalty. These are tunable preferences, not calibrate
 economic values. Population coverage uses fixed exclusive zones to avoid double
 counting; `latest.json` reports its population count and fraction.
 
-`configs/netherlands.json` now requires service at 75% of candidate markets
+The `netherlands` profile in `config.json` now requires service at 75% of candidate markets
 (15 of 20), at least 10% of fixed regional potential demand, and at least
 5% of each selected market's outbound demand. Every selected line operates at
 least twice per hour in each direction. Station circles may overlap; fixed
@@ -169,7 +173,7 @@ Python 3.9+; run from this project directory:
 ```sh
 python3 -m venv .venv
 .venv/bin/python -m pip install -r requirements.txt
-.venv/bin/python optimize.py --config configs/netherlands.json --output runs/my-region --time-limit 3600 --snapshot-every 5
+.venv/bin/python optimize.py --profile netherlands --output runs/my-region --time-limit 3600 --snapshot-every 5
 ```
 
 The command runs for up to one hour of **solver time**, with additional time for
@@ -187,32 +191,32 @@ state are always saved once data is available. The
 output directory must be new or
 empty unless resuming or using `--overwrite` to delete its existing contents.
 
-Open **`runs/my-region/index.html`** for a live dashboard, or watch
-**`runs/my-region/latest.png`**. The dashboard works directly as a local HTML file;
-it reloads the latest results every two seconds without external services. Open
-**`runs/my-region/progress.gif`** to watch the accumulated progress animation.
+Watch **`runs/my-region/latest.png`** for the current map and
+**`runs/my-region/progress.png`** for a six-panel chart of stations, lines,
+passenger demand, coverage, track length, and costs over iterations. Both update
+at snapshot cadence. Open **`runs/my-region/progress.gif`** for the map animation.
 
 If no feasible network exists yet, snapshots show population and city candidates
 with an explicit status, rather than inventing a profitable solution.
 
 ### Example assumptions
 
-`configs/netherlands.json` selects up to 20 population-derived markets. Its monetary and demand defaults are uncalibrated; it may be infeasible.
+The `netherlands` profile in `config.json` selects up to 20 population-derived markets. Its monetary and demand defaults are uncalibrated; it may be infeasible.
 The bounding box defines the study area and can include neighboring countries.
 `countries` filters population cells using the configured boundary dataset.
 City-file records provide optional labels only. Verify source coverage before
 interpreting national totals.
 
-`configs/exploratory.json` supplies explicitly **optimistic illustrative costs**,
+The `exploratory` profile in `config.json` supplies explicitly **optimistic illustrative costs**,
 a higher trip rate and a higher fare, to exercise feasible network searches. A
 profitable result with it is not evidence of real-world profitability:
 
 ```sh
-.venv/bin/python optimize.py --config configs/exploratory.json --output runs/exploration --time-limit 120 --snapshot-every 5 --gif-frame-ms 400
+.venv/bin/python optimize.py --profile exploratory --output runs/exploration --time-limit 120 --snapshot-every 5 --gif-frame-ms 400
 ```
 
-Export the built-in defaults, edit the JSON, then use it with `--config`
-(the export does not copy your edited `config.json`):
+Export the current effective defaults, edit the JSON, then use it with `--config`
+(the export includes your current defaults and any selected profile):
 
 ```sh
 .venv/bin/python optimize.py --write-default-config my-config.json
@@ -225,12 +229,12 @@ distances are km, densities people/km², demand directional trips/hour.
 
 ## Tune costs and station access
 
-`config.json` contains all optimizer assumptions, including costs in **euros**,
+`config.json`’s `defaults` section contains all optimizer assumptions, including costs in **euros**,
 objective weights, candidate limits, access speed, solver duration and animation
-settings. The CLI loads it automatically; `--config configs/netherlands.json`
-applies top-level regional overrides on top of it (nested values are replaced,
+settings. The CLI loads it automatically; `--profile netherlands`
+applies the named regional overrides on top of it (nested values are replaced,
 not recursively merged). CLI runtime options override JSON. The current defaults
-use H3 resolution 6 population cells, `population_subdivision=0`, and a 120-second
+use H3 resolution 6 population cells, `population_subdivision=0`, and a 3,600-second
 solver limit.
 Run the Netherlands–Belgium scenario with the supplied 3 km population H3 tiles:
 
@@ -280,7 +284,7 @@ longer defaults to a density peak. Candidate locations are finite, so the networ
 optimizer chooses among generated sites rather than every coordinate.
 
 Previous generated runs are preserved in `runs/archive_previous/`. New results
-are isolated in their own output directory; `index.html`, `latest.png`,
+are isolated in their own output directory; `progress.png`, `latest.png`,
 `latest.json`, and `progress.gif` are the main files to inspect.
 
 ## Saved Netherlands–Belgium scenario
@@ -292,7 +296,7 @@ Ghent and Groningen. It contains 3,621 population cells, 32 station options,
 56 track candidates and 96 candidate lines. The solver reached its 120-second
 time limit without a feasible incumbent; **infeasibility was not proven**.
 The saved map shows population and candidate cities rather than selected tracks.
-Open `runs/netherlands-belgium-3km/index.html` or inspect `latest.json` for status.
+Open `runs/netherlands-belgium-3km/progress.png` or inspect `latest.json` for status.
 
 ## Live output and resume
 
@@ -333,7 +337,7 @@ Reports distinguish potential trips outside rail access/uptake from **accessible
 but unserved** rail trips. Station boarding counts include transfers; served-trip
 counts count each passenger journey once.
 
-`progress.jsonl` records compact update history in one file; `manifest.json` records
+`progress.jsonl` records compact update history, including chart metrics, in one file; `manifest.json` records
 configuration, input hashes, dimensions, solver version and model fingerprint.
 
 `checkpoint.npz` stores the latest feasible incumbent. Ctrl+C or SIGTERM requests
@@ -346,7 +350,7 @@ and GIF writing happen off the solver thread.
 Start fresh in an existing output directory (permanently deletes its contents):
 
 ```sh
-.venv/bin/python optimize.py --config configs/netherlands.json --output runs/netherlands-belgium --overwrite
+.venv/bin/python optimize.py --profile netherlands --output runs/netherlands-belgium --overwrite
 ```
 
 `--overwrite` and `--resume` cannot be used together.
@@ -354,7 +358,7 @@ Start fresh in an existing output directory (permanently deletes its contents):
 Resume with the **same model configuration and input data**:
 
 ```sh
-.venv/bin/python optimize.py --config configs/exploratory.json --output runs/exploration --resume runs/exploration/checkpoint.npz --time-limit 3600 --snapshot-every 10
+.venv/bin/python optimize.py --profile exploratory --output runs/exploration --resume runs/exploration/checkpoint.npz --time-limit 3600 --snapshot-every 10
 ```
 
 This is an incumbent **warm start**, not restoration of the previous solver's
@@ -695,7 +699,7 @@ output modules are separated to support this extension.
 ## Code map
 
 - `optimize.py`: command-line entry point.
-- `train_optimizer/config.py`: assumptions and validation.
+- `train_optimizer/settings.py`: configuration loading, schema and validation (no default values).
 - `train_optimizer/geography.py`: population, city/station candidates and routing.
 - `train_optimizer/lines.py`: all-stop candidate patterns.
 - `train_optimizer/model.py`: joint infrastructure/service/passenger optimization.
@@ -736,3 +740,29 @@ width is proportional to demand in trips/hour. Set `demand_map_top_percent`
 (default 10) and `demand_map_min_trips_per_hour` (default 0) to filter connections.
 At least one pair is omitted to avoid displaying the complete graph. The dashboard
 links to this map. If evaluated demand changes, the demand map is regenerated.
+
+### Conventional and high-speed trains
+
+The `defaults` section of `config.json` enables `train_types: ["CR", "HSR"]`. All named profiles inherit these choices; use `["CR"]` or `["HSR"]` for a single-type study.
+Existing `train_speed_kmh`, `train_cost_per_km`, `ticket_per_km`, and terrain-based
+track construction costs are CR baselines. HSR multiplies these by
+`hsr_speed_ratio` (2.5), `hsr_opex_ratio` (1.65), `hsr_fare_ratio` (2.0), and
+`hsr_capex_ratio` (3.75), respectively. Ratios are configurable, finite, and at
+least one; the defaults are scenario assumptions based on the supplied ranges.
+
+HSR infrastructure is charged once per physical edge: baseline construction plus
+the HSR increment, with maintenance on the full amount. CR services may share
+HSR infrastructure at CR speed; all services share the existing track capacity.
+Station costs, seats, fleet unit capital, dwell, and departure costs retain their
+existing assumptions. Faster services can need fewer trainsets. These are cost
+and commercial-speed scenarios; alignments do not enforce HSR curve radii.
+
+Fares accrue per passenger-km actually ridden, at each service's yield, including
+mixed CR/HSR transfers. This replaces the former straight-line OD fare calculation.
+The model does not estimate fare elasticity or willingness to pay for a premium.
+MILP selects technology jointly with the network; heuristic search evaluates typed
+line alternatives; annealing fixes each proposed network and solves its train-type
+choices and passenger assignment. Dual-type annealing evaluations therefore use
+a small mixed-integer solve and may take longer. Results include `train_type` and
+`speed_kmh` for lines in JSON and `latest_lines.csv`, and track infrastructure type
+in JSON. Changing train types or ratios requires a new run/checkpoint.

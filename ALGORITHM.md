@@ -467,7 +467,7 @@ or better regional result must be measured; it is not guaranteed by annealing.
 
 ## Europe passenger-growth profile
 
-`configs/europe.json` emphasizes service with `served_weight=50`,
+The `europe` profile in `config.json` emphasizes service with `served_weight=50`,
 `population_weight=2`, and `profit_shortfall_weight=0.1`. New services start at
 2 trains/hour/direction instead of 1. The extra growth probability is 0.65,
 which makes additions approximately 71% of nonempty-state action draws. Cooling
@@ -622,11 +622,11 @@ potential regional trips, reported separately.
 
 ## Effective settings and time-limit inheritance
 
-The configuration priority is Python defaults, base JSON, regional JSON, then
-CLI overrides. The repeated 120-second overrides have been removed from the
+All values live in `config.json`: `defaults`, then optional external JSON, then
+the named `--profile`, then CLI overrides. Python only defines the schema and validation. The repeated 120-second overrides have been removed from the
 base JSON and standard Europe, France, Netherlands–Belgium, and UK profiles, so
-editing `Config.solver_time_limit` now controls their inherited setting. Explicit
+editing `defaults.solver_time_limit` in `config.json` controls their inherited setting. Explicit
 custom profile overrides remain effective. Startup messages and manifest
-`run_settings` expose actual CLI-adjusted limits. In goal mode this is a per-LP
+`run_settings` expose actual CLI-adjusted limits. In goal mode this is a per-evaluation
 limit with no total search cap; bounded mode uses a total search deadline and
 its configured proposal cap.

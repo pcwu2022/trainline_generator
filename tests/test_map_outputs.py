@@ -13,7 +13,7 @@ from matplotlib.figure import Figure
 import numpy as np
 from PIL import Image
 
-from train_optimizer.config import Config
+from train_optimizer.settings import Config
 from train_optimizer.outputs import LiveState, Reporter, draw_map, map_figure_size, map_projector, map_viewport, segment_satisfaction, demand_connections
 
 

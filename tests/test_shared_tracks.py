@@ -1,13 +1,13 @@
 import unittest
 from types import SimpleNamespace
 
-from train_optimizer.config import Config
+from train_optimizer.settings import Config
 from train_optimizer.model import NetworkModel
 
 
 class SharedTrackTests(unittest.TestCase):
     def test_intermediate_station_enables_shared_trunk_paid_once(self):
-        c = Config.from_dict(dict(maximum_extra_lines=0, maximum_shared_track_lines=10,
+        c = Config.from_dict(dict(train_types=['CR'], maximum_extra_lines=0, maximum_shared_track_lines=10,
             maximum_shared_track_detour=2, maximum_line_stops=3, frequencies_per_hour=[1],
             station_capital_cost=1000, station_annual_cost=0, train_capital_cost=0,
             train_cost_per_km=0, maintenance_fraction=0, cost_weight=1,

@@ -202,12 +202,13 @@ def draw_map(path, config, problem, result, viewport=None, demand_only=False):
                             label='Throughput / demand')
             for line in result['lines']:
                 frequency = line['frequency_per_hour_per_direction']
+                linestyle = '-' if line.get('train_type', 'CR') == 'HSR' else '--'
                 edges = line.get('edges', [])
                 geometries = [problem.edges[edge]['geometry'] for edge in edges] or [line['geometry']]
                 for segment, geometry in enumerate(geometries):
                     xy = project(geometry)
                     ax.plot(xy[:, 0], xy[:, 1], color=cmap(norm(ratios.get((line['id'], segment), 0))),
-                            linewidth=1.7+frequency*0.6, zorder=4)
+                            linewidth=1.7+frequency*0.6, linestyle=linestyle, zorder=4)
             for station in result['stations']:
                 xy = project([station['coordinate']])[0]
                 ax.add_patch(Circle(xy, station['radius_km'], fill=False, color='#217c55',
@@ -256,7 +257,8 @@ def draw_map(path, config, problem, result, viewport=None, demand_only=False):
               'Scenario estimates; H3 terrain routing is coarse and is not an engineering alignment.')
     footer = ('Width: total two-way demand (trips/hour). Demand is fixed before network selection.' if demand_only else
               'Color: carried passengers / full OD demand using each segment (including transfers).\n'
-              'Width: trains/hour/direction · White dots: stations · Dashed green: catchments')
+              'Solid: high-speed · Dashed: conventional · Width: trains/hour/direction\n'
+              'White dots: stations · Dashed green circles: catchments')
     figure.supxlabel(footer, fontsize=8)
     try:
         with matplotlib.rc_context({'savefig.bbox': None}):
@@ -371,22 +373,63 @@ class ProgressGif:
         self.size = self.size or frame.size
 
 
-DASHBOARD = '''<!doctype html><html><head><meta charset="utf-8"><title>Rail optimizer</title>
-<style>body{font:16px system-ui;margin:24px;background:#f2f5f8;color:#203047}img{max-width:100%;background:white}
-pre{white-space:pre-wrap;background:white;padding:16px}a{color:#1265bb}</style></head><body>
-<h1>Rail optimizer — live search</h1><p id="status">Waiting for first update…</p>
-<p><a href="latest.json">Current network</a> · <a href="best_feasible.json">Best feasible network</a> · <a href="exploration.png">Latest exploration map</a> · <a href="latest.geojson">GeoJSON</a> ·
-<a href="latest_stations.csv">Stations CSV</a> · <a href="latest_lines.csv">Lines CSV</a> ·
-<a href="demand.png">Candidate demand map</a> · <a href="progress.gif">Progress animation</a></p>
-<img id="map" src="latest.png" alt="Current rail network"><pre id="metrics"></pre>
-<script>window.updateRail=function(d){document.getElementById('status').textContent=
-(d.exploratory?'Exploratory | ':'')+d.phase+(d.solver.stage?' / '+d.solver.stage:'')+' | progress step '+d.iterations+' | '+d.elapsed_seconds.toFixed(1)+'s | update '+d.snapshot+' | '+d.message;
-document.getElementById('metrics').textContent=JSON.stringify(d.metrics||{feasible:false,warnings:d.warnings},null,2);
-if(window.railUpdateVersion!==d.utc_time){document.getElementById('map').src='latest.png?t='+encodeURIComponent(d.utc_time);
-window.railUpdateVersion=d.utc_time;}};
-function refresh(){let s=document.createElement('script');s.src='latest.js?t='+Date.now();
-s.onload=s.onerror=()=>s.remove();document.body.appendChild(s);}refresh();setInterval(refresh,2000);
-</script></body></html>'''
+def draw_progress(path, history):
+    """Plot sampled network metrics; missing historical fields remain gaps."""
+    panels = [
+        ('Network size', 'Count', [('stations', 'Stations'), ('service_lines', 'Service lines')]),
+        ('Passenger demand', 'Trips / hour', [('served_trips_per_hour', 'Served'),
+            ('accessible_trips_per_hour', 'Accessible'), ('rail_eligible_needs_per_hour', 'Rail-eligible needs')]),
+        ('Coverage and connectivity', 'Percent', [('coverage_percent', 'Coverage'),
+            ('connected_percent', 'Population in largest component')]),
+        ('Infrastructure', 'Track km', [('total_track_km', 'Track length')]),
+        ('Capital cost', '€ million', [('capital_millions', 'Capital')]),
+        ('Annual finances', '€ million / year', [('operating_millions', 'Operating cost'),
+            ('revenue_millions', 'Revenue'), ('annual_cost_millions', 'Annual-equivalent cost')]),
+    ]
+    fig, axes = plt.subplots(3, 2, figsize=(14, 11), constrained_layout=True)
+    try:
+        x = [row['iterations'] for row in history]
+        for ax, (title, ylabel, series) in zip(axes.flat, panels):
+            for key, label in series:
+                values = [row.get('plot_metrics', {}).get(key) for row in history]
+                if any(value is not None for value in values):
+                    ax.plot(x, [np.nan if v is None else v for v in values], label=label,
+                            marker='.', markersize=3)
+            ax.set(title=title, ylabel=ylabel, xlabel='Iteration / solver progress step')
+            ax.grid(True, alpha=.25)
+            if ax.lines:
+                ax.legend(fontsize=8)
+            else:
+                ax.text(.5, .5, 'Waiting for metrics', ha='center', transform=ax.transAxes)
+        fig.suptitle('Network progress · sampled snapshots (exploration and incumbent views)')
+        path = Path(path)
+        temporary = path.with_name(path.stem+'.tmp.png')
+        fig.savefig(temporary, dpi=120)
+        temporary.replace(path)
+    finally:
+        plt.close(fig)
+
+
+def progress_metrics(result):
+    metrics, solver = result.get('metrics', {}), result.get('solver', {})
+    values = {key: metrics.get(key) for key in ('served_trips_per_hour',
+              'accessible_trips_per_hour', 'rail_eligible_needs_per_hour', 'total_track_km')}
+    values.update(stations=len(result['stations']) if 'stations' in result else None,
+                  service_lines=result['service_lines'])
+    for source, target in [('coverage_fraction', 'coverage_percent'),
+                           ('largest_component_population_share', 'connected_percent')]:
+        value = solver.get(source)
+        values[target] = value*100 if value is not None else None
+    for source, target in [('capital_cost', 'capital_millions'),
+                           ('annual_operating_cost', 'operating_millions'),
+                           ('annual_revenue', 'revenue_millions')]:
+        value = metrics.get(source)
+        values[target] = value/1e6 if value is not None else None
+    lifecycle = metrics.get('lifecycle', {})
+    value = (lifecycle['pv_cost']/lifecycle['annuity_factor']
+             if lifecycle.get('annuity_factor') else None)
+    values['annual_cost_millions'] = value/1e6 if value is not None else None
+    return values
 
 
 class Reporter:
@@ -410,7 +453,12 @@ class Reporter:
         self.growth_line_counts = set()
         self.failure = None
         self.thread = threading.Thread(target=self._loop, name='rail-snapshots', daemon=True)
-        atomic_text(self.output/'index.html', DASHBOARD)
+        self.history = []
+        history_path = self.output/'progress.jsonl'
+        if history_path.exists():
+            self.history = [json.loads(line) for line in history_path.read_text().splitlines() if line.strip()]
+        for name in ('index.html', 'latest.js'):
+            (self.output/name).unlink(missing_ok=True)
 
     def start(self):
         # Population preparation runs before the first image. On resume, keep
@@ -519,7 +567,7 @@ class Reporter:
                 row[key] = problem.cities[problem.locations[location]['city']]['name']
             line_rows.append(row)
         line_temp = self.output/'latest_lines.csv.tmp'
-        write_csv(line_temp, ['id', 'from_city', 'to_city', 'stops', 'km', 'frequency_per_hour_per_direction',
+        write_csv(line_temp, ['id', 'train_type', 'speed_kmh', 'from_city', 'to_city', 'stops', 'km', 'frequency_per_hour_per_direction',
                                      'capacity_per_direction_per_hour', 'forward_load', 'reverse_load',
                                      'fleet', 'capital_cost', 'annual_operating_cost'], line_rows)
         station_temp.replace(self.output/'latest_stations.csv')
@@ -544,7 +592,6 @@ class Reporter:
             atomic_text(self.output/'exploration.json', json.dumps(result, indent=2, allow_nan=False))
             shutil.copyfile(self.output/'latest.png', self.output/'exploration.png')
         atomic_text(self.output/'cost_breakdown.log', cost_breakdown_log(result))
-        atomic_text(self.output/'latest.js', 'window.updateRail('+json.dumps(result, allow_nan=False)+');')
         if best_result and best_result.get('feasible'):
             atomic_text(self.output/'best_feasible.json', json.dumps(clean(best_result), indent=2, allow_nan=False))
             temporary = self.output/'checkpoint.npz.tmp'
@@ -553,8 +600,13 @@ class Reporter:
                                     **({'annealing': best_model.annealing_checkpoint}
                                        if hasattr(best_model, 'annealing_checkpoint') else {}))
             temporary.replace(self.output/'checkpoint.npz')
+        entry = {k: result[k] for k in ('snapshot', 'iterations', 'animation_frames', 'phase',
+                 'elapsed_seconds', 'feasible', 'exploratory', 'service_lines', 'solver')}
+        entry['plot_metrics'] = progress_metrics(result)
         with (self.output/'progress.jsonl').open('a', encoding='utf8') as stream:
-            stream.write(json.dumps({k: result[k] for k in ('snapshot', 'iterations', 'animation_frames', 'phase', 'elapsed_seconds', 'feasible', 'exploratory', 'service_lines', 'solver')})+'\n')
+            stream.write(json.dumps(entry, allow_nan=False)+'\n')
+        self.history.append(entry)
+        draw_progress(self.output/'progress.png', self.history)
         phase_display = phase + (' / '+solver['stage'] if solver.get('stage') else '')
         if 'coverage_fraction' in solver:
             label = 'passenger needs satisfied' if solver['coverage_metric'] == 'needs' else solver['coverage_metric']+' coverage'

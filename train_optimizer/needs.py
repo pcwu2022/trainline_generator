@@ -13,6 +13,7 @@ def rail_need_bound(problem):
                    if c.minimum_service_frequency <= f <= c.track_trains_per_hour_per_direction]
     if not frequencies:
         return 0.
+    speed = c.train_speed_kmh*(c.hsr_speed_ratio if 'HSR' in c.train_types else 1)
     maximum_frequency = max(frequencies)
     minimum_frequency = min(f for f in c.frequencies_per_hour if f >= c.minimum_service_frequency)
     stations = {}
@@ -28,7 +29,7 @@ def rail_need_bound(problem):
                 # solely because spherical and ellipsoidal distances differ.
                 direct = .99*haversine(problem.locations[a['location']]['coordinate'],
                                        problem.locations[b['location']]['coordinate'])
-                optimistic_time = access+direct/c.train_speed_kmh+.5/maximum_frequency
+                optimistic_time = access+direct/speed+.5/maximum_frequency
                 limit = c.maximum_journey_hours
                 if c.maximum_journey_detour_ratio:
                     limit = min(limit, access+.5/minimum_frequency

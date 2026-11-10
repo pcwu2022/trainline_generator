@@ -40,7 +40,7 @@ class ConsolidationTests(unittest.TestCase):
         self.assertEqual(changed[0][1], (1,))
 
     def test_invalid_consolidation_settings_are_rejected(self):
-        from train_optimizer.config import Config
+        from train_optimizer.settings import Config
         for data in [dict(annealing_consolidation_coverage=0), dict(annealing_consolidation_coverage=1.1),
                      dict(annealing_coverage_metric='unknown'),
                      dict(annealing_retained_ridership=0), dict(annealing_retained_ridership=1.1),

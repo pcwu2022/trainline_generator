@@ -7,7 +7,7 @@ import numpy as np
 import rasterio
 from rasterio.transform import from_origin
 
-from train_optimizer.config import Config
+from train_optimizer.settings import Config
 from train_optimizer.geography import Router
 from train_optimizer.terrain import TerrainCostMap
 

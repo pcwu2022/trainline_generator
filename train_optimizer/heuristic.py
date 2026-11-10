@@ -79,7 +79,7 @@ def journey_times(model, design):
                 if i == j:
                     continue
                 lo, hi = sorted((i, j))
-                hours = (sum(line['segment_km'][lo:hi])/c.train_speed_kmh
+                hours = (sum(line['segment_km'][lo:hi])/line['speed_kmh']
                          + (hi-lo-1)*c.dwell_minutes/60 + .5/frequency + c.transfer_minutes/60)
                 times[a, b] = min(times[a, b], hours)
     for k in range(n):
@@ -108,6 +108,9 @@ def neighborhood(model, design, frequencies):
         edges = {e for line in candidate for e in model.lines[line]['edges']}
         total -= sum(model.cost[model.z[line, frequency]] for line, frequency in candidate.items())
         total -= sum(model.cost[model.y[e]] for e in edges)
+        high_speed_edges = {e for line in candidate if model.lines[line]['train_type'] == 'HSR'
+                            for e in model.lines[line]['edges']}
+        total -= sum(model.cost[model.hsr_tracks[e]] for e in high_speed_edges)
         return total
     candidates = {}
     def add(candidate):
@@ -208,6 +211,9 @@ def solve_heuristic(model, state, time_limit, interrupted, checkpoint=None, repo
             for edge in model.lines[line]['edges']:
                 fixed[model.y[edge]] = 1
             fixed[model.z[line, frequency]] = 1
+            if model.lines[line]['train_type'] == 'HSR':
+                for edge in model.lines[line]['edges']:
+                    fixed[model.hsr_tracks[edge]] = 1
         if config.require_connected_network and live:
             fixed[model.names.index(f'root_{min(live)}')] = 1
         bounds = fixed[indices]

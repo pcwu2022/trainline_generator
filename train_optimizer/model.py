@@ -99,7 +99,13 @@ class NetworkModel(LinearModel):
         c = problem.config
         self.x, self.y, self.z, self.q, self.flow = {}, {}, {}, {}, {}
         progress('Generating candidate service lines')
-        self.lines = generate_lines(problem) if lines is None else lines
+        base_lines = generate_lines(problem) if lines is None else lines
+        self.lines = []
+        for line in base_lines:
+            for train_type in ([line['train_type']] if 'train_type' in line else c.train_types):
+                self.lines.append(dict(line, id=len(self.lines), train_type=train_type,
+                                       speed_kmh=c.train_speed_kmh*(c.hsr_speed_ratio if train_type == 'HSR' else 1)))
+        self.hsr_tracks = {}
         progress(f'Generated {len(self.lines):,} service lines; building variables and constraints')
         required_cities = math.ceil(c.minimum_city_served_fraction * len(problem.cities) - 1e-10)
         if c.require_connected_network and required_cities:
@@ -134,7 +140,7 @@ class NetworkModel(LinearModel):
                            for line in self.lines)
         estimate = (1 + active_od_count * ride_choices
                     + sum(station_counts[d['origin']]*station_counts[d['destination']] for d in problem.demand)
-                    + len(problem.stations) + len(problem.edges) + service_choices)
+                    + len(problem.stations) + len(problem.edges)*(2 if 'HSR' in c.train_types else 1) + service_choices)
         if c.require_connected_network:
             estimate += 2*len(problem.locations) + 2*len(problem.edges)
         if estimate > c.maximum_model_variables:
@@ -182,6 +188,14 @@ class NetworkModel(LinearModel):
             self.asset_kind[index] = 'track'
             self.capital[index] = edge['track_capital']
             self.operating[index] = c.maintenance_fraction * edge['track_capital']
+        if 'HSR' in c.train_types:
+            for edge in problem.edges:
+                index = self.var(f'hsr_track_{edge["id"]}', upper=1, integer=True)
+                self.hsr_tracks[edge['id']] = index
+                self.row({index: 1, self.y[edge['id']]: -1}, upper=0)
+                self.asset_kind[index] = 'track'
+                self.capital[index] = edge['track_capital']*(c.hsr_capex_ratio-1)
+                self.operating[index] = c.maintenance_fraction*self.capital[index]
         track_services = {edge['id']: {} for edge in problem.edges}
         track_options = {edge['id']: {} for edge in problem.edges}
         service_patterns = {}
@@ -192,11 +206,11 @@ class NetworkModel(LinearModel):
                 self.z[line['id'], frequency] = index
                 choices[index] = 1
                 service_patterns.setdefault(tuple(line['stops']), {})[index] = 1
-                runtime = line['km'] / c.train_speed_kmh + (len(line['stops'])-2)*c.dwell_minutes/60
+                runtime = line['km'] / line['speed_kmh'] + (len(line['stops'])-2)*c.dwell_minutes/60
                 fleet = max(1, math.ceil(2 * (runtime + c.turnaround_minutes/60) * frequency - 1e-10))
                 capex = fleet * c.train_capital_cost
                 departures = 2 * frequency * c.annual_hours
-                opex = departures * (line['km'] * c.train_cost_per_km + c.train_cost_per_departure)
+                opex = departures * (line['km'] * c.train_cost_per_km * (c.hsr_opex_ratio if line['train_type'] == 'HSR' else 1) + c.train_cost_per_departure)
                 self.asset_kind[index] = 'fleet'
                 self.capital[index], self.operating[index] = capex, opex
                 self.service[line['id'], frequency] = dict(fleet=fleet, runtime_hours=runtime,
@@ -204,6 +218,8 @@ class NetworkModel(LinearModel):
                                                           annual_departures=departures)
                 for edge_id in line['edges']:
                     self.row({index: 1, self.y[edge_id]: -1}, upper=0)
+                    if line['train_type'] == 'HSR':
+                        self.row({index: 1, self.hsr_tracks[edge_id]: -1}, upper=0)
                     track_services[edge_id][index] = frequency
                     track_options[edge_id][index] = -1
                 for location in line['stops']:
@@ -216,11 +232,19 @@ class NetworkModel(LinearModel):
         # An alignment variant is a choice for a service, not a second service
         # frequency tier. Distinct stop patterns may share the selected edges.
         for terms in service_patterns.values():
-            self.row(terms, upper=1)
+            self.row(terms, lower=1 if lines is not None else -math.inf, upper=1)
         for edge_id, terms in track_services.items():
             self.row(terms, upper=c.track_trains_per_hour_per_direction)
             used = dict(track_options[edge_id])
             used[self.y[edge_id]] = 1
+            self.row(used, upper=0)
+        for edge_id, upgrade in self.hsr_tracks.items():
+            used = {upgrade: 1}
+            for line in self.lines:
+                if line['train_type'] == 'HSR' and edge_id in line['edges']:
+                    for frequency in line.get('frequencies', c.frequencies_per_hour):
+                        if (line['id'], frequency) in self.z:
+                            used[self.z[line['id'], frequency]] = -1
             self.row(used, upper=0)
         for location, options in self.by_location.items():
             for station in options:
@@ -250,7 +274,7 @@ class NetworkModel(LinearModel):
                     # outflow - inflow = injected passengers at origins.
                     add(conservation[sa['location']], index, -1)
                     add(conservation[sb['location']], index, 1)
-                    self.revenue[index] = od['km'] * c.ticket_per_km * c.annual_hours
+                    # Fares accrue on ridden segments, once per passenger-km.
                     # Arc time includes a transfer penalty per boarding; remove
                     # one penalty here because the initial boarding is not a transfer.
                     self.time[index] = sa['access_hours'] + sb['access_hours'] - c.transfer_minutes / 60
@@ -279,7 +303,8 @@ class NetworkModel(LinearModel):
                                 lo, hi = sorted((board, alight))
                                 km = sum(line['segment_km'][lo:hi])
                                 dwell = (hi-lo-1)*c.dwell_minutes/60
-                                self.time[index] = km/c.train_speed_kmh + dwell + 0.5/frequency + c.transfer_minutes/60
+                                self.time[index] = km/line['speed_kmh'] + dwell + 0.5/frequency + c.transfer_minutes/60
+                                self.revenue[index] = km*c.ticket_per_km*c.annual_hours*(c.hsr_fare_ratio if line['train_type'] == 'HSR' else 1)
                                 journey[index] = self.time[index]
                                 self.cost[index] = c.time_weight * self.time[index] / normalization
                                 direction = int(board > alight)
@@ -422,7 +447,11 @@ class NetworkModel(LinearModel):
                                   capital_cost=self.capital[index], annual_operating_cost=self.operating[index]))
         for edge_id, index in self.y.items():
             if v[index] > 0.5:
-                tracks.append(dict(**p.edges[edge_id], capital_cost=self.capital[index], annual_maintenance=self.operating[index]))
+                upgrade = self.hsr_tracks.get(edge_id)
+                hsr = upgrade is not None and v[upgrade] > .5
+                tracks.append(dict(**p.edges[edge_id], train_type='HSR' if hsr else 'CR',
+                                   capital_cost=self.capital[index] + (self.capital[upgrade] if hsr else 0),
+                                   annual_maintenance=self.operating[index] + (self.operating[upgrade] if hsr else 0)))
         selected_capture = {city['id']: 0 for city in p.cities}
         for station in stations:
             selected_capture[station['city']] = station['capture_fraction']

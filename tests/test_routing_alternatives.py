@@ -4,14 +4,14 @@ import h3
 from pyproj import Geod
 
 from test_soft_profit import example
-from train_optimizer.config import Config
+from train_optimizer.settings import Config
 from train_optimizer.geography import Router
 from train_optimizer.model import NetworkModel
 
 
 class RoutingAlternativeTests(unittest.TestCase):
     def router(self):
-        config = Config(terrain_search_limit=2500, routing_sample_km=2)
+        config = Config(terrain_file='', terrain_search_limit=2500, routing_sample_km=2)
         router = Router(config, [dict(h3=h3.latlng_to_cell(0, 0, 5), density=0)])
         router.allowed = lambda cell: abs(h3.cell_to_latlng(cell)[0]) < 1 and abs(h3.cell_to_latlng(cell)[1]) < 1
         return router
