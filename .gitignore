@@ -1,0 +1,43 @@
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Test and coverage reports
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# Type checking
+.mypy_cache/
+.pyre/
+.hypothesis/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# IDE and OS files
+.idea/
+.vscode/
+.DS_Store
+
+# Optimizer artifacts (maps, checkpoints and solver runs)
+runs/
+.mplconfig/
+
+# Downloaded DEM tiles and generated elevation grids
+data/copernicus_dem/
+data/europe_terrain_*km.tif

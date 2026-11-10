@@ -1,0 +1,124 @@
+{
+  "population_file": "data/europe_3km.geojson",
+  "cities_file": "data/cities50000.json",
+  "terrain_file": "data/exportImage.tiff",
+  "land_file": "",
+  "bbox": [
+    2.5,
+    49.4,
+    7.5,
+    53.7
+  ],
+  "countries": [
+    "NL",
+    "BE"
+  ],
+
+  "max_cities": 8,
+  "market_radius_km": 25,
+  "minimum_city_population": 50000,
+  "density_threshold": 100,
+  "population_subdivision": 0,
+
+  "center_method": "access",
+  "center_coefficient": 0.1,
+  "locations_per_city": 2,
+  "station_offset_km": 12,
+  "access_normalization_floor_km": 0.001,
+  "access_optimizer_tolerance_km": 0.0001,
+
+  "demand_model": "production",
+  "trips_per_person_hour": 0.005,
+  "gravity_scale": 2e-05,
+  "gravity_beta": 2,
+  "distance_floor_km": 10,
+  "maximum_trip_distance_km": 400,
+  "p_max": 0.6,
+  "uptake_a": 0.1,
+  "uptake_alpha": 1,
+
+  "neighbors_per_city": 3,
+  "maximum_edge_km": 180,
+  "require_connected_network": true,
+  "routing_sample_km": 5,
+  "terrain_search_limit": 15000,
+  "terrain_cost_position": 0.5,
+  "terrain_cost_ranges_million": {
+    "bridge": [
+      20,
+      50
+    ],
+    "hilly": [
+      15,
+      25
+    ],
+    "moderate_mountains": [
+      25,
+      40
+    ],
+    "difficult_mountains": [
+      40,
+      70
+    ],
+    "very_difficult": [
+      70,
+      120
+    ]
+  },
+
+  "maximum_line_stops": 3,
+  "maximum_extra_lines": 40,
+  "frequencies_per_hour": [
+    1,
+    2,
+    4
+  ],
+  "track_trains_per_hour_per_direction": 12,
+  "train_seats": 500,
+  "train_speed_kmh": 120,
+  "dwell_minutes": 2,
+  "turnaround_minutes": 5,
+  "access_speed_kmh": 25,
+  "transfer_minutes": 5,
+  "maximum_journey_hours": 5,
+
+  "operating_start_hour": 6,
+  "operating_end_hour": 22,
+  "operating_days_per_year": 365,
+
+  "base_track_cost_per_km": 10000000,
+  "urban_cost_coefficient": 5000,
+  "station_capital_cost": 10000000,
+  "station_annual_cost": 400000,
+  "train_capital_cost": 5000000,
+  "train_cost_per_km": 15,
+  "train_cost_per_departure": 0,
+  "maintenance_fraction": 0.02,
+
+  "ticket_per_km": 0.2,
+  "accounting_years": 10,
+  "appraisal_years": 30,
+  "discount_rate": 0.04,
+  "discount_rates": [0.02, 0.04, 0.06],
+  "asset_lives_years": {"track": 40, "station": 50, "fleet": 25},
+  "financial_margin": 0.05,
+  "minimum_horizon_profit": 1,
+  "upfront_budget": 0,
+
+  "minimum_served_fraction": 0.001,
+  "minimum_origin_served_fraction": 0,
+
+  "served_weight": 1,
+  "time_weight": 0.05,
+  "center_weight": 0,
+  "access_weight": 0.01,
+  "cost_weight": 0.001,
+  "profit_shortfall_weight": 1,
+
+  "solver_time_limit": 120,
+  "mip_relative_gap": 0.01,
+  "random_seed": 42,
+  "maximum_model_variables": 2000000,
+  "snapshot_every": 5,
+  "gif_frame_ms": 500
+}

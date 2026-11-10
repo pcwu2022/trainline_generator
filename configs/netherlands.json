@@ -1,0 +1,26 @@
+{
+  "population_file": "data/europe_3km.geojson",
+  "bbox": [
+    2.5,
+    49.4,
+    7.5,
+    53.7
+  ],
+  "countries": [
+    "NL",
+    "BE"
+  ],
+
+  "max_cities": 8,
+  "density_threshold": 100,
+  "population_subdivision": 0,
+
+  "center_method": "access",
+
+  "operating_start_hour": 6,
+  "operating_end_hour": 22,
+
+  "accounting_years": 10,
+
+  "minimum_served_fraction": 0.001
+}

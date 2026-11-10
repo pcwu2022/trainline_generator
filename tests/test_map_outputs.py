@@ -1,0 +1,107 @@
+"""Regression checks for stable map framing and complete animation frames."""
+import json
+from pathlib import Path
+import tempfile
+import time
+from types import SimpleNamespace
+import unittest
+from unittest.mock import patch
+
+import h3
+import matplotlib
+from matplotlib.figure import Figure
+import numpy as np
+from PIL import Image
+
+from train_optimizer.config import Config
+from train_optimizer.outputs import LiveState, Reporter, draw_map, map_projector, map_viewport
+
+
+def example_map():
+    config = Config.from_dict({'bbox': [4.0, 50.8, 4.8, 51.5]})
+    index = h3.latlng_to_cell(51.49, 4.79, 4)
+    problem = SimpleNamespace(
+        cells=[dict(h3=index, density=150)],
+        cities=[dict(center=(4.4, 51.1), name='Example')],
+        locations=[dict(coordinate=(4.7, 51.4))],
+        stations=[dict(location=0, radius_km=30)],
+        edges=[dict(geometry=[(4.2, 50.9), (5.0, 51.2)])], warnings=[])
+    result = dict(phase='solving', elapsed_seconds=10, iterations=5, snapshot=2, feasible=False)
+    return config, problem, result
+
+
+class MapOutputTests(unittest.TestCase):
+    def test_viewport_contains_complete_cells_corridors_and_catchments(self):
+        config, problem, _ = example_map()
+        xmin, xmax, ymin, ymax = map_viewport(config, problem)
+        project = map_projector(config)
+        coordinates = [(lon, lat) for lat, lon in h3.cell_to_boundary(problem.cells[0]['h3'])]
+        coordinates.extend(problem.edges[0]['geometry'])
+        for x, y in project(coordinates):
+            self.assertTrue(xmin < x < xmax)
+            self.assertTrue(ymin < y < ymax)
+        x, y = project([problem.locations[0]['coordinate']])[0]
+        self.assertLess(xmin, x-30)
+        self.assertGreater(xmax, x+30)
+        self.assertLess(ymin, y-30)
+        self.assertGreater(ymax, y+30)
+
+    def test_map_axes_and_canvas_do_not_shift_with_colorbar_or_solution(self):
+        config, problem, result = example_map()
+        viewport = map_viewport(config, problem)
+        captures = []
+        savefig = Figure.savefig
+        def record(figure, path, **kwargs):
+            savefig(figure, path, **kwargs)
+            ax = figure.axes[0]
+            captures.append((ax.get_position().bounds, ax.get_xlim(), ax.get_ylim()))
+        solution = dict(result, feasible=True,
+                        lines=[dict(id=0, geometry=problem.edges[0]['geometry'], frequency_per_hour_per_direction=1)],
+                        stations=[dict(coordinate=problem.locations[0]['coordinate'], radius_km=30)],
+                        metrics=dict(served_trips_per_hour=100, served_fraction=0.1,
+                                     total_track_km=50, horizon_profit=1e6))
+        with tempfile.TemporaryDirectory() as directory:
+            # Explicit layout must override a user's matplotlibrc cropping/layout.
+            with matplotlib.rc_context({'savefig.bbox': 'tight', 'figure.autolayout': True}):
+                with patch.object(Figure, 'savefig', autospec=True, side_effect=record):
+                    for i, (data, state) in enumerate([(None, result), (problem, result), (problem, solution)]):
+                        path = Path(directory)/f'frame{i}.png'
+                        draw_map(path, config, data, state, viewport=viewport)
+                        with Image.open(path) as image:
+                            self.assertEqual(image.size, (1300, 1300))
+            for actual in captures[1:]:
+                for a, b in zip(captures[0], actual):
+                    np.testing.assert_allclose(a, b, atol=1e-12)
+
+    def test_first_image_waits_for_population_data(self):
+        config, problem, _ = example_map()
+        state = LiveState()
+        def render(path, *args, **kwargs):
+            Image.new('RGB', (32, 32), color='white').save(path)
+        with tempfile.TemporaryDirectory() as directory:
+            folder = Path(directory)
+            with patch('train_optimizer.outputs.draw_map', side_effect=render):
+                reporter = Reporter(state, config, folder)
+                reporter.start()
+                try:
+                    self.assertFalse((folder/'latest.png').exists())
+                    self.assertFalse((folder/'progress.gif').exists())
+                    state.update(problem=problem)
+                    reporter.requested.set()
+                    deadline = time.monotonic()+2
+                    while time.monotonic() < deadline:
+                        latest = folder/'latest.json'
+                        if latest.exists() and json.loads(latest.read_text())['animation_frames'] == 1:
+                            break
+                        time.sleep(0.01)
+                    else:
+                        self.fail('First complete map frame was not published')
+                finally:
+                    reporter.finish()
+            with Image.open(folder/'progress.gif') as animation:
+                self.assertEqual(animation.n_frames, 2)  # First complete map and final state.
+            self.assertFalse(list(folder.glob('snapshot_*')))
+
+
+if __name__ == '__main__':
+    unittest.main()
