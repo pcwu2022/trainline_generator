@@ -31,12 +31,13 @@ def example_map():
 
 
 class MapOutputTests(unittest.TestCase):
-    def test_transfer_flows_use_full_demand_on_each_leg(self):
+    def test_transfer_flows_use_eligible_needs_on_each_leg(self):
         problem = SimpleNamespace(demand=[dict(id=0, volume=3000)])
-        result = dict(lines=[dict(id=1), dict(id=2)], passenger_flows=[
+        result = dict(od_pairs=[dict(id=0, rail_eligible_needs=2400)],
+                      lines=[dict(id=1), dict(id=2)], passenger_flows=[
             dict(od=0, line=line, board_stop=0, alight_stop=1, trips_per_hour=2000)
             for line in (1, 2)])
-        self.assertEqual(segment_satisfaction(problem, result), {(1, 0): 2/3, (2, 0): 2/3})
+        self.assertEqual(segment_satisfaction(problem, result), {(1, 0): 5/6, (2, 0): 5/6})
 
     def test_demand_filter_combines_directions_and_omits_complete_graph(self):
         problem = SimpleNamespace(demand=[
@@ -84,7 +85,7 @@ class MapOutputTests(unittest.TestCase):
         solution = dict(result, feasible=True,
                         lines=[dict(id=0, geometry=problem.edges[0]['geometry'], frequency_per_hour_per_direction=1)],
                         stations=[dict(coordinate=problem.locations[0]['coordinate'], radius_km=30)],
-                        metrics=dict(served_trips_per_hour=100, served_fraction=0.1,
+                        metrics=dict(served_trips_per_hour=100, needs_satisfaction_fraction=0.1,
                                      total_track_km=50, horizon_profit=1e6))
         with tempfile.TemporaryDirectory() as directory:
             # Explicit layout must override a user's matplotlibrc cropping/layout.

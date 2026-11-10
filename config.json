@@ -32,13 +32,13 @@
     "gravity_scale": 2e-05,
     "gravity_beta": 2,
     "distance_floor_km": 10,
-    "maximum_trip_distance_km": 400,
+    "maximum_trip_distance_km": 1500,
     "p_max": 0.6,
     "uptake_a": 0.1,
     "uptake_alpha": 1,
     "uptake_reference_radius_km": 0,
     "neighbors_per_city": 3,
-    "maximum_edge_km": 180,
+    "maximum_edge_km": 500,
     "require_connected_network": true,
     "routing_sample_km": 5,
     "terrain_search_limit": 15000,
@@ -75,7 +75,7 @@
       4
     ],
     "track_trains_per_hour_per_direction": 12,
-    "train_seats": 500,
+    "train_seats": 400,
     "train_speed_kmh": 120,
     "train_types": [
       "CR",
@@ -126,7 +126,7 @@
     "minimum_city_served_fraction": 0,
     "minimum_selected_origin_served_fraction": 0,
     "minimum_service_frequency": 1,
-    "population_weight": 1,
+    "population_weight": 0,
     "served_weight": 10,
     "time_weight": 0.5,
     "center_weight": 0.0001,
@@ -227,6 +227,18 @@
       "countries": [
         "NL",
         "BE"
+      ],
+      "max_cities": 20
+    },
+    "switzerland": {
+      "bbox": [
+        5.9,
+        45.8,
+        10.5,
+        47.8
+      ],
+      "countries": [
+        "CH"
       ],
       "max_cities": 20
     },

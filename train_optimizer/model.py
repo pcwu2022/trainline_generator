@@ -7,7 +7,7 @@ import highspy
 import numpy as np
 from scipy.sparse import coo_matrix
 from .lines import generate_lines
-from .needs import rail_need_bound
+from .needs import rail_needs_by_od
 from .finance import annuity_factor, asset_pv_factor, lifecycle_report
 
 
@@ -117,10 +117,11 @@ def add(terms, index, value):
 
 
 class NetworkModel(LinearModel):
-    def __init__(self, problem, progress=lambda message: None, lines=None, capture_upper_bound=None, protection=None, needs_upper_bound=None):
+    def __init__(self, problem, progress=lambda message: None, lines=None, capture_upper_bound=None, protection=None, needs_upper_bound=None, needs_by_od=None):
         super().__init__()
         self.problem = problem
-        self.needs_upper_bound = rail_need_bound(problem) if needs_upper_bound is None else needs_upper_bound
+        self.needs_by_od = rail_needs_by_od(problem) if needs_by_od is None else needs_by_od
+        self.needs_upper_bound = sum(self.needs_by_od.values()) if needs_upper_bound is None else needs_upper_bound
         c = problem.config
         self.x, self.y, self.z, self.q, self.flow = {}, {}, {}, {}, {}
         progress('Generating candidate service lines')
@@ -184,10 +185,10 @@ class NetworkModel(LinearModel):
                 maximum_capture[city] = max(maximum_capture[city], station['capture_fraction'])
             self.capture_upper_bound = sum(d['volume']*maximum_capture[d['origin']]*maximum_capture[d['destination']]
                                            for d in problem.demand)
-        # Normalize rider/time objectives by a fixed optimistic capture bound,
+        # Normalize rider/time objectives by fixed regional rail-eligible needs,
         # rather than by millions of inaccessible potential trips. Otherwise small
         # center-location penalties can overwhelm all achievable rider benefit.
-        normalization = max(1, self.capture_upper_bound)
+        normalization = max(1, self.needs_upper_bound)
         self.population_normalization = max(1, sum(city.get('population', 0) for city in problem.cities))
         self.by_city = {city['id']: [] for city in problem.cities}
         self.by_location = {loc['id']: [] for loc in problem.locations}
@@ -287,10 +288,10 @@ class NetworkModel(LinearModel):
         all_served, served_by_origin = {}, {city['id']: {} for city in problem.cities}
         origin_demands = defaultdict(float)
         for od in problem.demand:
-            origin_demands[od['origin']] += od['volume']
+            origin_demands[od['origin']] += self.needs_by_od[od['id']]
         for od in problem.demand:
             # No passengers can enter or leave a market without a station.
-            # Keep full demand totals and origin service floors below.
+            # Keep fixed eligible demand totals and origin service floors below.
             if not self.by_city[od['origin']] or not self.by_city[od['destination']]:
                 continue
             conservation = defaultdict(dict)
@@ -352,9 +353,9 @@ class NetworkModel(LinearModel):
             self.row(journey, upper=0)
             progress(f'Built passenger commodity {od["id"]+1}/{len(problem.demand)}')
         for (line, frequency, segment, direction), terms in capacities.items():
-            terms[self.z[line, frequency]] = -c.train_seats * frequency
+            terms[self.z[line, frequency]] = -c.seats_per_train(self.lines[line]['train_type']) * frequency
             self.row(terms, upper=0)
-        self.row(all_served, lower=c.minimum_served_fraction * self.total_demand)
+        self.row(all_served, lower=c.minimum_served_fraction * self.needs_upper_bound)
         for city, terms in served_by_origin.items():
             origin_demand = origin_demands[city]
             if origin_demand:
@@ -477,7 +478,7 @@ class NetworkModel(LinearModel):
                          for segment in range(len(line['edges']))]
                 stop_names = [p.cities[p.locations[location]['city']]['name'] for location in line['stops']]
                 lines.append(dict(**line, stop_names=stop_names, frequency_per_hour_per_direction=frequency,
-                                  capacity_per_direction_per_hour=c.train_seats*frequency,
+                                  capacity_per_direction_per_hour=c.seats_per_train(line['train_type'])*frequency,
                                   directional_loads=[max(load[d] for load in loads) for d in (0, 1)],
                                   segment_directional_loads=loads, **self.service[line_id, frequency],
                                   capital_cost=self.capital[index], annual_operating_cost=self.operating[index]))
@@ -506,7 +507,8 @@ class NetworkModel(LinearModel):
             volume = served_by_od[od['id']]
             captured = od['volume']*selected_capture[od['origin']]*selected_capture[od['destination']]
             accessible += captured
-            pairs.append(dict(**od, served=volume, unmet=max(0, od['volume']-volume),
+            pairs.append(dict(**od, rail_eligible_needs=self.needs_by_od[od['id']],
+                              served=volume, unmet=max(0, self.needs_by_od[od['id']]-volume),
                               accessible=captured, unserved_accessible=max(0, captured-volume)))
         time = dot(self.time)
         return dict(feasible=True, validation=validation, stations=stations, lines=lines, tracks=tracks,
@@ -523,8 +525,6 @@ class NetworkModel(LinearModel):
                         accessible_trips_per_hour=accessible,
                         unserved_accessible_trips_per_hour=max(0, accessible-served),
                         outside_access_or_uptake_trips_per_hour=max(0, self.total_demand-accessible),
-                        served_fraction_of_accessible_demand=served/accessible if accessible else None,
-                        served_fraction=served/self.total_demand,
                         covered_population=sum(s.get('covered_population', 0) for s in stations),
                         covered_population_fraction=sum(s.get('covered_population', 0) for s in stations)/self.population_normalization,
                         served_cities=len(stations), candidate_cities=len(p.cities),

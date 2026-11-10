@@ -33,7 +33,6 @@ def cost_breakdown_log(result):
     if m.get('needs_satisfaction_fraction') is not None:
         rows.append(f"Rail-eligible passenger needs satisfied: {m['needs_satisfaction_fraction']:.1%}")
         rows.append(f"Completed trips / fixed eligible needs per hour: {m['served_trips_per_hour']:,.2f} / {m['rail_eligible_needs_per_hour']:,.2f}")
-        rows.append(f"All potential trips served: {m['served_fraction']:.1%}")
     rows.append(f"Served markets: {m['served_cities']} / {m['candidate_cities']}")
     if m['subsidy_per_passenger'] is not None:
         amount('Lifecycle subsidy per passenger trip', m['subsidy_per_passenger'])

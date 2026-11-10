@@ -14,8 +14,8 @@ exploratory components can be separate. Set `annealing_coverage_metric` to
 `needs` (the default), `markets`, `population`, or legacy `demand` to choose
 the measure. Needs satisfaction is completed trips divided by fixed rail-eligible
 demand, accounting for uptake, station access, and best-case journey limits.
-Opening stations alone does not satisfy needs. The share of all potential trips
-served is reported separately.
+Opening stations alone does not satisfy needs. Map segment colors use fixed
+rail-eligible needs for the OD pairs using each segment, including transfer legs.
 
 Default `annealing_budget_mode="goals"` continues until those stages finish or
 Ctrl+C is pressed. `--time-limit 120` selects a bounded 120-second search;
@@ -48,7 +48,7 @@ checkpoint behavior, and limitations. Existing run outputs are not modified.
 `config.json` is the single source of configuration: `defaults` contains every
 setting, and `profiles` contains named scenario overrides. Select a scenario with
 `--profile europe`, `--profile france`, `--profile italy`, `--profile netherlands`,
-`--profile uk`, or `--profile exploratory`. All profiles inherit CR/HSR choices
+`--profile switzerland`, `--profile uk`, or `--profile exploratory`. All profiles inherit CR/HSR choices
 and their scaling ratios from `defaults`. Python contains only the schema and
 validation, with no separate default values. Optional external JSON overrides
 (`--config PATH`) apply over defaults; a selected profile then applies over those
@@ -126,17 +126,19 @@ shared-track option without changing fares, construction prices, objective
 weights, or the detour limit. A larger pool also makes the MILP harder; a
 time-limited fresh run is not guaranteed to discover the shared solution.
 
-Objective defaults prioritize ridership (`served_weight=10`), population within
-operating station catchments (`population_weight=1`), and shorter passenger
-journeys (`time_weight=0.5`, including access, waiting and transfers).
+Objective defaults prioritize rail-eligible satisfaction (`served_weight=10`)
+and shorter passenger journeys (`time_weight=0.5`, including access, waiting
+and transfers). The optional population catchment reward is disabled by default
+(`population_weight=0`), so opening a station without completed journeys earns
+no population reward.
 `access_weight=0.05` favors convenient access; `profit_shortfall_weight=0.25`
 retains a softer financial penalty. These are tunable preferences, not calibrated
 economic values. Population coverage uses fixed exclusive zones to avoid double
 counting; `latest.json` reports its population count and fraction.
 
 The `netherlands` profile in `config.json` now requires service at 75% of candidate markets
-(15 of 20), at least 10% of fixed regional potential demand, and at least
-5% of each selected market's outbound demand. Every selected line operates at
+(15 of 20), at least 10% of fixed regional rail-eligible needs, and at least
+5% of each selected market's outbound rail-eligible needs. Every selected line operates at
 least twice per hour in each direction. Station circles may overlap; fixed
 nearest-market population zones prevent double counting. These thresholds are
 scenario assumptions, not calibrated service standards.
@@ -456,8 +458,8 @@ legacy names for the population-derived market count and target population.
    optional upfront budget. Thirty-year lifecycle profitability is a soft target. Minimize a weighted,
    normalized combination of unmet demand, passenger-hours, population-weighted access penalties
    and annual-equivalent costs. Weights and service targets are configurable.
-   Rider and time terms are normalized by a fixed optimistic bound on capturable
-   trips, so inaccessible potential demand does not drown out their importance.
+   Rider and time terms are normalized by fixed rail-eligible
+   needs, so inaccessible potential demand does not drown out their importance.
    Every exported incumbent is checked against variable bounds, integrality,
    every linear constraint and the financial calculation.
 
@@ -478,10 +480,12 @@ Defaults are a 30-year discounted appraisal, a separate ten-year cash-flow
 report, a 5% margin and a positive one-unit present-value profit floor. `upfront_budget=0` means no separate capital ceiling. The construction cost
 is paid at time zero, rather than spread over an unrelated asset lifetime.
 
-`minimum_served_fraction` is measured against **all fixed eligible potential
-demand**, including unmet access. With uptake at both endpoints its achievable
-value can be far below 100%. Choose it as a policy/scenario input. The positive
-service target excludes an empty network.
+`minimum_served_fraction` is measured against **fixed rail-eligible needs**,
+after endpoint capture, uptake, and best-case journey filtering. Origin service
+floors use the same eligible needs grouped by origin. These denominators never
+shrink when stations close. The positive service target excludes an empty network.
+The existing configuration field names are retained; their fractions now refer
+to rail-eligible needs. Rider/time rewards use this same regional denominator.
 
 ## Generate European elevation rasters
 
@@ -824,9 +828,17 @@ exploration, integration, and cost reduction then continue with configured train
 types, including HSR. Hard budget and feasibility limits still apply. Resuming a
 validated checkpoint continues the normal phases without reseeding.
 
-`--speed-up` samples at most 10 regional demand/bridge candidates and 10 queued
-cost moves per selection, using the configured random seed. Untested cost moves
-remain queued. This reduces selection work but can affect solution quality;
-routing and passenger optimization still use their normal accuracy. The flags
+`--speed-up` preserves normal demand/bridge sampling and cost-move selection.
+Exploratory passenger/technology solves use a 2-second solver limit (bounded by
+the remaining run budget) and a 5% objective gap, or the configured gap if looser.
+Compatible service decisions from the previous network provide a partial solver
+starting point. Feasibility checks remain unchanged; a timeout without a validated
+assignment is recorded as unevaluated, not rejected as infeasible. Final incumbent
+and consolidation evaluations retain the configured accuracy and remaining-time
+limit. Routing resolution and alignment generation are unchanged. The time cap
+applies to solving, not the complete iteration; runtime gains depend on the workload.
+Cumulative selection, routing, model-build and solve seconds are recorded under
+`solver.timing_seconds` in progress records.
+The flags
 also have JSON settings `gravity_heuristic`,
 `gravity_heuristic_demand_threshold`, and `speed_up`.

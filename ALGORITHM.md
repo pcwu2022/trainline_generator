@@ -224,6 +224,8 @@ For coverage, let `q_i` be completed trips/hour from market `i`, and `x_i` indic
 an open station in that market. Let `g`, `c`, `o`, and `s` be
 `minimum_served_fraction`, `minimum_city_served_fraction`,
 `minimum_origin_served_fraction`, and `minimum_selected_origin_served_fraction`.
+Here `D_0` and `D_i` are fixed rail-eligible needs regionally and by origin,
+after endpoint capture, uptake, and best-case journey filtering.
 Using `[z]+ = max(0,z)`, define
 
 $$
@@ -272,8 +274,8 @@ one completed trip. If the denominator is zero, report `no_eligible_needs` and
 stop without claiming 100% satisfaction.
 
 This evaluates rail-eligible needs after uptake and capture assumptions, not all
-travel needs in the region. `served_fraction = q / D` remains the separate share
-of all potential regional trips served. `N_needs` is optimistic: infrastructure,
+travel needs in the region. Total-demand served shares are no longer reported
+or used for service floors. `N_needs` is optimistic: infrastructure,
 shared capacity, and mutually exclusive station choices can make a high target
 unattainable even after best-case journey filtering.
 
@@ -617,8 +619,7 @@ New metrics are `rail_eligible_needs_per_hour`, `satisfied_needs_per_hour`,
 and cost logs label the score as passenger needs satisfied. Legacy market counts
 remain descriptive outputs. A bounded Netherlands check opened all 20 candidate
 markets but satisfied only 58.7% of 11,692 eligible trips/hour, so it correctly
-stayed in integration. Its 6,865 completed trips/hour represented 17.8% of all
-potential regional trips, reported separately.
+stayed in integration. Its 6,865 completed trips/hour count completed journeys, without transfer duplication.
 
 ## Effective settings and time-limit inheritance
 

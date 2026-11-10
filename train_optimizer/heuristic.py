@@ -103,7 +103,7 @@ def neighborhood(model, design, frequencies):
         for a, b, volume in ods:
             hours = times[a, b] - c.transfer_minutes/60
             if hours <= c.maximum_journey_hours:
-                total += volume*(c.served_weight-c.time_weight*hours)/max(1, model.capture_upper_bound)
+                total += volume*(c.served_weight-c.time_weight*hours)/max(1, model.needs_upper_bound)
         # Charge incremental fleet and unique infrastructure in the ranking.
         edges = {e for line in candidate for e in model.lines[line]['edges']}
         total -= sum(model.cost[model.z[line, frequency]] for line, frequency in candidate.items())

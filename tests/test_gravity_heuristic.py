@@ -45,7 +45,7 @@ class GravityTests(unittest.TestCase):
         self.assertNotEqual(state.snapshot()[-1]['stage'], 'gravity_heuristic')
         self.assertIsNotNone(state.snapshot()[2])
 
-    def test_speed_up_bounds_regional_demand_sampling(self):
+    def test_speed_up_preserves_regional_demand_sampling(self):
         import numpy as np
         from train_optimizer.network_growth import regional_proposal
         from train_optimizer.sampling import sample_indices
@@ -56,4 +56,64 @@ class GravityTests(unittest.TestCase):
             regional_proposal(p, RoutePool(p), design, np.random.default_rng(1), [1],
                               'exploration', allowed=['seed_region'])
         self.assertTrue(sample.called)
-        self.assertTrue(all(call.args[1] <= 10 for call in sample.call_args_list))
+        self.assertTrue(all(call.args[1] == p.config.annealing_candidate_pair_limit
+                            for call in sample.call_args_list))
+
+    def test_speed_up_limits_only_exploratory_solves(self):
+        from train_optimizer.model import NetworkModel
+        p = problem()
+        p.config.speed_up = True
+        p.config.mip_relative_gap = .01
+        pool = RoutePool(p)
+        original = NetworkModel.solver
+        calls = []
+        def recording(model, config, limit):
+            calls.append((config.mip_relative_gap, limit))
+            return original(model, config, limit)
+        with patch.object(NetworkModel, 'solver', recording):
+            record = evaluate(p, pool, (((0, 1), (0,), 1),), 1,
+                              lambda: 5, threading.Event())
+            self.assertIsNotNone(record)
+            evaluate(p, pool, (((0, 1), (0,), 1),), 1,
+                     lambda: 5, threading.Event(), final=True, previous=record[:2])
+        self.assertEqual(calls, [(.05, 2.), (.01, 5)])
+        self.assertEqual(p.config.mip_relative_gap, .01)
+        self.assertGreater(pool.timings['solving'], 0)
+
+    def test_speed_up_timeout_is_unevaluated(self):
+        import highspy
+        from unittest.mock import MagicMock
+        from train_optimizer.annealing import EvaluationTimeout
+        p = problem()
+        p.config.speed_up = True
+        solver = MagicMock()
+        solver.getSolution.return_value.value_valid = False
+        solver.getModelStatus.return_value = highspy.HighsModelStatus.kTimeLimit
+        with patch('train_optimizer.annealing.NetworkModel.solver', return_value=solver):
+            with self.assertRaises(EvaluationTimeout):
+                evaluate(p, RoutePool(p), (((0, 1), (0,), 1),), 1,
+                         lambda: 5, threading.Event())
+
+    def test_service_start_matches_patterns_after_line_ids_change(self):
+        from types import SimpleNamespace
+        from train_optimizer.annealing import service_start
+        line = dict(stops=[0, 1], segment_km=[100], geometry=[(0, 0), (1, 1)], train_type='CR')
+        old = SimpleNamespace(lines=[line], z={(0, 1): 0})
+        new = SimpleNamespace(lines=[dict(line, train_type='HSR'), line],
+                              z={(0, 1): 7, (1, 1): 8, (1, 2): 9})
+        self.assertEqual(service_start(new, (old, [1.])), {8: 1.})
+
+    def test_speed_up_respects_remaining_budget_and_looser_configured_gap(self):
+        from train_optimizer.model import NetworkModel
+        p = problem()
+        p.config.speed_up = True
+        p.config.mip_relative_gap = .1
+        original = NetworkModel.solver
+        calls = []
+        def recording(model, config, limit):
+            calls.append((config.mip_relative_gap, limit))
+            return original(model, config, limit)
+        with patch.object(NetworkModel, 'solver', recording):
+            evaluate(p, RoutePool(p), (((0, 1), (0,), 1),), 1,
+                     lambda: .5, threading.Event())
+        self.assertEqual(calls, [(.1, .5)])

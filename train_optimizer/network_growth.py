@@ -80,7 +80,7 @@ def regional_proposal(problem, pool, design, rng, frequencies, stage, allowed=No
     from .annealing import canonical
     c = problem.config
     allowed = set(allowed if allowed is not None else ('seed_region', 'frontier', 'bridge'))
-    limit = min(c.annealing_candidate_pair_limit or 10, 10) if c.speed_up else c.annealing_candidate_pair_limit
+    limit = c.annealing_candidate_pair_limit
     indices = sample_indices(len(problem.demand), limit, rng)
     live = {site for stops, ids, f in design for site in stops}
     active = {problem.locations[site]['city']: site for site in live}

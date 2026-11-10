@@ -10,14 +10,14 @@ import time
 import highspy
 import numpy as np
 
-from .sampling import PHASE_ACTION_WEIGHTS, choose_action, pop_cost_candidate, sample_actions, sample_indices
+from .sampling import PHASE_ACTION_WEIGHTS, choose_action, pop_cost_candidate, sample_actions
 from .finance import annuity_factor, asset_pv_factor
 from .consolidation import annual_cost, candidates, materialize, service_protection
 from .geography import Router, haversine
 from pyproj import Geod
 import h3
 from .model import NetworkModel, SolverModelError
-from .needs import rail_need_bound
+from .needs import rail_needs_by_od
 from .network_growth import (connected_designs, connectivity, growth_energy, integration_pressure,
                              ready_to_consolidate, regional_proposal)
 
@@ -45,9 +45,11 @@ class RoutePool:
         self.edges = [dict(e) for e in problem.edges]
         self.cache = {}
         self.searches = 0
+        self.timings = dict(selection=0., routing=0., model_build=0., solving=0.)
         capture = {city['id']: max((s['capture_fraction'] for s in problem.stations
                                    if s['city'] == city['id']), default=0) for city in problem.cities}
-        self.needs_upper_bound = rail_need_bound(problem)
+        self.needs_by_od = rail_needs_by_od(problem)
+        self.needs_upper_bound = sum(self.needs_by_od.values())
         self.capture_upper_bound = sum(d['volume']*capture[d['origin']]*capture[d['destination']]
                                        for d in problem.demand)
         for e in self.edges:
@@ -128,7 +130,11 @@ class RoutePool:
             if self.router is None:
                 self.router = Router(self.problem.config, self.problem.cells)
                 self.router.check = self.check
-            routes = self.router.routes(pa, pb)
+            started = time.monotonic()
+            try:
+                routes = self.router.routes(pa, pb)
+            finally:
+                self.timings['routing'] += time.monotonic()-started
             self.searches += 1
             self.cache[key] = []
             for route in routes:
@@ -177,14 +183,14 @@ def financial_cost(model):
 
 
 def coverage_deficit(model, vector, config):
-    total = max(1, model.total_demand)
+    total = max(1, model.needs_upper_bound)
     served = sum(vector[i] for i in model.q.values())
     live = sum(vector[i] for i in model.x.values())
     deficit = max(0, config.minimum_served_fraction - served/total)
     deficit += max(0, config.minimum_city_served_fraction - live/max(1, len(model.problem.cities)))
     for city in model.problem.cities:
         origin = city['id']
-        demand = sum(d['volume'] for d in model.problem.demand if d['origin'] == origin)
+        demand = sum(model.needs_by_od[d['id']] for d in model.problem.demand if d['origin'] == origin)
         if not demand:
             continue
         flow = sum(vector[i] for (od, a, b), i in model.q.items()
@@ -195,7 +201,27 @@ def coverage_deficit(model, vector, config):
     return deficit
 
 
-def evaluate(problem, pool, design, financial_weight, remaining, interrupted, final=False, protection=None, network_pressure=0, conventional_only=False):
+class EvaluationTimeout(Exception):
+    """An exploratory solve ended without a validated feasible assignment."""
+
+
+def service_start(model, previous):
+    """Match service decisions by physical pattern, never by transient line IDs."""
+    if previous is None:
+        return {}
+    old_model, vector = previous
+    def key(m, line, frequency):
+        service = m.lines[line]
+        return (tuple(service['stops']), tuple(service['segment_km']),
+                tuple(tuple(point) for point in service['geometry']), service['train_type'], frequency)
+    values = {key(old_model, line, frequency): float(vector[index])
+              for (line, frequency), index in old_model.z.items()}
+    return {index: values[key(model, line, frequency)]
+            for (line, frequency), index in model.z.items()
+            if key(model, line, frequency) in values}
+
+
+def evaluate(problem, pool, design, financial_weight, remaining, interrupted, final=False, protection=None, network_pressure=0, conventional_only=False, previous=None):
     """Fix the proposed network; optimize train technology and passenger assignment."""
     c = problem.config
     live = {site for stops, ids, f in design for site in stops}
@@ -227,12 +253,16 @@ def evaluate(problem, pool, design, financial_weight, remaining, interrupted, fi
                 pending.extend(adjacency[site]-reached)
         if reached != live:
             return None
-    model = NetworkModel(p, lines=lines, capture_upper_bound=pool.capture_upper_bound, protection=protection,
-                         needs_upper_bound=pool.needs_upper_bound)
+    started = time.monotonic()
+    try:
+        model = NetworkModel(p, lines=lines, capture_upper_bound=pool.capture_upper_bound, protection=protection,
+                             needs_upper_bound=pool.needs_upper_bound, needs_by_od=pool.needs_by_od)
+    finally:
+        pool.timings['model_build'] += time.monotonic()-started
     financial = financial_cost(model)
     costs = model.cost - (1-financial_weight)*financial
     for index in model.q.values():
-        costs[index] -= network_pressure*c.annealing_network_effect_weight*c.served_weight/max(1, pool.capture_upper_bound)
+        costs[index] -= network_pressure*c.annealing_network_effect_weight*c.served_weight/max(1, pool.needs_upper_bound)
     fixed = np.zeros(len(model.names))
     for station in p.stations:
         fixed[model.x[station['id']]] = int(station['location'] in live)
@@ -246,7 +276,9 @@ def evaluate(problem, pool, design, financial_weight, remaining, interrupted, fi
     if remaining() <= 0 or interrupted.is_set():
         raise InterruptedError('Annealing search stopped')
     try:
-        solver = model.solver(c, max(.001, remaining()))
+        fast = c.speed_up and not final
+        solve_config = replace(c, mip_relative_gap=max(c.mip_relative_gap, .05)) if fast else c
+        solver = model.solver(solve_config, max(.001, min(remaining(), 2.) if fast else remaining()))
     except SolverModelError as error:
         # A numerically unusable corridor must not discard the existing walk
         # or the validated incumbent. Do not alter or clamp its physical cost.
@@ -264,12 +296,28 @@ def evaluate(problem, pool, design, financial_weight, remaining, interrupted, fi
             solver.changeColsBounds(len(disabled), disabled, np.zeros(len(disabled)), np.zeros(len(disabled)))
     columns = np.arange(len(costs), dtype=np.int32)
     solver.changeColsCost(len(costs), columns, costs)
-    solver.run()
+    if c.speed_up:
+        start = service_start(model, previous)
+        if conventional_only:
+            start = {index: value for index, value in start.items() if index not in disabled}
+        if start:
+            solver.setSolution(len(start), np.asarray(list(start), dtype=np.int32),
+                               np.asarray(list(start.values()), dtype=float))
+    started = time.monotonic()
+    try:
+        solver.run()
+    finally:
+        pool.timings['solving'] += time.monotonic()-started
     solution = solver.getSolution()
+    timed_out = fast and solver.getModelStatus() == highspy.HighsModelStatus.kTimeLimit
     if not solution.value_valid:
+        if timed_out:
+            raise EvaluationTimeout()
         return None
     vector = np.asarray(solution.col_value, dtype=float)
     if not model.validation(vector)['valid'] or not np.allclose(vector[indices], fixed[indices], atol=1e-5, rtol=0):
+        if timed_out:
+            raise EvaluationTimeout()
         return None
     deficit = coverage_deficit(model, vector, c)
     # Match LinearModel.objective: avoid spurious BLAS floating-point flags on
@@ -415,7 +463,7 @@ def repair_origin(problem, pool, design, record, frequencies, excluded=None):
     model, vector = record
     demand, served = {}, {}
     for od in problem.demand:
-        demand[od['origin']] = demand.get(od['origin'], 0)+od['volume']
+        demand[od['origin']] = demand.get(od['origin'], 0)+pool.needs_by_od[od['id']]
     for (od, a, b), index in model.q.items():
         origin = problem.demand[od]['origin']
         served[origin] = served.get(origin, 0)+vector[index]
@@ -446,7 +494,11 @@ def repair_origin(problem, pool, design, record, frequencies, excluded=None):
             stops, ids, f = design[i]
             higher = [other for other in frequencies if other > f]
             capturable = volumes.get((city, problem.locations[b]['city']), 0)*capture[city]*capture[problem.locations[b]['city']]
-            if higher and capturable > f*problem.config.train_seats+1e-6:
+            seats = max((problem.config.seats_per_train(model.lines[line]['train_type'])
+                         for (line, frequency), index in model.z.items()
+                         if vector[index] > .5 and tuple(model.lines[line]['stops']) == tuple(stops)),
+                        default=problem.config.train_seats)
+            if higher and capturable > f*seats+1e-6:
                 proposal = list(design)
                 proposal[i] = stops, ids, higher[0]
                 candidate = canonical(proposal)
@@ -549,7 +601,7 @@ def solve_annealing(problem, state, time_limit, interrupted, checkpoint=None, re
             restored_problem = replace(problem, edges=edges, stations=stations)
             restored = NetworkModel(restored_problem, lines=make_lines(local, edges),
                                     capture_upper_bound=pool.capture_upper_bound, protection=metadata.get('protection'),
-                                    needs_upper_bound=pool.needs_upper_bound)
+                                    needs_upper_bound=pool.needs_upper_bound, needs_by_od=pool.needs_by_od)
             vector = saved['vector'].copy()
             if str(saved['fingerprint']) != restored.fingerprint() or not restored.validation(vector)['valid']:
                 raise ValueError('Checkpoint fails model fingerprint or feasibility validation')
@@ -594,6 +646,7 @@ def solve_annealing(problem, state, time_limit, interrupted, checkpoint=None, re
                                 budget_mode=c.annealing_budget_mode,
                                 elapsed_search_seconds=time.monotonic()-start,
                                 action=action, temperature=temperature, financial_weight=weight,
+                                timing_seconds=dict(pool.timings),
                                 **connectivity(current_record),
                                 connectivity_target=c.annealing_connectivity_target,
                                 coverage_metric=c.annealing_coverage_metric,
@@ -623,7 +676,7 @@ def solve_annealing(problem, state, time_limit, interrupted, checkpoint=None, re
             check()
             if gravity_active and current_record is not None:
                 served = sum(current_record[1][i] for i in current_record[0].q.values())
-                gravity_active = served < c.gravity_heuristic_demand_threshold*pool.capture_upper_bound
+                gravity_active = served < c.gravity_heuristic_demand_threshold*pool.needs_upper_bound
             if gravity_active:
                 pair = next(ranked_pairs, None)
                 if pair is None:
@@ -654,12 +707,7 @@ def solve_annealing(problem, state, time_limit, interrupted, checkpoint=None, re
                 if not pending:
                     stop_reason = 'bounded_cost_neighborhood_exhausted'
                     break
-                if c.speed_up and len(pending) > 10:
-                    sampled = [pending[i] for i in sample_indices(len(pending), 10, rng)]
-                    candidate = pop_cost_candidate(sampled, c.annealing_action_fraction, rng)
-                    pending.remove(candidate)
-                else:
-                    candidate = pop_cost_candidate(pending, c.annealing_action_fraction, rng)
+                candidate = pop_cost_candidate(pending, c.annealing_action_fraction, rng)
                 action = candidate[1]
                 state.update(message=f'{stage.capitalize()}: testing {action}; {len(pending)} cost candidates remain')
                 proposal = materialize(pool, current, candidate)
@@ -667,7 +715,7 @@ def solve_annealing(problem, state, time_limit, interrupted, checkpoint=None, re
                 tested += 1
                 if proposal and proposal != current:
                     result = evaluate(problem, pool, proposal, 1., remaining, interrupted,
-                                      final=True, protection=protection)
+                                      final=True, protection=protection, previous=current_record)
                     if result is not None:
                         record = result[:2]
                         cost = annual_cost(*record)
@@ -689,6 +737,8 @@ def solve_annealing(problem, state, time_limit, interrupted, checkpoint=None, re
             pressure = integration_pressure(coverage, c)
             weight = c.annealing_initial_financial_weight + (1-c.annealing_initial_financial_weight)*coverage_progress
             temperature = c.annealing_start_temperature*(c.annealing_end_temperature/c.annealing_start_temperature)**coverage_progress
+            selection_started = time.monotonic()
+            routing_before = pool.timings['routing']
             if gravity_active:
                 proposal, action = gravity_proposal(problem, pool, current, pair, frequencies), 'gravity_add'
             elif checkpoint and iteration == 0:
@@ -700,6 +750,8 @@ def solve_annealing(problem, state, time_limit, interrupted, checkpoint=None, re
                     action = 'repair_origin'
                 else:
                     proposal, action = propose(problem, pool, current, rng, frequencies, growth=True, stage=stage)
+            pool.timings['selection'] += max(0., time.monotonic()-selection_started
+                                             -(pool.timings['routing']-routing_before))
             state.advance_iteration()
             result = None
             if proposal == current and action != 'resume':
@@ -708,7 +760,14 @@ def solve_annealing(problem, state, time_limit, interrupted, checkpoint=None, re
             if not proposal:
                 new = (0., empty_money, empty_deficit)
             else:
-                result = evaluate(problem, pool, proposal, weight, remaining, interrupted, network_pressure=pressure, conventional_only=gravity_active)
+                try:
+                    result = evaluate(problem, pool, proposal, weight, remaining, interrupted,
+                                      network_pressure=pressure, conventional_only=gravity_active,
+                                      previous=current_record)
+                except EvaluationTimeout:
+                    state.update(message='Exploratory solve timed out without a feasible assignment; proposal unevaluated')
+                    progress_report(temperature, weight, 'evaluation_timeout')
+                    continue
                 if result is None:
                     growth_rejected.add(proposal)
                     progress_report(temperature, weight, action)
@@ -727,7 +786,8 @@ def solve_annealing(problem, state, time_limit, interrupted, checkpoint=None, re
                 for final_design in final_designs:
                     if final_design in final_evaluated:
                         continue
-                    final = evaluate(problem, pool, final_design, 1., remaining, interrupted, final=True, conventional_only=gravity_active)
+                    final = evaluate(problem, pool, final_design, 1., remaining, interrupted,
+                                     final=True, conventional_only=gravity_active, previous=result[:2])
                     if not gravity_active:
                         final_evaluated.add(final_design)
                     if final is not None:
@@ -739,7 +799,7 @@ def solve_annealing(problem, state, time_limit, interrupted, checkpoint=None, re
                         if better_coverage or (same_coverage and final[0].objective(final[1]) < best):
                             publish(final[:2], final_design)
             energy = lambda values, record: growth_energy(values, record, weight, pressure, c,
-                         network_coverage(record, c, pool.capture_upper_bound), pool.capture_upper_bound)
+                         network_coverage(record, c, pool.capture_upper_bound), pool.needs_upper_bound)
             proposed_record = result[:2] if result is not None else None
             delta = energy(new, proposed_record)-energy(components, current_record)
             if gravity_active or delta <= 0 or rng.random() < math.exp(-delta/temperature):

@@ -8,6 +8,7 @@ class ObjectiveRewardTests(unittest.TestCase):
     def test_rewards_population_ridership_and_shorter_waits(self):
         problem = example(weight=0)
         c = problem.config
+        c.population_weight = 1
         c.frequencies_per_hour = [1, 2]
         c.cost_weight = 0
         for city in problem.cities:

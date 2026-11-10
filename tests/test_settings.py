@@ -14,7 +14,7 @@ class SettingsTests(unittest.TestCase):
         defaults, profiles = read_configuration()
         self.assertEqual(set(defaults), {f.name for f in fields(Config)})
         self.assertEqual(asdict(Config()), defaults)
-        self.assertEqual(set(profiles), {'europe', 'exploratory', 'france', 'italy', 'netherlands', 'uk'})
+        self.assertEqual(set(profiles), {'europe', 'exploratory', 'france', 'italy', 'netherlands', 'switzerland', 'uk'})
         for name, overrides in profiles.items():
             with self.subTest(profile=name):
                 config = load_config(profile=name)

@@ -14,7 +14,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib.collections import PolyCollection
-from matplotlib.colors import LogNorm, Normalize
+from matplotlib.colors import LinearSegmentedColormap, LogNorm, Normalize
 from matplotlib.cm import ScalarMappable
 from matplotlib.patches import Circle
 import numpy as np
@@ -120,12 +120,15 @@ def map_figure_size(viewport):
 
 
 def segment_satisfaction(problem, result):
-    """Full OD demand behind each used segment, counting each OD once.
+    """Fixed rail-eligible OD demand behind each used segment, counting each OD once.
 
     Flow records include transfer legs. Sum both travel directions consistently
     in numerator and denominator; unused segments have zero satisfaction.
     """
-    demand = {od['id']: od['volume'] for od in problem.demand}
+    demand = {od['id']: od['rail_eligible_needs'] for od in result.get('od_pairs', [])}
+    if not demand:
+        from .needs import rail_needs_by_od
+        demand = rail_needs_by_od(problem)
     lines = {line['id']: line for line in result.get('lines', [])}
     loads, markets = {}, {}
     for flow in result.get('passenger_flows', []):
@@ -196,10 +199,11 @@ def draw_map(path, config, problem, result, viewport=None, demand_only=False):
             ax.legend(title='Two-way demand', loc='lower left', fontsize=8)
         elif result.get('feasible') or result.get('exploratory'):
             ratios = segment_satisfaction(problem, result) if hasattr(problem, 'demand') else {}
-            cmap, norm = plt.get_cmap('viridis'), Normalize(0, 1)
+            cmap = LinearSegmentedColormap.from_list('rail_satisfaction', ['#b2f2a5', '#00cc33'])
+            norm = Normalize(0, 1)
             ratio_axis = figure.add_axes([0.85, 0.08, 0.025, 0.13])
             figure.colorbar(ScalarMappable(norm=norm, cmap=cmap), cax=ratio_axis,
-                            label='Throughput / demand')
+                            label='Rail-eligible satisfaction')
             for line in result['lines']:
                 frequency = line['frequency_per_hour_per_direction']
                 linestyle = '-' if line.get('train_type', 'CR') == 'HSR' else '--'
@@ -233,7 +237,7 @@ def draw_map(path, config, problem, result, viewport=None, demand_only=False):
     if result.get('feasible') or result.get('exploratory'):
         metrics = result['metrics']
         subtitle += (f"\n{metrics['served_trips_per_hour']:,.0f} trips/h served "
-                     f"({metrics['served_fraction']:.1%}) · {metrics['total_track_km']:.0f} km track · "
+                     f"· {metrics['total_track_km']:.0f} km track · "
                      f"{config.accounting_years}-year profit {metrics['horizon_profit']/1e6:,.1f}M")
         if metrics.get('needs_satisfaction_fraction') is not None:
             subtitle += f"\nRail-eligible passenger needs satisfied: {metrics['needs_satisfaction_fraction']:.1%}"
@@ -256,7 +260,7 @@ def draw_map(path, config, problem, result, viewport=None, demand_only=False):
               if not config.terrain_file or not config.land_file else
               'Scenario estimates; H3 terrain routing is coarse and is not an engineering alignment.')
     footer = ('Width: total two-way demand (trips/hour). Demand is fixed before network selection.' if demand_only else
-              'Color: carried passengers / full OD demand using each segment (including transfers).\n'
+              'Color: carried passengers / fixed rail-eligible OD needs using each segment (including transfers).\n'
               'Solid: high-speed · Dashed: conventional · Width: trains/hour/direction\n'
               'White dots: stations · Dashed green circles: catchments')
     figure.supxlabel(footer, fontsize=8)
@@ -552,7 +556,7 @@ class Reporter:
                                            candidate_lines=len(model.lines), potential_trips_per_hour=model.total_demand,
                                            capture_upper_bound_trips_per_hour=model.capture_upper_bound,
                                            rail_eligible_needs_per_hour=model.needs_upper_bound,
-                                           minimum_required_trips_per_hour=self.config.minimum_served_fraction*model.total_demand)
+                                           minimum_required_trips_per_hour=self.config.minimum_served_fraction*model.needs_upper_bound)
         atomic_text(self.output/'latest.geojson', json.dumps(clean(network_geojson(result)), allow_nan=False))
         station_rows = [dict(s, longitude=s['coordinate'][0], latitude=s['coordinate'][1]) for s in result.get('stations', [])]
         station_temp = self.output/'latest_stations.csv.tmp'

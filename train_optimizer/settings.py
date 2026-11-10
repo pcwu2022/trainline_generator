@@ -112,7 +112,7 @@ class Config:
     maximum_alignment_variants_per_line: int # Fastest, cheapest and mixed physical alignments.
     frequencies_per_hour: list
     track_trains_per_hour_per_direction: int
-    train_seats: int
+    train_seats: int # CR seats per train; HSR carries twice this number.
     train_speed_kmh: float
     train_types: list
     hsr_capex_ratio: float
@@ -162,12 +162,12 @@ class Config:
     maximum_annual_subsidy: float # Zero disables the hard lifecycle annual-equivalent subsidy ceiling.
 
     # Minimum service requirements
-    # Require minimum served shares of fixed potential demand, globally and per
+    # Require minimum satisfied shares of fixed rail-eligible needs, globally and per
     # origin. The global target must be positive; zero disables the per-origin target.
-    minimum_served_fraction: float
-    minimum_origin_served_fraction: float
+    minimum_served_fraction: float # Minimum completed trips / fixed rail-eligible needs.
+    minimum_origin_served_fraction: float # Fraction of fixed rail-eligible origin needs.
     minimum_city_served_fraction: float # Fraction of candidate markets with operating service.
-    minimum_selected_origin_served_fraction: float # Fixed origin demand share, conditional on a station.
+    minimum_selected_origin_served_fraction: float # Fixed rail-eligible origin need share, conditional on a station.
     minimum_service_frequency: int # Minimum frequency of each selected line, per direction.
 
     # Objective weights
@@ -216,6 +216,9 @@ class Config:
     demand_map_top_percent: float # Strongest undirected city pairs; always omit at least one pair.
     demand_map_min_trips_per_hour: float
     gif_frame_ms: int
+
+    def seats_per_train(self, train_type='CR'):
+        return self.train_seats * (2 if train_type == 'HSR' else 1)
 
     @classmethod
     def from_dict(cls, data):

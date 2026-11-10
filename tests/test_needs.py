@@ -12,6 +12,7 @@ from train_optimizer.outputs import LiveState
 class PassengerNeedsTests(unittest.TestCase):
     def test_default_metric_is_needs(self):
         self.assertEqual(Config().annealing_coverage_metric, 'needs')
+        self.assertEqual(Config().population_weight, 0)
 
     def test_full_station_coverage_does_not_mean_passenger_needs_are_satisfied(self):
         p = problem()
@@ -64,6 +65,36 @@ class PassengerNeedsTests(unittest.TestCase):
         floors = service_protection(*before[:2], p.config)
         floors.update(coverage_metric='needs', minimum_coverage=.75, coverage_denominator=pool.needs_upper_bound)
         self.assertIsNone(evaluate(p, pool, (((0, 1), (0,), 1),), 1, lambda: 5, threading.Event(), final=True, protection=floors))
+
+    def test_service_floors_use_eligible_needs_instead_of_full_demand(self):
+        p = problem()
+        p.stations[0]['capture_fraction'] = .5
+        p.stations[1]['capture_fraction'] = .4
+        p.config.minimum_served_fraction = 1
+        p.config.minimum_origin_served_fraction = 1
+        p.config.minimum_selected_origin_served_fraction = 1
+        pool = RoutePool(p)
+        result = evaluate(p, pool, (((0, 1), (0,), 1),), 1, lambda: 5,
+                          threading.Event(), final=True)
+        self.assertIsNotNone(result)
+        model, vector = result[:2]
+        report = model.describe(vector)
+        self.assertAlmostEqual(report['metrics']['needs_satisfaction_fraction'], 1)
+        self.assertAlmostEqual(report['metrics']['served_trips_per_hour'], 20)
+        self.assertNotIn('served_fraction', report['metrics'])
+        self.assertEqual(report['od_pairs'][0]['rail_eligible_needs'], 20)
+        self.assertEqual(report['od_pairs'][0]['unmet'], 0)
+
+    def test_eligible_needs_are_reused_during_proposal_evaluation(self):
+        from unittest.mock import patch
+        p = problem()
+        pool = RoutePool(p)
+        with patch('train_optimizer.model.rail_needs_by_od',
+                   side_effect=AssertionError('Must reuse the regional cache')):
+            result = evaluate(p, pool, (((0, 1), (0,), 1),), 1,
+                              lambda: 5, threading.Event())
+        self.assertIsNotNone(result)
+        self.assertIs(result[0].needs_by_od, pool.needs_by_od)
 
     def test_no_eligible_needs_does_not_enter_an_endless_goal_loop(self):
         p = problem()

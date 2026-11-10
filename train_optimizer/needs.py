@@ -2,7 +2,7 @@
 from .geography import haversine
 
 
-def rail_need_bound(problem):
+def rail_needs_by_od(problem):
     """Optimistic capturable trips that could satisfy best-case journey limits.
 
     No built track or chosen service enters this calculation. Capacity and actual
@@ -12,14 +12,14 @@ def rail_need_bound(problem):
     frequencies = [f for f in c.frequencies_per_hour
                    if c.minimum_service_frequency <= f <= c.track_trains_per_hour_per_direction]
     if not frequencies:
-        return 0.
+        return {od["id"]: 0. for od in problem.demand}
     speed = c.train_speed_kmh*(c.hsr_speed_ratio if 'HSR' in c.train_types else 1)
     maximum_frequency = max(frequencies)
     minimum_frequency = min(f for f in c.frequencies_per_hour if f >= c.minimum_service_frequency)
     stations = {}
     for station in problem.stations:
         stations.setdefault(station['city'], []).append(station)
-    total = 0.
+    needs = {}
     for od in problem.demand:
         capture = 0.
         for a in stations.get(od['origin'], []):
@@ -36,5 +36,9 @@ def rail_need_bound(problem):
                                 +c.maximum_journey_detour_ratio*od['km']/c.train_speed_kmh)
                 if optimistic_time <= limit+1e-9:
                     capture = max(capture, a['capture_fraction']*b['capture_fraction'])
-        total += od['volume']*capture
-    return float(total)
+        needs[od['id']] = float(od['volume']*capture)
+    return needs
+
+
+def rail_need_bound(problem):
+    return sum(rail_needs_by_od(problem).values())

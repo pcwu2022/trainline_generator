@@ -36,7 +36,7 @@ class HeuristicTests(unittest.TestCase):
         self.assertTrue(model.validation(vector)['valid'])
         result = model.describe(vector)
         self.assertEqual(result['metrics']['served_cities'], 2)
-        self.assertGreaterEqual(result['metrics']['served_fraction'], .1)
+        self.assertGreaterEqual(result['metrics']['needs_satisfaction_fraction'], .1)
         second_model, second_vector, _ = self.run_search(p)
         self.assertAlmostEqual(model.objective(vector), second_model.objective(second_vector))
 

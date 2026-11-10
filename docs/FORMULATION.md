@@ -420,10 +420,11 @@ initial CAPEX only. Land and asset subcomponents are not yet separated.
 ## 10. Objective, constraints and solve
 
 Let S be total served trips/hour, T total served passenger-hours/hour, and
-Q_total the fixed potential demand. Define a fixed optimistic capture bound:
+N_needs the fixed rail-eligible demand after capture, uptake and best-case
+journey filtering (see ALGORITHM.md). Define:
 
 ```text
-B = max(1, sum(ij, Q_ij * max_capture_i * max_capture_j))
+B = max(1, N_needs)
 ```
 
 The implemented weighted objective is:
@@ -442,7 +443,7 @@ minimize -served_weight * S / B
 The served term is equivalent to minimizing unmet demand up to a fixed constant.
 Population coverage counts residents in exclusive market zones within operating
 stations' catchments, before uptake. It rewards absolute population, not density
-alone. Defaults are population_weight=1, served_weight=10, time_weight=0.5,
+alone. Defaults are population_weight=0, served_weight=10, time_weight=0.5,
 access_weight=0.05, cost_weight=0.001 and profit_shortfall_weight=0.25.
 All else equal, saving an hour on twenty existing passenger trips offsets the
 ridership reward for one additional trip. Journey time includes access, waiting,
@@ -456,10 +457,10 @@ directed segment capacity, track throughput, optional connectivity,
 OD-average journey limits, optional upfront budget, and:
 
 ```text
-S >= minimum_served_fraction * Q_total
-served_from_i >= minimum_origin_served_fraction * potential_from_i
+S >= minimum_served_fraction * N_needs
+served_from_i >= minimum_origin_served_fraction * eligible_needs_from_i
 sum(selected_city_i) >= ceil(minimum_city_served_fraction * number_of_cities)
-served_from_i >= minimum_selected_origin_served_fraction * potential_from_i * selected_city_i
+served_from_i >= minimum_selected_origin_served_fraction * eligible_needs_from_i * selected_city_i
 ```
 
 Only frequencies at or above `minimum_service_frequency` are generated. Each
@@ -468,7 +469,7 @@ positive, caps lifecycle equivalent annual cost minus annual fare revenue;
 unlike the soft profit target it cannot be relaxed by financial slack.
 
 The global served fraction defaults to 0.001; the per-origin fraction defaults
-to zero. Both refer to fixed potential demand, including failed access/uptake.
+to zero. Both refer to fixed rail-eligible needs, including currently unserved markets.
 The positive global target excludes an empty profitable network.
 
 HiGHS solves the MILP with a configurable time limit and relative gap.

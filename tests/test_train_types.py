@@ -10,6 +10,20 @@ from train_optimizer.outputs import LiveState
 
 
 class TrainTypeTests(unittest.TestCase):
+    def test_capacity_depends_on_train_type(self):
+        self.assertEqual(Config().seats_per_train('CR'), 400)
+        self.assertEqual(Config().seats_per_train('HSR'), 800)
+        for train_type, capacity in [('CR', 400), ('HSR', 800)]:
+            with self.subTest(train_type=train_type):
+                p = self.make_problem()
+                p.config.train_types = [train_type]
+                p.config.train_seats = 400
+                p.config.frequencies_per_hour = [1]
+                p.demand[0]['volume'] = 1000
+                _, _, result = self.solve(p)
+                self.assertAlmostEqual(result['metrics']['served_trips_per_hour'], capacity)
+                self.assertEqual(result['lines'][0]['capacity_per_direction_per_hour'], capacity)
+
     def make_problem(self):
         p = problem()
         p.config.train_types = ['CR', 'HSR']

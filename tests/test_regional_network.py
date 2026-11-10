@@ -23,7 +23,7 @@ class RegionalNetworkTests(unittest.TestCase):
         self.assertEqual(solver.modelStatusToString(solver.getModelStatus()), 'Optimal')
         result = model.describe(solver.getSolution().col_value)
         self.assertEqual(result['metrics']['served_cities'], 2)
-        self.assertGreaterEqual(result['metrics']['served_fraction'], 0.1 - 1e-8)
+        self.assertGreaterEqual(result['metrics']['needs_satisfaction_fraction'], 0.1 - 1e-8)
         self.assertLessEqual(result['metrics']['served_trips_per_hour'], 100)
 
     def test_subsidy_ceiling_is_hard_even_with_profit_slack(self):

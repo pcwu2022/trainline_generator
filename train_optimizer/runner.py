@@ -88,7 +88,7 @@ def solve(model, state, time_limit, interrupted, checkpoint=None, reporter=None)
 def main(argv=None):
     parser = argparse.ArgumentParser(description='Optimize stations, corridors, all-stop services and passenger flows.')
     parser.add_argument('--config', default=str(DEFAULT_CONFIG_PATH), help='Optional external JSON overrides')
-    parser.add_argument('--profile', help='Named profile from config.json (europe, exploratory, france, italy, netherlands, uk)')
+    parser.add_argument('--profile', help='Named profile from config.json (europe, exploratory, france, italy, netherlands, switzerland, uk)')
     parser.add_argument('--output', help='Output directory (default: runs/<profile>, or runs/netherlands without a profile)')
     parser.add_argument('--solver', choices=['annealing', 'heuristic', 'milp'], help='Override solver_method')
     parser.add_argument('--time-limit', type=float, default=None, help='Total search seconds; selects bounded annealing unless --budget-mode goals is given')
@@ -100,7 +100,7 @@ def main(argv=None):
                         help='Playback duration per GIF frame, in multiples of 10 ms (default: 500)')
     parser.add_argument('--gravity-heuristic', action='store_true', help='Seed conventional rail in descending gravitational-pull order')
     parser.add_argument('--gravity-demand-threshold', type=float, help='Gravity phase: served share of capturable demand (default: 0.75)')
-    parser.add_argument('--speed-up', action='store_true', help='Sample at most 10 regional pairs and cost candidates per selection')
+    parser.add_argument('--speed-up', action='store_true', help='Limit exploratory solves to 2 seconds and a 5%% gap; preserve candidate search and final accuracy')
     restart = parser.add_mutually_exclusive_group()
     restart.add_argument('--resume', help='Compatible checkpoint.npz to use as an incumbent warm start')
     restart.add_argument('--overwrite', action='store_true',
