@@ -19,16 +19,22 @@ solved by HiGHS.
    of that demand can use rail.
 4. **Create track and service choices.** Connect nearby candidate locations,
    estimate construction costs from population density and available terrain,
+   retain a direct geodesic and a cheaper any-angle terrain detour when found,
    and generate two-stop and selected multi-stop all-stop lines. Each line has
    discrete frequency choices and a calculated train fleet.
+   The solver compares alignment variants using actual cost and journey length;
+   through lines can mix direct and detouring segments and share physical tracks.
 5. **Choose a network and assign passengers together.** The solver selects
    stations, tracks, lines and frequencies, and routes passengers through them.
    Passengers may transfer; each train segment has a capacity limit.
 6. **Enforce operating requirements.** Allow at most one station option per city,
-   prevent overlapping station catchments, require stations and tracks for each
+   allow overlapping catchments with exclusive population zones, require stations and tracks for each
    service, enforce passenger flow balance, track throughput, average journey
    limits and minimum service targets. Require a connected network when enabled.
    An optional upfront capital budget remains a hard limit.
+   The Netherlands scenario requires 75% of markets, 10% of regional demand,
+   5% of each selected origin's demand, and at least two trains/hour/direction
+   on every selected line. An optional annual-equivalent subsidy ceiling is hard.
 7. **Balance benefits, costs and profitability.** Minimize a weighted sum of
    unserved demand (equivalently, reward served trips), passenger journey time,
    station access penalties, annual-equivalent costs and profit-target shortfall.

@@ -68,6 +68,9 @@
 
   "maximum_line_stops": 3,
   "maximum_extra_lines": 40,
+  "maximum_shared_track_lines": 40,
+  "maximum_shared_track_detour": 1.35,
+  "maximum_alignment_variants_per_line": 16,
   "frequencies_per_hour": [
     1,
     2,
@@ -88,6 +91,7 @@
 
   "base_track_cost_per_km": 10000000,
   "urban_cost_coefficient": 5000,
+  "urban_density_threshold": 5000,
   "station_capital_cost": 10000000,
   "station_annual_cost": 400000,
   "train_capital_cost": 5000000,
@@ -108,12 +112,13 @@
   "minimum_served_fraction": 0.001,
   "minimum_origin_served_fraction": 0,
 
-  "served_weight": 1,
-  "time_weight": 0.05,
+  "population_weight": 1,
+  "served_weight": 10,
+  "time_weight": 0.5,
   "center_weight": 0,
-  "access_weight": 0.01,
+  "access_weight": 0.05,
   "cost_weight": 0.001,
-  "profit_shortfall_weight": 1,
+  "profit_shortfall_weight": 0.25,
 
   "solver_time_limit": 120,
   "mip_relative_gap": 0.01,

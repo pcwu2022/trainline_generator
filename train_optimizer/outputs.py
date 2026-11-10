@@ -133,9 +133,6 @@ def draw_map(path, config, problem, result, viewport=None):
                 frequency = line['frequency_per_hour_per_direction']
                 color = palette[line_number % len(palette)]
                 ax.plot(xy[:, 0], xy[:, 1], color=color, linewidth=1.7+frequency*0.6, zorder=4)
-                middle = xy[len(xy)//2]
-                ax.annotate(f'L{line["id"]}: {frequency}/h', middle, fontsize=8, color=color,
-                            bbox=dict(facecolor='white', alpha=0.8, edgecolor='none', pad=1), zorder=6)
             for station in result['stations']:
                 xy = project([station['coordinate']])[0]
                 ax.add_patch(Circle(xy, station['radius_km'], fill=False, color='#217c55',

@@ -8,10 +8,10 @@ from pathlib import Path
 
 import h3
 import numpy as np
-from pyproj import Transformer
+from pyproj import Transformer, Geod
 from scipy.spatial import cKDTree
 from scipy.optimize import minimize
-from shapely.geometry import Point, shape
+from shapely.geometry import Point, LineString, shape
 from shapely.ops import unary_union
 from shapely.prepared import prep
 
@@ -105,56 +105,89 @@ class Router:
         if terrain.get('terrain_class'):
             low, high = c.terrain_cost_ranges_million[terrain['terrain_class']]
             baseline = max(baseline, (low + c.terrain_cost_position * (high-low)) * 1_000_000)
-        return (baseline + c.urban_cost_coefficient * density) * terrain.get('multiplier', 1)
+        return (baseline + c.urban_cost_coefficient * max(0, density - c.urban_density_threshold)) * terrain.get('multiplier', 1)
 
-    def route(self, a, b):
-        c = self.config
-        if not c.terrain_file and not c.land_file:
-            count = max(2, math.ceil(haversine(a, b) / c.routing_sample_km) + 1)
-            geometry = np.linspace(a, b, count).tolist()
-        else:
-            start, end = [h3.latlng_to_cell(p[1], p[0], self.resolution) for p in (a, b)]
-            if not self.allowed(start) or not self.allowed(end):
+    def alignment(self, points):
+        """Integrate costs along geodesic segments, rather than grid directions."""
+        geod = Geod(ellps='WGS84')
+        spacing = min(self.config.routing_sample_km,
+                      h3.average_hexagon_edge_length(self.resolution, unit='km') / 3)
+        geometry, length, cost = [], 0.0, 0.0
+        for a, b in zip(points, points[1:]):
+            km = geod.inv(*a, *b)[2] / 1000
+            count = max(1, math.ceil(km / spacing))
+            samples = [list(a)] + (geod.npts(*a, *b, count-1) if count > 1 else []) + [list(b)]
+            if self.land is not None and not self.land.covers(LineString(samples)):
                 return None
-            queue = [(0, start)]
-            distance, previous = {start: 0}, {}
-            visited = set()
-            while queue and len(visited) < c.terrain_search_limit:
-                _, current = heapq.heappop(queue)
-                if current in visited:
+            for point in samples:
+                if not self.allowed(h3.latlng_to_cell(point[1], point[0], self.resolution)):
+                    return None
+            for x, y in zip(samples, samples[1:]):
+                segment_km = geod.inv(*x, *y)[2] / 1000
+                midpoint = geod.npts(*x, *y, 1)[0] if segment_km > 0 else x
+                cell = h3.latlng_to_cell(midpoint[1], midpoint[0], self.resolution)
+                if not self.allowed(cell):
+                    return None
+                length += segment_km
+                cost += segment_km * self.cost(cell)
+            geometry.extend(samples if not geometry else samples[1:])
+        return dict(km=length, track_capital=cost, geometry=geometry)
+
+    def routes(self, a, b):
+        """Direct plus a weighted Theta* any-angle construction-cost alternative."""
+        direct = self.alignment([a, b])
+        candidates = [dict(direct, alignment_kind='direct')] if direct else []
+        start, end = [h3.latlng_to_cell(p[1], p[0], self.resolution) for p in (a, b)]
+        if not self.allowed(start) or not self.allowed(end) or start == end:
+            return candidates
+        def coordinate(cell):
+            if cell == start:
+                return a
+            if cell == end:
+                return b
+            lat, lon = h3.cell_to_latlng(cell)
+            return (lon, lat)
+        cache = {}
+        def segment(u, v):
+            key = tuple(sorted((u, v)))
+            if key not in cache:
+                result = self.alignment([coordinate(u), coordinate(v)])
+                cache[key] = result['track_capital'] if result else math.inf
+            return cache[key]
+        queue, distance, previous, visited = [(0, start)], {start: 0}, {start: start}, set()
+        while queue and len(visited) < self.config.terrain_search_limit:
+            _, current = heapq.heappop(queue)
+            if current in visited:
+                continue
+            visited.add(current)
+            if current == end:
+                break
+            for neighbor in sorted(h3.grid_disk(current, 1)):
+                if neighbor == current or neighbor in visited or not self.allowed(neighbor):
                     continue
-                visited.add(current)
-                if current == end:
-                    break
-                lat, lon = h3.cell_to_latlng(current)
-                for neighbor in h3.grid_disk(current, 1):
-                    if neighbor == current or neighbor in visited or not self.allowed(neighbor):
-                        continue
-                    nlat, nlon = h3.cell_to_latlng(neighbor)
-                    w = haversine((lon, lat), (nlon, nlat)) * (self.cost(current) + self.cost(neighbor)) / 2
-                    trial = distance[current] + w
-                    if trial < distance.get(neighbor, math.inf):
-                        distance[neighbor] = trial
-                        previous[neighbor] = current
-                        heuristic = haversine((nlon, nlat), b) * c.base_track_cost_per_km
-                        heapq.heappush(queue, (trial + heuristic, neighbor))
-            if end not in visited:
-                return None
+                # Compare both: a visible parent shortcut can cross costly land.
+                options = [(distance[current] + segment(current, neighbor), current)]
+                parent = previous[current]
+                if parent != current:
+                    options.append((distance[parent] + segment(parent, neighbor), parent))
+                trial, predecessor = min(options)
+                if trial < distance.get(neighbor, math.inf):
+                    distance[neighbor], previous[neighbor] = trial, predecessor
+                    heuristic = haversine(coordinate(neighbor), b) * self.config.base_track_cost_per_km * .99
+                    heapq.heappush(queue, (trial + heuristic, neighbor))
+        if end in visited:
             path = [end]
             while path[-1] != start:
                 path.append(previous[path[-1]])
-            middle = [[h3.cell_to_latlng(x)[1], h3.cell_to_latlng(x)[0]] for x in reversed(path)]
-            geometry = [list(a)] + middle + [list(b)]
-        length = cost = 0
-        for x, y in zip(geometry, geometry[1:]):
-            km = haversine(x, y)
-            midpoint = [(x[i]+y[i])/2 for i in (0, 1)]
-            cell = h3.latlng_to_cell(midpoint[1], midpoint[0], self.resolution)
-            if not self.allowed(cell):
-                return None
-            length += km
-            cost += km * self.cost(cell)
-        return dict(km=length, track_capital=cost, geometry=geometry)
+            alternative = self.alignment([coordinate(node) for node in reversed(path)])
+            if alternative and (not direct or
+                    alternative['track_capital'] < direct['track_capital'] - 1):
+                candidates.append(dict(alternative, alignment_kind='terrain_any_angle'))
+        return candidates
+
+    def route(self, a, b):
+        """Compatibility helper returning the cheapest generated alignment."""
+        return min(self.routes(a, b), key=lambda route: route['track_capital'], default=None)
 
 
 def prepare(config, progress=lambda message: None, publish=lambda problem: None):
@@ -167,6 +200,7 @@ def prepare(config, progress=lambda message: None, publish=lambda problem: None)
         'Population seeds and demand are clipped by bbox; countries is legacy metadata and does not filter geography.',
         'Access uses fixed nearest-city origin zones; cross-zone access to another city station is excluded.',
         'Line patterns are a finite set of all-stop services; optimality is relative to these candidates.',
+        'Direct geodesic and finite any-angle terrain alternatives use sampled costs; sub-sample obstacles may be missed.',
         'Hourly steady-state demand/capacity model; not a timetable or queue guarantee.',
         'The 06:00–22:00 window constrains departures; late arrivals may be after closing.',
         'Geometric crossing corridors are separate tracks unless sharing the same candidate edge.',
@@ -301,9 +335,9 @@ def prepare(config, progress=lambda message: None, publish=lambda problem: None)
     for i, j in sorted(pairs):
         for a, b in itertools.product([l for l in locations if l['city'] == i and l['id'] in live_locations],
                                       [l for l in locations if l['city'] == j and l['id'] in live_locations]):
-            route = router.route(a['coordinate'], b['coordinate'])
-            if route and 0 < route['km'] <= config.maximum_edge_km:
-                edges.append(dict(id=len(edges), a=a['id'], b=b['id'], **route))
+            for route in router.routes(a['coordinate'], b['coordinate']):
+                if 0 < route['km'] <= config.maximum_edge_km:
+                    edges.append(dict(id=len(edges), a=a['id'], b=b['id'], **route))
         progress(f'Routed candidate market pair {i+1}–{j+1}')
     demand = []
     for i, origin in enumerate(cities):

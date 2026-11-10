@@ -60,6 +60,6 @@ class TerrainCostMap:
         if terrain != 'normal':
             low, high = c.terrain_cost_ranges_million[terrain]
             baseline = max(baseline, (low + c.terrain_cost_position * (high-low)) * 1_000_000)
-        return baseline + c.urban_cost_coefficient * density
+        return baseline + c.urban_cost_coefficient * max(0, density - c.urban_density_threshold)
 
     __call__ = cost_per_km

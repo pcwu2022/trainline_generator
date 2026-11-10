@@ -23,6 +23,11 @@ def cost_breakdown_log(result):
     amount('Total annual operating cost', m['annual_operating_cost'])
     amount('Annual fare revenue', m['annual_revenue'])
     amount('Annual operating surplus', m['annual_revenue'] - m['annual_operating_cost'])
+    amount('Lifecycle equivalent annual subsidy', m['equivalent_annual_subsidy'])
+    rows.append(f"Fare recovery ratio (revenue / operating cost): {m['fare_recovery_ratio']}")
+    rows.append(f"Served markets: {m['served_cities']} / {m['candidate_cities']}")
+    if m['subsidy_per_passenger'] is not None:
+        amount('Lifecycle subsidy per passenger trip', m['subsidy_per_passenger'])
     rows += ['', f"UNDISCOUNTED {c['accounting_years']}-YEAR ACCOUNTING (initial capital + operations)"]
     amount('Revenue', m['horizon_revenue'])
     amount('Cost', m['horizon_cost'])
@@ -42,7 +47,7 @@ def cost_breakdown_log(result):
     rows.append(f"Shortfall objective penalty (dimensionless, not a cash cost): {m['profit_shortfall_penalty']:.9g}")
     rows += ['', 'SELECTED ASSETS']
     for track in result['tracks']:
-        amount(f"Track {track['id']} ({track['km']:.2f} km), capital", track['capital_cost'])
+        amount(f"Track {track['id']} ({track['km']:.2f} km, {track.get('alignment_kind', 'legacy')}), capital", track['capital_cost'])
     for station in result['stations']:
         amount(f"Station {station['id']} ({station['name']}), capital", c['station_capital_cost'])
     for line in result['lines']:

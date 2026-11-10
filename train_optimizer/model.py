@@ -97,6 +97,27 @@ class NetworkModel(LinearModel):
         c = problem.config
         self.x, self.y, self.z, self.q, self.flow = {}, {}, {}, {}, {}
         self.lines = generate_lines(problem)
+        required_cities = math.ceil(c.minimum_city_served_fraction * len(problem.cities) - 1e-10)
+        if c.require_connected_network and required_cities:
+            adjacency = {loc['id']: set() for loc in problem.locations}
+            for edge in problem.edges:
+                adjacency[edge['a']].add(edge['b'])
+                adjacency[edge['b']].add(edge['a'])
+            unseen, largest = set(adjacency), 0
+            while unseen:
+                pending, component = [next(iter(unseen))], set()
+                while pending:
+                    node = pending.pop()
+                    if node in component:
+                        continue
+                    component.add(node)
+                    pending.extend(adjacency[node] - component)
+                unseen.difference_update(component)
+                largest = max(largest, len({problem.locations[node]['city'] for node in component}))
+            if largest < required_cities:
+                raise ValueError(f'Connected coverage requires {required_cities} markets, but the largest '
+                                 f'candidate track component contains only {largest}; expand candidate '
+                                 'corridors (neighbors_per_city / maximum_edge_km) or revise the study region')
         station_counts = {city['id']: sum(s['city'] == city['id'] for s in problem.stations) for city in problem.cities}
         estimate = (1 + len(problem.demand) * len(c.frequencies_per_hour)
                     * sum(len(line['stops'])*(len(line['stops'])-1) for line in self.lines)
@@ -118,6 +139,7 @@ class NetworkModel(LinearModel):
         # rather than by millions of inaccessible potential trips. Otherwise small
         # center-location penalties can overwhelm all achievable rider benefit.
         normalization = max(1, self.capture_upper_bound)
+        self.population_normalization = max(1, sum(city.get('population', 0) for city in problem.cities))
         self.by_city = {city['id']: [] for city in problem.cities}
         self.by_location = {loc['id']: [] for loc in problem.locations}
         self.incident = {loc['id']: [] for loc in problem.locations}
@@ -125,7 +147,8 @@ class NetworkModel(LinearModel):
             loc = problem.locations[station['location']]
             index = self.var(f'station_{station["id"]}',
                              cost=(c.center_weight * loc['center_offset_km'] / max(1, c.station_offset_km)
-                                   + c.access_weight * (station.get('access_multiplier', 1) - 1)) / len(problem.cities),
+                                   + c.access_weight * (station.get('access_multiplier', 1) - 1)) / len(problem.cities)
+                                  - c.population_weight * station.get('covered_population', 0) / self.population_normalization,
                              upper=1, integer=True)
             self.x[station['id']] = index
             self.by_city[station['city']].append(station['id'])
@@ -135,16 +158,10 @@ class NetworkModel(LinearModel):
             self.operating[index] = c.station_annual_cost
         for city, options in self.by_city.items():
             self.row({self.x[s]: 1 for s in options}, upper=1)
-        # Circles are mutually exclusive. Hence overlapping demand is never counted
-        # twice, and the larger-station tie rule is unnecessary for selected sites.
-        for i, a in enumerate(problem.stations):
-            for b in problem.stations[i+1:]:
-                if a['city'] == b['city']:
-                    continue
-                distance = np.linalg.norm(np.array(problem.locations[a['location']]['xy'])
-                                          - problem.locations[b['location']]['xy'])
-                if distance < a['radius_km'] + b['radius_km']:
-                    self.row({self.x[a['id']]: 1, self.x[b['id']]: 1}, upper=1)
+        # Population belongs to disjoint fixed market zones. One station per
+        # market therefore prevents duplicate capture even when circles overlap.
+        self.row({index: 1 for index in self.x.values()},
+                 lower=required_cities)
         for edge in problem.edges:
             index = self.var(f'track_{edge["id"]}', upper=1, integer=True)
             self.y[edge['id']] = index
@@ -153,12 +170,14 @@ class NetworkModel(LinearModel):
             self.operating[index] = c.maintenance_fraction * edge['track_capital']
         track_services = {edge['id']: {} for edge in problem.edges}
         track_options = {edge['id']: {} for edge in problem.edges}
+        service_patterns = {}
         for line in self.lines:
             choices = {}
-            for frequency in sorted(c.frequencies_per_hour):
+            for frequency in sorted(f for f in c.frequencies_per_hour if f >= c.minimum_service_frequency):
                 index = self.var(f'line_{line["id"]}_f{frequency}', upper=1, integer=True)
                 self.z[line['id'], frequency] = index
                 choices[index] = 1
+                service_patterns.setdefault(tuple(line['stops']), {})[index] = 1
                 runtime = line['km'] / c.train_speed_kmh + (len(line['stops'])-2)*c.dwell_minutes/60
                 fleet = max(1, math.ceil(2 * (runtime + c.turnaround_minutes/60) * frequency - 1e-10))
                 capex = fleet * c.train_capital_cost
@@ -180,6 +199,10 @@ class NetworkModel(LinearModel):
                         add(terms, self.x[s], -1)
                     self.row(terms, upper=0)
             self.row(choices, upper=1)
+        # An alignment variant is a choice for a service, not a second service
+        # frequency tier. Distinct stop patterns may share the selected edges.
+        for terms in service_patterns.values():
+            self.row(terms, upper=1)
         for edge_id, terms in track_services.items():
             self.row(terms, upper=c.track_trains_per_hour_per_direction)
             used = dict(track_options[edge_id])
@@ -221,7 +244,7 @@ class NetworkModel(LinearModel):
                     self.cost[index] = (-c.served_weight + c.time_weight*self.time[index]) / normalization
             self.row(served, upper=od['volume'])
             for line in self.lines:
-                for frequency in sorted(c.frequencies_per_hour):
+                for frequency in sorted(f for f in c.frequencies_per_hour if f >= c.minimum_service_frequency):
                     # A ride can board and alight at any ordered stop pair on
                     # this line. Staying aboard incurs no extra waiting/transfer.
                     for board in range(len(line['stops'])):
@@ -254,15 +277,22 @@ class NetworkModel(LinearModel):
             origin_demand = sum(d['volume'] for d in problem.demand if d['origin'] == city)
             if origin_demand:
                 self.row(terms, lower=c.minimum_origin_served_fraction*origin_demand)
+                selected_terms = dict(terms)
+                for station in self.by_city[city]:
+                    add(selected_terms, self.x[station],
+                        -c.minimum_selected_origin_served_fraction * origin_demand)
+                self.row(selected_terms, lower=0)
         # Thousands of currency units keep a small positive profit floor meaningful
         # at the solver's feasibility tolerance while scaling down capital values.
         self.appraisal_annuity = annuity_factor(c.appraisal_years, c.discount_rate)
         financial = {index: value / 1000 for index, value in self.revenue.items()}
+        subsidy = {index: -value / 1000 for index, value in self.revenue.items()}
         for index in self.capital:
             factor = asset_pv_factor(c.asset_lives_years[self.asset_kind[index]],
                                      c.appraisal_years, c.discount_rate)
             annual_equivalent = self.capital[index] * factor / self.appraisal_annuity + self.operating[index]
             financial[index] = -(1 + c.financial_margin) * annual_equivalent / 1000
+            subsidy[index] = annual_equivalent / 1000
             self.cost[index] += c.cost_weight * annual_equivalent / 1e8
         # Annual shortfall in thousands of euros relaxes the profitability target.
         self.profit_shortfall = self.var('profit_shortfall', cost=c.profit_shortfall_weight / 1e5)
@@ -270,6 +300,8 @@ class NetworkModel(LinearModel):
         self.row(financial, lower=c.minimum_horizon_profit/self.appraisal_annuity/1000)
         if c.upfront_budget:
             self.row({i: value/1e6 for i, value in self.capital.items()}, upper=c.upfront_budget/1e6)
+        if c.maximum_annual_subsidy:
+            self.row(subsidy, upper=c.maximum_annual_subsidy/1000)
         self.finalize()
 
     def _connectivity(self):
@@ -380,6 +412,13 @@ class NetworkModel(LinearModel):
                         outside_access_or_uptake_trips_per_hour=max(0, self.total_demand-accessible),
                         served_fraction_of_accessible_demand=served/accessible if accessible else None,
                         served_fraction=served/self.total_demand,
+                        covered_population=sum(s.get('covered_population', 0) for s in stations),
+                        covered_population_fraction=sum(s.get('covered_population', 0) for s in stations)/self.population_normalization,
+                        served_cities=len(stations), candidate_cities=len(p.cities),
+                        served_city_fraction=len(stations)/len(p.cities),
+                        fare_recovery_ratio=revenue/opex if opex else None,
+                        equivalent_annual_subsidy=max(0, -lifecycle['equivalent_annual_net_value']),
+                        subsidy_per_passenger=max(0, -lifecycle['equivalent_annual_net_value'])/(served*c.annual_hours) if served else None,
                         passenger_hours_per_hour=time, mean_journey_hours=time/served if served else None,
                         total_track_km=sum(track['km'] for track in tracks),
                         fleet_trainsets=sum(line['fleet'] for line in lines),

@@ -38,10 +38,10 @@ def gravity(pop_a, pop_b, distance, scale, distance_floor=1.0, beta=2.0):
     return scale * pop_a * pop_b / max(distance, distance_floor) ** beta
 
 
-def urban_cost_per_km(density, base_cost, urban_coefficient):
+def urban_cost_per_km(density, base_cost, urban_coefficient, density_threshold=5000):
     nonnegative(density=density, base_cost=base_cost,
-                urban_coefficient=urban_coefficient)
-    return base_cost + urban_coefficient * density
+                urban_coefficient=urban_coefficient, density_threshold=density_threshold)
+    return base_cost + urban_coefficient * max(0, density - density_threshold)
 
 
 def capital_recovery_factor(rate, years):

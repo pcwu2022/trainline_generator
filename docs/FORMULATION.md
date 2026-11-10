@@ -96,10 +96,10 @@ capture_s = (covered_s / N_i) * uptake_s
 Zero-coverage options are omitted. Uptake is an aggregate fraction for a whole
 catchment, not an individual distance-decay curve. It requires calibration.
 
-At most one station/location/radius option can open per city. Options from
-different cities are mutually exclusive when their circles overlap: center
-distance less than the sum of radii. This is stricter than allowing overlaps
-with exclusive population allocation. The optimizer does not use the standalone
+At most one station/location/radius option can open per city. Circles from
+different markets may overlap. Each population cell belongs to one fixed nearest
+seed zone, and only its zone's station can capture it, preventing duplicate demand.
+Cross-zone station access is not modeled. The optimizer does not use the standalone
 `rail_model.py` size-rank assignment helper for station selection.
 
 ## 4. Population-weighted station access
@@ -163,19 +163,42 @@ fail access or uptake; accessible-but-unserved trips are reported separately.
 ## 6. Corridors and railway construction costs
 
 Select nearby city pairs with `neighbors_per_city` and `maximum_edge_km`, then
-route their station-location combinations. Without terrain or a land mask,
-alignments are sampled straight lines in longitude/latitude. With either input,
-A* searches the population-resolution H3 adjacency graph, up to
-`terrain_search_limit`. Each location pair receives one routed candidate.
+route their station-location combinations. Always evaluate a direct WGS84
+geodesic, integrating terrain and density along it. Reject it when sampled
+blocked terrain or the land mask forbids it. A weighted Theta* search uses H3
+cells as waypoints but permits straight parent-to-neighbor segments across cells;
+both ordinary steps and shortcuts are compared using integrated construction
+cost. Search stops at `terrain_search_limit`. Keep a cheaper any-angle alternative
+when found, alongside the direct candidate. This finite search is not a proof
+of the cheapest continuous alignment.
+
+Sampling spacing is the smaller of `routing_sample_km` and one third of the
+population H3 resolution's average edge length. Costs use segment midpoints;
+sample endpoints and midpoints check blocked terrain, and the land mask checks
+entire sampled polylines. Features smaller than sampling or source resolution
+can still be missed. Raster colors are not engineering obstacles or gradients.
+
+Alternative alignments have distinct physical edge IDs and actual lengths,
+construction costs, capacity and maintenance. Line patterns expand into up to
+`maximum_alignment_variants_per_line` combinations (default 16), always retaining
+fastest and cheapest combinations before bounded mixed combinations. Only one
+frequency/alignment choice may operate per stop pattern. Different patterns may
+share the same physical edge; coincident geometry alone is not shared track.
+The network objective compares passenger time, fleet and operating costs, and
+construction/lifecycle cost, so direct routes can win despite higher terrain
+cost. No fixed preference forces a detour. The distance ceiling applies to each
+actual routed alignment.
 
 For density D, the conventional construction estimate is:
 
 ```text
-C(D) = 10 + 0.005 D                         [million euros/km]
-     = base_track_cost_per_km + urban_cost_coefficient * D  [euros/km]
+C(D) = 10 + 0.005 max(0, D - 5000)          [million euros/km]
+     = base_track_cost_per_km + urban_cost_coefficient * max(0, D - urban_density_threshold)  [euros/km]
 ```
 
-Defaults are €10,000,000/km and €5,000 per unit of density. Terrain-class
+Defaults are €10,000,000/km, a threshold of 5,000 people/km², and €5,000 per
+unit of density above that threshold. There is no urban surcharge at or below
+the threshold; it increases continuously and linearly above it. Terrain-class
 baselines are supplied in `terrain_cost_ranges_million`:
 
 | `terrain_class` | Low–high (M€/km) | Midpoint (M€/km) |
@@ -191,7 +214,7 @@ For a classified cell, with p = `terrain_cost_position` (default 0.5):
 ```text
 terrain_baseline = 1,000,000 * (low + p * (high-low))
 base_g = max(base_track_cost_per_km, terrain_baseline)
-C_g = (base_g + urban_cost_coefficient * D_g) * multiplier_g
+C_g = (base_g + urban_cost_coefficient * max(0, D_g - urban_density_threshold)) * multiplier_g
 ```
 
 Unclassified cells use the conventional baseline. Multipliers default to 1 and
@@ -221,6 +244,16 @@ curvature, tunnel design and exact coastlines are outside this model.
 Candidate lines include every two-stop corridor and a bounded pool of simple
 multi-stop paths with no repeated city. Extra paths favor low detour and are
 limited by `maximum_line_stops` and `maximum_extra_lines`.
+An additional `maximum_shared_track_lines` pool (default 40) reserves three-stop
+hub services that generic ranking omitted. Their length/direct-distance ratio
+must not exceed `maximum_shared_track_detour` (default 1.35). Ranking estimates
+the avoided direct-edge capital minus the cheaper spoke's capital and one
+station's capital, assuming the other spoke may already be shared. This is only
+a candidate-ranking heuristic; the MILP pays all actual costs and chooses the
+network jointly. Candidate hubs are existing station locations, not new free
+junctions, and all stops incur dwell and station costs. Multiple services on the
+same physical edge share its construction and maintenance costs and its
+directional track throughput limit.
 
 For line l and configured frequency f, binary z_lf selects that frequency option.
 At most one frequency is selected per line. Defaults are 1, 2 and 4 departures
@@ -322,6 +355,7 @@ The implemented weighted objective is:
 
 ```text
 minimize -served_weight * S / B
+         - population_weight * sum(s, x_s * covered_population_s) / total_market_population
          + time_weight * T / B
          + access_weight / number_of_cities * sum(s, x_s * (access_multiplier_s - 1))
          + center_weight / number_of_cities
@@ -331,18 +365,32 @@ minimize -served_weight * S / B
 ```
 
 The served term is equivalent to minimizing unmet demand up to a fixed constant.
+Population coverage counts residents in exclusive market zones within operating
+stations' catchments, before uptake. It rewards absolute population, not density
+alone. Defaults are population_weight=1, served_weight=10, time_weight=0.5,
+access_weight=0.05, cost_weight=0.001 and profit_shortfall_weight=0.25.
+All else equal, saving an hour on twenty existing passenger trips offsets the
+ridership reward for one additional trip. Journey time includes access, waiting,
+transfers and in-vehicle travel; this does not directly optimize track length.
 The €100M annual-equivalent denominator is an implementation scaling constant.
 Weights are configured in JSON; this is a single weighted objective, not a
 lexicographic optimization or automatic Pareto sweep.
 
-Hard constraints include the station/line/track consistency rules, non-overlapping
-catchments, directed segment capacity, track throughput, optional connectivity,
+Hard constraints include the station/line/track consistency rules,
+directed segment capacity, track throughput, optional connectivity,
 OD-average journey limits, optional upfront budget, and:
 
 ```text
 S >= minimum_served_fraction * Q_total
 served_from_i >= minimum_origin_served_fraction * potential_from_i
+sum(selected_city_i) >= ceil(minimum_city_served_fraction * number_of_cities)
+served_from_i >= minimum_selected_origin_served_fraction * potential_from_i * selected_city_i
 ```
+
+Only frequencies at or above `minimum_service_frequency` are generated. Each
+selected station must have operating service. `maximum_annual_subsidy`, when
+positive, caps lifecycle equivalent annual cost minus annual fare revenue;
+unlike the soft profit target it cannot be relaxed by financial slack.
 
 The global served fraction defaults to 0.001; the per-origin fraction defaults
 to zero. Both refer to fixed potential demand, including failed access/uptake.

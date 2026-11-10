@@ -18,8 +18,8 @@ class Config:
     # Population and city selection
     # Rank eligible population cells by nearby population, then enforce separation.
     # Legacy city setting names now apply to population-derived markets.
-    max_cities: int = 30
-    market_radius_km: float = 25  # Unified scoring, market, center and catchment radius
+    max_cities: int = 100
+    market_radius_km: float = 15  # Unified scoring, market, center and catchment radius
     minimum_city_population: int = 50000  # Minimum eligible population within seed radius
     density_threshold: float = 100
     population_subdivision: int = 0
@@ -29,7 +29,7 @@ class Config:
     # Access normalization and tolerance control the station-location calculation.
     center_method: str = 'access'
     center_coefficient: float = 0.1  # Legacy metadata; unified market radius replaces it
-    locations_per_city: int = 2
+    locations_per_city: int = 5
     station_offset_km: float = 12
     access_normalization_floor_km: float = 0.1
     access_optimizer_tolerance_km: float = 0.1
@@ -67,6 +67,9 @@ class Config:
     # (km/h). Stop/transfer times are minutes; the OD-average journey limit is hours.
     maximum_line_stops: int = 20
     maximum_extra_lines: int = 40
+    maximum_shared_track_lines: int = 40  # Additional three-stop hub candidates, independent of the generic line cap.
+    maximum_shared_track_detour: float = 1.35  # Maximum length / direct endpoint distance.
+    maximum_alignment_variants_per_line: int = 16  # Fastest, cheapest and mixed physical alignments.
     frequencies_per_hour: list = field(default_factory=lambda: [1, 2, 3, 4, 6, 10, 12])
     track_trains_per_hour_per_direction: int = 12
     train_seats: int = 500
@@ -86,9 +89,11 @@ class Config:
 
     # Construction and operating costs
     # Set capital and recurring costs in euros. Track costs are per km; the urban
-    # coefficient multiplies density. Maintenance is a yearly fraction of track capital.
+    # coefficient multiplies density above the threshold (people/km²).
+    # Maintenance is a yearly fraction of track capital.
     base_track_cost_per_km: float = 10_000_000
     urban_cost_coefficient: float = 5_000
+    urban_density_threshold: float = 5_000
     station_capital_cost: float = 10_000_000
     station_annual_cost: float = 400_000
     train_capital_cost: float = 5_000_000
@@ -108,22 +113,27 @@ class Config:
     financial_margin: float = 0.05
     minimum_horizon_profit: float = 1
     upfront_budget: float = 0  # Zero means no separate capital ceiling.
+    maximum_annual_subsidy: float = 0  # Zero disables the hard lifecycle annual-equivalent subsidy ceiling.
 
     # Minimum service requirements
     # Require minimum served shares of fixed potential demand, globally and per
     # origin. The global target must be positive; zero disables the per-origin target.
     minimum_served_fraction: float = 0.001
     minimum_origin_served_fraction: float = 0
+    minimum_city_served_fraction: float = 0  # Fraction of candidate markets with operating service.
+    minimum_selected_origin_served_fraction: float = 0  # Fixed origin demand share, conditional on a station.
+    minimum_service_frequency: int = 1  # Minimum frequency of each selected line, per direction.
 
     # Objective weights
     # Balance ridership benefits against journey time, station access, costs and
     # profit shortfall. Larger weights give a term more influence; zero disables its term.
-    served_weight: float = 1
-    time_weight: float = 0.05
+    population_weight: float = 1  # Reward the share of fixed market population within selected catchments.
+    served_weight: float = 10  # Reward completed passenger trips; transfers do not count as extra trips.
+    time_weight: float = 0.5  # Passenger-hours, including access, waits and transfers.
     center_weight: float = 0
-    access_weight: float = 0.01
+    access_weight: float = 0.05
     cost_weight: float = 0.001
-    profit_shortfall_weight: float = 1  # Penalty per 100M euros of annual-equivalent shortfall.
+    profit_shortfall_weight: float = 0.25  # Penalty per 100M euros of annual-equivalent shortfall.
 
     # Solver and output settings
     # Control solver seconds, relative optimality gap, reproducibility and model size.
@@ -174,7 +184,8 @@ class Config:
             if getattr(self, key) <= 0:
                 raise ValueError(f'{key} must be positive')
         for key in ('minimum_served_fraction', 'minimum_origin_served_fraction', 'p_max',
-                    'terrain_cost_position', 'mip_relative_gap', 'financial_margin', 'maintenance_fraction'):
+                    'terrain_cost_position', 'mip_relative_gap', 'financial_margin', 'maintenance_fraction',
+                    'minimum_city_served_fraction', 'minimum_selected_origin_served_fraction'):
             if not 0 <= getattr(self, key) <= 1:
                 raise ValueError(f'{key} must be between 0 and 1')
         if self.minimum_served_fraction == 0:
@@ -200,11 +211,21 @@ class Config:
             raise ValueError('maximum_line_stops must be between 2 and 20')
         if type(self.maximum_extra_lines) is not int or self.maximum_extra_lines < 0:
             raise ValueError('maximum_extra_lines must be a nonnegative integer')
+        if type(self.maximum_shared_track_lines) is not int or self.maximum_shared_track_lines < 0:
+            raise ValueError('maximum_shared_track_lines must be a nonnegative integer')
+        if self.maximum_shared_track_detour < 1:
+            raise ValueError('maximum_shared_track_detour must be at least 1')
+        if type(self.maximum_alignment_variants_per_line) is not int or self.maximum_alignment_variants_per_line < 2:
+            raise ValueError('maximum_alignment_variants_per_line must be an integer >= 2')
         if self.center_method not in ('peak', 'circle', 'access') or self.demand_model not in ('gravity', 'production'):
             raise ValueError('invalid center_method or demand_model')
         if (not self.frequencies_per_hour or any(type(f) is not int or f < 1 for f in self.frequencies_per_hour)
                 or len(set(self.frequencies_per_hour)) != len(self.frequencies_per_hour)):
             raise ValueError('frequencies_per_hour must contain unique positive integers')
+        if type(self.minimum_service_frequency) is not int or self.minimum_service_frequency < 1:
+            raise ValueError('minimum_service_frequency must be a positive integer')
+        if not any(f >= self.minimum_service_frequency for f in self.frequencies_per_hour):
+            raise ValueError('frequencies_per_hour has no option meeting minimum_service_frequency')
 
         if not isinstance(self.terrain_cost_ranges_million, dict):
             raise ValueError('terrain_cost_ranges_million must be an object')

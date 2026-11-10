@@ -13,6 +13,18 @@ from train_optimizer.terrain import TerrainCostMap
 
 
 class TerrainCostTests(unittest.TestCase):
+    def test_density_threshold_without_raster(self):
+        config = Config(urban_density_threshold=5000)
+        cell = h3.latlng_to_cell(51, 4, 6)
+        router = Router(config, [{'h3': cell, 'density': 5000}])
+        self.assertEqual(router.cost(cell), 10_000_000)
+        router.density[cell] = 6000
+        self.assertEqual(router.cost(cell), 15_000_000)
+        config.urban_density_threshold = 6000
+        self.assertEqual(router.cost(cell), 10_000_000)
+        with self.assertRaises(ValueError):
+            Config.from_dict({'urban_density_threshold': -1})
+
     def test_classes_costs_and_router(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'relief.tiff'
@@ -27,11 +39,14 @@ class TerrainCostTests(unittest.TestCase):
                              ['normal', 'bridge', 'moderate_mountains'])
             self.assertEqual([terrain(x, .5) for x in [.5, 1.5, 2.5]],
                              [10_000_000, 35_000_000, 32_500_000])
-            self.assertEqual(terrain(.5, .5, density=100), 10_500_000)
+            self.assertEqual(terrain(.5, .5, density=100), 10_000_000)
+            self.assertEqual(terrain(.5, .5, density=5000), 10_000_000)
+            self.assertEqual(terrain(.5, .5, density=6000), 15_000_000)
+            self.assertEqual(terrain(.5, .5, density=7000), 20_000_000)
             cell = h3.latlng_to_cell(.5, 1.5, 6)
             router = Router(config, [{'h3': cell, 'density': 100}])
             self.assertTrue(router.allowed(cell))
-            self.assertEqual(router.cost(cell), 35_500_000)
+            self.assertEqual(router.cost(cell), 35_000_000)
             outside = h3.latlng_to_cell(30, 30, 6)
             self.assertFalse(router.allowed(outside))
             for lon, lat in [(3, .5), (-1, .5), (float('nan'), .5), (0, 91)]:

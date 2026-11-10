@@ -42,7 +42,7 @@ def plot_costs(config, output):
         cost = router.cost(tile)
         total.append(cost / 1e6)
         factor = router.terrain.get(tile, {}).get('multiplier', 1)
-        base.append((cost - config.urban_cost_coefficient * density * factor) / 1e6)
+        base.append((cost - config.urban_cost_coefficient * max(0, density - config.urban_density_threshold) * factor) / 1e6)
     if not polygons:
         raise ValueError('No allowed terrain tiles within configured bounds')
     fig, axes = plt.subplots(1, 2, figsize=(15, 9), facecolor='#f5f7fa')

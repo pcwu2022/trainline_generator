@@ -37,7 +37,7 @@ class PopulationSeedTests(unittest.TestCase):
 
     def test_markets_stop_at_25km_and_overlap_has_one_owner(self):
         import numpy as np
-        config = Config(density_threshold=100)
+        config = Config(density_threshold=100, market_radius_km=25)
         owner, eligible = market_membership(
             np.array([[0, 0], [25, 0], [25.1, 0], [40, 0], [90, 0], [1, 0]]),
             np.array([[0, 0], [60, 0]]), [100, 100, 100, 100, 100, 99], config)

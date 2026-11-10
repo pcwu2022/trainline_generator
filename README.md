@@ -1,5 +1,53 @@
 # Population-driven railway optimizer
 
+## Regional coverage scenario
+
+Shared-track services have a dedicated candidate budget:
+`maximum_shared_track_lines=40` adds three-stop hub patterns beyond the generic
+line pool, with `maximum_shared_track_detour=1.35` limiting routed length to
+1.35 times direct endpoint distance. Candidates are ranked by potential capital
+savings if a spoke is already shared. The solver decides whether opening the
+intermediate station is worthwhile, charging its full cost and stopping time.
+Physical track capital and maintenance are paid once per selected edge, while
+each service pays its own fleet and operating costs and consumes shared capacity.
+Set the shared-track budget to zero to disable this additional pool. Hubs must
+be existing candidate station sites; geometric track crossings alone do not
+create junctions or shared infrastructure.
+
+Objective defaults prioritize ridership (`served_weight=10`), population within
+operating station catchments (`population_weight=1`), and shorter passenger
+journeys (`time_weight=0.5`, including access, waiting and transfers).
+`access_weight=0.05` favors convenient access; `profit_shortfall_weight=0.25`
+retains a softer financial penalty. These are tunable preferences, not calibrated
+economic values. Population coverage uses fixed exclusive zones to avoid double
+counting; `latest.json` reports its population count and fraction.
+
+`configs/netherlands.json` now requires service at 75% of candidate markets
+(six of eight), at least 10% of fixed regional potential demand, and at least
+5% of each selected market's outbound demand. Every selected line operates at
+least twice per hour in each direction. Station circles may overlap; fixed
+nearest-market population zones prevent double counting. These thresholds are
+scenario assumptions, not calibrated service standards.
+The scenario uses five neighboring markets and a 250 km corridor limit to
+connect the candidate graph; the previous three-neighbor/180 km graph split
+into components of five and three markets, making six-market coverage impossible.
+The bounding box includes German markets: `countries` remains legacy metadata
+and does not filter population geography.
+
+`minimum_city_served_fraction`, `minimum_selected_origin_served_fraction`, and
+`minimum_service_frequency` control these requirements. Set `upfront_budget`
+and/or `maximum_annual_subsidy` to positive euro amounts to impose hard spending
+limits; zero disables each ceiling. Subsidy uses lifecycle annual-equivalent
+cost minus fare revenue, including capital, renewals and residual credit. No
+budget is chosen automatically. The weighted objective and soft profitability
+penalty remain active. `latest.json` reports city coverage, fare recovery,
+annual-equivalent subsidy, and subsidy per passenger; `cost_breakdown.log`
+provides readable accounting for each run.
+
+Access remains restricted to each population cell's fixed market zone, and
+journey limits remain OD averages. Cross-market station choice, per-route time
+limits, and budget/coverage scenario sweeps are not implemented here.
+
 An end-to-end **strategic network optimizer** for the supplied European population
 and world city data. It jointly chooses station locations, catchment radii, track
 corridors, multi-stop all-stop lines, frequencies and capacity-constrained passenger
@@ -30,7 +78,7 @@ geography are loaded before rendering the first image. No blank loading image
 is written to `latest.png` or included in the GIF. The complete map and final
 state are always saved once data is available. The
 output directory must be new or
-empty unless resuming. Source data and program files are not overwritten.
+empty unless resuming or using `--overwrite` to delete its existing contents.
 
 Open **`runs/my-region/index.html`** for a live dashboard, or watch
 **`runs/my-region/latest.png`**. The dashboard works directly as a local HTML file;
@@ -84,8 +132,10 @@ Run the Netherlands–Belgium scenario with the supplied 3 km population H3 tile
 .venv/bin/python optimize.py --output runs/my-netherlands-belgium-3km
 ```
 
-Conventional track costs **€10M/km**. The urban surcharge is linear in density
-D (people/km²): **C(D) = 10 + 0.005D M€/km**. For explicitly classified terrain,
+Conventional track costs **€10M/km**. The urban surcharge applies only above
+`urban_density_threshold` (default 5,000 people/km²), increasing linearly with
+excess density D: **C(D) = 10 + 0.005 × max(0, D − 5000) M€/km**.
+For explicitly classified terrain,
 the terrain baseline replaces the conventional baseline when higher, then the same urban
 surcharge is added. `terrain_cost_position` selects the low (0), midpoint (0.5,
 default), or high (1) end of these configurable ranges:
@@ -187,6 +237,14 @@ thread never calls the solver. Native
 copy improving solutions and request an update at iteration thresholds. Rendering
 and GIF writing happen off the solver thread.
 
+Start fresh in an existing output directory (permanently deletes its contents):
+
+```sh
+.venv/bin/python optimize.py --config configs/netherlands.json --output runs/netherlands-belgium --overwrite
+```
+
+`--overwrite` and `--resume` cannot be used together.
+
 Resume with the **same model configuration and input data**:
 
 ```sh
@@ -233,9 +291,9 @@ legacy names for the population-derived market count and screening threshold.
 3. **Catchments.** Select at most one station/location/radius option per city.
    Eligible residents of that origin zone within the radius supply coverage.
    Uptake is `p_max*(1-exp(-uptake_a*radius**uptake_alpha))`. Capture is covered
-   population / zone population times uptake. Selected circles **cannot overlap**,
-   so no population is double counted and no size-based overlap tie is needed.
-   This restriction is stronger than allowing overlap with exclusive allocation.
+   population / zone population times uptake. Selected circles may overlap;
+   fixed exclusive origin zones and one station per market prevent double counting.
+   Cross-zone access to another market's station is not yet modeled.
 4. **Gravity demand.** Default `production` mode generates
    `trips_per_person_hour * zone_population` outbound trips and distributes them
    by destination population / distance^`gravity_beta` (default 2).
@@ -245,7 +303,9 @@ legacy names for the population-derived market count and screening threshold.
    For selected endpoint options a,b, rail demand is bounded by
    `fixed_potential_OD * capture_a * capture_b`, assuming independent endpoint uptake.
 5. **Track and terrain.** Generate nearby-city corridor alternatives for station
-   locations. Integrate `10,000,000 + 5,000*density` euros/km along each alignment.
+   locations. Evaluate a direct geodesic and a cheaper terrain-avoiding any-angle
+   alternative when found. Integrate terrain baseline plus
+   `5,000*max(0, density-5,000)` euros/km along each alignment.
    Optional H3 terrain classes, multipliers, blocked cells and a land mask enable coarse
    least-cost routing. Shared candidate track is constructed and charged **once**,
    regardless of the number of services using it. Geometric crossings alone do
@@ -439,8 +499,15 @@ for the older 22 km population file and matching resolution-4 cell IDs. These ex
 a real terrain dataset. Use `land_file` for a WGS84 polygon FeatureCollection of
 allowed land. Reconstructing population hexagons is not a land/water mask.
 
-Routing uses H3 adjacency and A* with a configurable search limit. Coarse cell
-centers and sampled segments cannot establish exact coastlines or bridge spans.
+Routing always evaluates the direct geodesic and searches for a cheaper
+alternative with weighted Theta*: H3 cells provide waypoints, but shortcuts
+cross cells at arbitrary angles. Both alternatives enter the network optimizer
+with their actual construction costs and travel lengths. Search has a configurable
+limit; failure to find a detour does not discard a valid direct candidate.
+`maximum_alignment_variants_per_line` (default 16, minimum 2) bounds combinations
+for through services, retaining the fastest and cheapest first. Selected track
+records contain `alignment_kind`; line records contain `alignment_kinds`.
+Coarse terrain and sampled segments cannot establish exact coastlines or bridge spans.
 Gradient, curvature, tunnels, real bridge costs, permits and land acquisition
 require additional engineering inputs/constraints. A starting elevation source
 is [Copernicus DEM](https://dataspace.copernicus.eu/explore-data/data-collections/copernicus-contributing-missions/collections-description/COP-DEM).

@@ -6,6 +6,7 @@ import json
 import math
 from pathlib import Path
 import signal
+import shutil
 import sys
 import threading
 
@@ -90,7 +91,10 @@ def main(argv=None):
                         help='Solver progress steps between frames: native progress callbacks (default: 5)')
     parser.add_argument('--gif-frame-ms', type=int, default=None,
                         help='Playback duration per GIF frame, in multiples of 10 ms (default: 500)')
-    parser.add_argument('--resume', help='Compatible checkpoint.npz to use as an incumbent warm start')
+    restart = parser.add_mutually_exclusive_group()
+    restart.add_argument('--resume', help='Compatible checkpoint.npz to use as an incumbent warm start')
+    restart.add_argument('--overwrite', action='store_true',
+                         help='Delete the output directory contents before starting a fresh run')
     parser.add_argument('--write-default-config', metavar='PATH', help='Write every configurable assumption and exit')
     args = parser.parse_args(argv)
     if args.write_default_config:
@@ -115,8 +119,19 @@ def main(argv=None):
     output = Path(args.output)
     if output.exists() and not output.is_dir():
         parser.error('--output must be a directory')
+    if args.overwrite:
+        resolved_output = output.resolve()
+        if resolved_output == Path.cwd() or resolved_output in Path.cwd().parents:
+            parser.error('--overwrite cannot delete the working directory or its ancestors')
+        if output.is_symlink():
+            parser.error('--overwrite requires an output directory that is not a symlink')
+        if output.exists():
+            try:
+                shutil.rmtree(output)
+            except OSError as error:
+                parser.error(f'Cannot overwrite output directory: {error}')
     if output.exists() and any(output.iterdir()) and not args.resume:
-        parser.error('Output directory is not empty; use a new directory or --resume its checkpoint')
+        parser.error('Output directory is not empty; use --overwrite, a new directory or --resume its checkpoint')
     state, interrupted = LiveState(), threading.Event()
     reporter = Reporter(state, config, output, args.snapshot_every, args.gif_frame_ms)
     previous_handlers = {}
