@@ -64,7 +64,7 @@
         120
       ]
     },
-    "maximum_line_stops": 3,
+    "maximum_line_stops": 20,
     "maximum_extra_lines": 40,
     "maximum_shared_track_lines": 40,
     "maximum_shared_track_detour": 1.35,
@@ -136,6 +136,8 @@
     "solver_method": "annealing",
     "annealing_proposal_cost_exponent": 0.5,
     "annealing_growth_probability": 0,
+    "annealing_action_fraction": 0.67,
+    "annealing_candidate_pair_limit": 256,
     "annealing_coverage_metric": "needs",
     "annealing_consolidation_coverage": 0.75,
     "annealing_integration_coverage": 0.3,
@@ -162,7 +164,10 @@
     "snapshot_every": 5,
     "demand_map_top_percent": 10,
     "demand_map_min_trips_per_hour": 0,
-    "gif_frame_ms": 500
+    "gif_frame_ms": 500,
+    "gravity_heuristic": false,
+    "gravity_heuristic_demand_threshold": 0.75,
+    "speed_up": false
   },
   "profiles": {
     "europe": {
@@ -173,21 +178,7 @@
         72
       ],
       "countries": [],
-      "max_cities": 500,
-      "uptake_reference_radius_km": 25,
-      "minimum_seed_spacing_km": 25,
-      "neighbors_per_city": 20,
-      "maximum_edge_km": 1000,
-      "maximum_trip_distance_km": 2000,
-      "terrain_search_limit": 500,
-      "served_weight": 50,
-      "population_weight": 2,
-      "profit_shortfall_weight": 0.1,
-      "minimum_service_frequency": 2,
-      "annealing_growth_probability": 0.65,
-      "annealing_start_temperature": 0.15,
-      "annealing_end_temperature": 0.01,
-      "annealing_initial_financial_weight": 0.05
+      "max_cities": 500
     },
     "exploratory": {
       "bbox": [
@@ -200,19 +191,7 @@
         "NL",
         "BE"
       ],
-      "max_cities": 20,
-      "demand_model": "production",
-      "trips_per_person_hour": 0.01,
-      "maximum_line_stops": 3,
-      "maximum_extra_lines": 40,
-      "base_track_cost_per_km": 500000,
-      "urban_cost_coefficient": 10000,
-      "station_capital_cost": 2000000,
-      "station_annual_cost": 100000,
-      "train_capital_cost": 1000000,
-      "train_cost_per_km": 5,
-      "ticket_per_km": 0.3,
-      "minimum_served_fraction": 0.001
+      "max_cities": 20
     },
     "france": {
       "bbox": [
@@ -224,12 +203,7 @@
       "countries": [
         "FR"
       ],
-      "uptake_reference_radius_km": 25,
-      "minimum_seed_spacing_km": 25,
-      "max_cities": 100,
-      "neighbors_per_city": 5,
-      "maximum_edge_km": 500,
-      "maximum_trip_distance_km": 1000
+      "max_cities": 100
     },
     "italy": {
       "bbox": [
@@ -241,18 +215,9 @@
       "countries": [
         "IT"
       ],
-      "uptake_reference_radius_km": 25,
-      "minimum_seed_spacing_km": 25,
-      "max_cities": 30,
-      "neighbors_per_city": 5,
-      "maximum_edge_km": 500,
-      "maximum_trip_distance_km": 1000,
-      "solver_time_limit": 600,
-      "annealing_budget_mode": "bounded",
-      "annealing_iterations": 1000000
+      "max_cities": 30
     },
     "netherlands": {
-      "population_file": "data/europe_3km.geojson",
       "bbox": [
         2.5,
         49.4,
@@ -263,22 +228,7 @@
         "NL",
         "BE"
       ],
-      "uptake_reference_radius_km": 25,
-      "minimum_seed_spacing_km": 25,
-      "max_cities": 20,
-      "density_threshold": 100,
-      "population_subdivision": 0,
-      "center_method": "access",
-      "neighbors_per_city": 5,
-      "maximum_edge_km": 250,
-      "maximum_extra_lines": 120,
-      "operating_start_hour": 6,
-      "operating_end_hour": 22,
-      "accounting_years": 10,
-      "minimum_served_fraction": 0.1,
-      "minimum_city_served_fraction": 0.75,
-      "minimum_selected_origin_served_fraction": 0.05,
-      "minimum_service_frequency": 2
+      "max_cities": 20
     },
     "uk": {
       "bbox": [
@@ -290,13 +240,7 @@
       "countries": [
         "GB"
       ],
-      "uptake_reference_radius_km": 25,
-      "minimum_seed_spacing_km": 25,
-      "max_cities": 20,
-      "neighbors_per_city": 5,
-      "maximum_edge_km": 500,
-      "maximum_trip_distance_km": 1000,
-      "require_connected_network": false
+      "max_cities": 20
     }
   }
 }

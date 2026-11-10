@@ -89,7 +89,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description='Optimize stations, corridors, all-stop services and passenger flows.')
     parser.add_argument('--config', default=str(DEFAULT_CONFIG_PATH), help='Optional external JSON overrides')
     parser.add_argument('--profile', help='Named profile from config.json (europe, exploratory, france, italy, netherlands, uk)')
-    parser.add_argument('--output', default='runs/netherlands')
+    parser.add_argument('--output', help='Output directory (default: runs/<profile>, or runs/netherlands without a profile)')
     parser.add_argument('--solver', choices=['annealing', 'heuristic', 'milp'], help='Override solver_method')
     parser.add_argument('--time-limit', type=float, default=None, help='Total search seconds; selects bounded annealing unless --budget-mode goals is given')
     parser.add_argument('--budget-mode', choices=['goals', 'bounded'],
@@ -98,6 +98,9 @@ def main(argv=None):
                         help='Solver progress steps between frames: native progress callbacks (default: 5)')
     parser.add_argument('--gif-frame-ms', type=int, default=None,
                         help='Playback duration per GIF frame, in multiples of 10 ms (default: 500)')
+    parser.add_argument('--gravity-heuristic', action='store_true', help='Seed conventional rail in descending gravitational-pull order')
+    parser.add_argument('--gravity-demand-threshold', type=float, help='Gravity phase: served share of capturable demand (default: 0.75)')
+    parser.add_argument('--speed-up', action='store_true', help='Sample at most 10 regional pairs and cost candidates per selection')
     restart = parser.add_mutually_exclusive_group()
     restart.add_argument('--resume', help='Compatible checkpoint.npz to use as an incumbent warm start')
     restart.add_argument('--overwrite', action='store_true',
@@ -112,6 +115,12 @@ def main(argv=None):
             data['annealing_budget_mode'] = args.budget_mode
         elif args.time_limit is not None:
             data['annealing_budget_mode'] = 'bounded'
+        if args.gravity_heuristic:
+            data['gravity_heuristic'] = True
+        if args.gravity_demand_threshold is not None:
+            data['gravity_heuristic_demand_threshold'] = args.gravity_demand_threshold
+        if args.speed_up:
+            data['speed_up'] = True
         config = Config.from_dict(data)
     except (ValueError, OSError) as error:
         parser.error(str(error))
@@ -133,7 +142,7 @@ def main(argv=None):
                         passenger_lp_time_limit_seconds=args.time_limit if goal_mode else None,
                         proposal_limit=(config.annealing_iterations
                                         if config.solver_method == 'annealing' and not goal_mode else None))
-    output = Path(args.output)
+    output = Path(args.output) if args.output is not None else Path('runs') / (args.profile or 'netherlands')
     if output.exists() and not output.is_dir():
         parser.error('--output must be a directory')
     if args.overwrite:

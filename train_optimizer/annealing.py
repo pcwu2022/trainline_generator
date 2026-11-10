@@ -10,12 +10,13 @@ import time
 import highspy
 import numpy as np
 
+from .sampling import PHASE_ACTION_WEIGHTS, choose_action, pop_cost_candidate, sample_actions, sample_indices
 from .finance import annuity_factor, asset_pv_factor
 from .consolidation import annual_cost, candidates, materialize, service_protection
 from .geography import Router, haversine
 from pyproj import Geod
 import h3
-from .model import NetworkModel
+from .model import NetworkModel, SolverModelError
 from .needs import rail_need_bound
 from .network_growth import (connected_designs, connectivity, growth_energy, integration_pressure,
                              ready_to_consolidate, regional_proposal)
@@ -52,17 +53,29 @@ class RoutePool:
         for e in self.edges:
             self.cache.setdefault(tuple(sorted((e['a'], e['b']))), []).append(e['id'])
 
-    def demand_weights(self):
-        """Coarse cost screening, cached once; it performs no path searches."""
-        if hasattr(self, '_demand_weights'):
-            return self._demand_weights
+    def demand_weights(self, indices=None):
+        """Cache terrain screening only for requested demand records.
+
+        The default still returns the complete array for legacy callers.
+        Regional sampling requests only its bounded subset of indices.
+        """
         c = self.problem.config
-        centers = {city['id']: city.get('center', next((s['coordinate'] for s in self.problem.locations
-                   if s['city'] == city['id']), None)) for city in self.problem.cities}
-        estimates = {}
+        if not hasattr(self, '_demand_weights'):
+            self._demand_weights = np.full(len(self.problem.demand), np.nan)
+            self.capital_estimates = {}
+            fallback = {}
+            for site in self.problem.locations:
+                fallback.setdefault(site['city'], site['coordinate'])
+            self._market_centers = {city['id']: city.get('center', fallback.get(city['id']))
+                                    for city in self.problem.cities}
+        centers = self._market_centers
+        estimates = self.capital_estimates
+        requested = range(len(self.problem.demand)) if indices is None else indices
         geod = Geod(ellps='WGS84')
-        weights = []
-        for od in self.problem.demand:
+        for index in requested:
+            if not np.isnan(self._demand_weights[index]):
+                continue
+            od = self.problem.demand[index]
             pair = tuple(sorted((od['origin'], od['destination'])))
             if pair not in estimates:
                 a, b = (centers[i] for i in pair)
@@ -97,11 +110,11 @@ class RoutePool:
             capital = estimates[pair]
             # Divide by a fixed reference before exponentiation for stable units.
             relative = max(1., capital/max(1., c.base_track_cost_per_km*c.distance_floor_km))
-            weights.append(od['volume']/relative**c.annealing_proposal_cost_exponent
-                           if math.isfinite(capital) else 0.)
-        self.capital_estimates = estimates
-        self._demand_weights = np.asarray(weights, dtype=float)
-        return self._demand_weights
+            self._demand_weights[index] = (od['volume']/relative**c.annealing_proposal_cost_exponent
+                                           if math.isfinite(capital) else 0.)
+        if indices is None:
+            return self._demand_weights
+        return {index: self._demand_weights[index] for index in requested}
 
     def get(self, a, b):
         self.check()
@@ -182,7 +195,7 @@ def coverage_deficit(model, vector, config):
     return deficit
 
 
-def evaluate(problem, pool, design, financial_weight, remaining, interrupted, final=False, protection=None, network_pressure=0):
+def evaluate(problem, pool, design, financial_weight, remaining, interrupted, final=False, protection=None, network_pressure=0, conventional_only=False):
     """Fix the proposed network; optimize train technology and passenger assignment."""
     c = problem.config
     live = {site for stops, ids, f in design for site in stops}
@@ -232,11 +245,23 @@ def evaluate(problem, pool, design, financial_weight, remaining, interrupted, fi
     indices = np.array([i for i in np.flatnonzero(model.integer) if i not in technology], dtype=np.int32)
     if remaining() <= 0 or interrupted.is_set():
         raise InterruptedError('Annealing search stopped')
-    solver = model.solver(c, max(.001, remaining()))
+    try:
+        solver = model.solver(c, max(.001, remaining()))
+    except SolverModelError as error:
+        # A numerically unusable corridor must not discard the existing walk
+        # or the validated incumbent. Do not alter or clamp its physical cost.
+        pool.progress(str(error))
+        return None
     solver.cbSimplexInterrupt.subscribe(lambda event: event.interrupt() if interrupted.is_set() else None)
     solver.cbIpmInterrupt.subscribe(lambda event: event.interrupt() if interrupted.is_set() else None)
     solver.cbMipInterrupt.subscribe(lambda event: event.interrupt() if interrupted.is_set() else None)
     solver.changeColsBounds(len(indices), indices, fixed[indices], fixed[indices])
+    if conventional_only:
+        disabled = list(model.hsr_tracks.values()) + [index for (line, frequency), index in model.z.items()
+                    if model.lines[line]['train_type'] == 'HSR']
+        if disabled:
+            disabled = np.asarray(disabled, dtype=np.int32)
+            solver.changeColsBounds(len(disabled), disabled, np.zeros(len(disabled)), np.zeros(len(disabled)))
     columns = np.arange(len(costs), dtype=np.int32)
     solver.changeColsCost(len(costs), columns, costs)
     solver.run()
@@ -257,11 +282,16 @@ def evaluate(problem, pool, design, financial_weight, remaining, interrupted, fi
 def propose(problem, pool, design, rng, frequencies, growth=False, stage=None, action_override=None):
     c = problem.config
     if stage in ('exploration', 'integration'):
-        if not design or rng.random() < .9:
-            return regional_proposal(problem, pool, design, rng, frequencies, stage)
-        # Keep some capacity and through-service improvements in both phases.
-        return propose(problem, pool, design, rng, frequencies,
-                       action_override=str(rng.choice(['frequency', 'through'])))
+        weights = PHASE_ACTION_WEIGHTS[stage]
+        allowed = sample_actions(weights, c.annealing_action_fraction, rng, weights)
+        if not design:
+            allowed = ['seed_region']
+        action = choose_action(allowed, stage, rng)
+        if action in ('seed_region', 'frontier', 'bridge'):
+            regional = [a for a in allowed if a in ('seed_region', 'frontier', 'bridge')]
+            return regional_proposal(problem, pool, design, rng, frequencies, stage,
+                                     allowed=regional, preferred_action=action)
+        return propose(problem, pool, design, rng, frequencies, action_override=action)
     proposal = list(design)
     action = action_override or (str(rng.choice(['add', 'add', 'remove', 'frequency', 'through', 'split', 'move', 'reroute', 'bypass', 'hub', 'extend', 'close_station'])) if design else 'add')
     if growth and design and action_override is None:
@@ -432,6 +462,36 @@ def repair_origin(problem, pool, design, record, frequencies, excluded=None):
     return design
 
 
+def gravity_pairs(problem):
+    """Rank unique OD pairs by population gravity, independently of demand model."""
+    c = problem.config
+    pairs = {}
+    for od in problem.demand:
+        a, b = sorted((od['origin'], od['destination']))
+        pull = (problem.cities[a].get('population', 0)*problem.cities[b].get('population', 0)
+                / max(od['km'], c.distance_floor_km)**c.gravity_beta)
+        pairs[a, b] = pull
+    return iter(sorted(pairs, key=lambda pair: (-pairs[pair], pair)))
+
+
+def gravity_proposal(problem, pool, design, pair, frequencies):
+    sites = {problem.locations[s]['city']: s for stops, ids, f in design for s in stops}
+    endpoints = []
+    for city in pair:
+        options = [s for s in problem.stations if s['city'] == city]
+        if not options:
+            return design
+        endpoints.append(sites.get(city, max(options, key=lambda s: (s['capture_fraction'], -s['location']))['location']))
+    a, b = endpoints
+    if any(a in stops and b in stops for stops, ids, f in design):
+        return design
+    routes = pool.get(a, b)
+    if not routes:
+        return design
+    edge = min(routes, key=lambda i: (pool.edges[i]['track_capital'], i))
+    return canonical(list(design)+[((a, b), (edge,), frequencies[0])])
+
+
 def network_coverage(record, config, capture_upper_bound):
     """Coverage uses fixed regional denominators, independent of the active graph."""
     if record is None:
@@ -506,6 +566,8 @@ def solve_annealing(problem, state, time_limit, interrupted, checkpoint=None, re
     stop_reason = 'proposal_limit'
     first_preview = True
     stage = 'exploration'
+    gravity_active = c.gravity_heuristic and not checkpoint
+    ranked_pairs = gravity_pairs(problem) if gravity_active else iter(())
     def publish(record, design, floors=None):
         nonlocal best, best_design, best_record
         model, vector = record
@@ -559,10 +621,17 @@ def solve_annealing(problem, state, time_limit, interrupted, checkpoint=None, re
                 stop_reason = 'proposal_limit'
                 break
             check()
+            if gravity_active and current_record is not None:
+                served = sum(current_record[1][i] for i in current_record[0].q.values())
+                gravity_active = served < c.gravity_heuristic_demand_threshold*pool.capture_upper_bound
+            if gravity_active:
+                pair = next(ranked_pairs, None)
+                if pair is None:
+                    gravity_active = False
             coverage = network_coverage(current_record, c, pool.capture_upper_bound)
             best_coverage = network_coverage(best_record, c, pool.capture_upper_bound)
             coverage_progress = min(1., coverage/c.annealing_consolidation_coverage)
-            if (protection is None and ready_to_consolidate(best_record, best_coverage, c)
+            if (not gravity_active and protection is None and ready_to_consolidate(best_record, best_coverage, c)
                     and ready_to_consolidate(current_record, coverage, c)):
                 # Reset the walk to a useful railway and protect this fixed service
                 # baseline; do not ratchet the allowed losses after each saving.
@@ -585,7 +654,12 @@ def solve_annealing(problem, state, time_limit, interrupted, checkpoint=None, re
                 if not pending:
                     stop_reason = 'bounded_cost_neighborhood_exhausted'
                     break
-                candidate = pending.pop(0)
+                if c.speed_up and len(pending) > 10:
+                    sampled = [pending[i] for i in sample_indices(len(pending), 10, rng)]
+                    candidate = pop_cost_candidate(sampled, c.annealing_action_fraction, rng)
+                    pending.remove(candidate)
+                else:
+                    candidate = pop_cost_candidate(pending, c.annealing_action_fraction, rng)
                 action = candidate[1]
                 state.update(message=f'{stage.capitalize()}: testing {action}; {len(pending)} cost candidates remain')
                 proposal = materialize(pool, current, candidate)
@@ -610,10 +684,14 @@ def solve_annealing(problem, state, time_limit, interrupted, checkpoint=None, re
                 progress_report(action=action)
                 continue
             stage = 'exploration' if coverage < min(c.annealing_integration_coverage, c.annealing_consolidation_coverage) else 'integration'
+            if gravity_active:
+                stage = 'gravity_heuristic'
             pressure = integration_pressure(coverage, c)
             weight = c.annealing_initial_financial_weight + (1-c.annealing_initial_financial_weight)*coverage_progress
             temperature = c.annealing_start_temperature*(c.annealing_end_temperature/c.annealing_start_temperature)**coverage_progress
-            if checkpoint and iteration == 0:
+            if gravity_active:
+                proposal, action = gravity_proposal(problem, pool, current, pair, frequencies), 'gravity_add'
+            elif checkpoint and iteration == 0:
                 proposal, action = current, 'resume'
                 components = (math.inf, 0, 0)
             else:
@@ -630,7 +708,7 @@ def solve_annealing(problem, state, time_limit, interrupted, checkpoint=None, re
             if not proposal:
                 new = (0., empty_money, empty_deficit)
             else:
-                result = evaluate(problem, pool, proposal, weight, remaining, interrupted, network_pressure=pressure)
+                result = evaluate(problem, pool, proposal, weight, remaining, interrupted, network_pressure=pressure, conventional_only=gravity_active)
                 if result is None:
                     growth_rejected.add(proposal)
                     progress_report(temperature, weight, action)
@@ -649,8 +727,9 @@ def solve_annealing(problem, state, time_limit, interrupted, checkpoint=None, re
                 for final_design in final_designs:
                     if final_design in final_evaluated:
                         continue
-                    final = evaluate(problem, pool, final_design, 1., remaining, interrupted, final=True)
-                    final_evaluated.add(final_design)
+                    final = evaluate(problem, pool, final_design, 1., remaining, interrupted, final=True, conventional_only=gravity_active)
+                    if not gravity_active:
+                        final_evaluated.add(final_design)
                     if final is not None:
                         candidate_coverage = network_coverage(final[:2], c, pool.capture_upper_bound)
                         old_coverage = network_coverage(best_record, c, pool.capture_upper_bound)
@@ -663,7 +742,7 @@ def solve_annealing(problem, state, time_limit, interrupted, checkpoint=None, re
                          network_coverage(record, c, pool.capture_upper_bound), pool.capture_upper_bound)
             proposed_record = result[:2] if result is not None else None
             delta = energy(new, proposed_record)-energy(components, current_record)
-            if delta <= 0 or rng.random() < math.exp(-delta/temperature):
+            if gravity_active or delta <= 0 or rng.random() < math.exp(-delta/temperature):
                 current, components = proposal, new
                 growth_rejected.clear()
                 accepted += 1

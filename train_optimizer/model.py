@@ -1,5 +1,6 @@
 """Joint station, all-stop service, capacity and multi-commodity passenger MILP."""
 import hashlib
+from collections import defaultdict, deque
 import math
 
 import highspy
@@ -8,6 +9,10 @@ from scipy.sparse import coo_matrix
 from .lines import generate_lines
 from .needs import rail_need_bound
 from .finance import annuity_factor, asset_pv_factor, lifecycle_report
+
+
+class SolverModelError(RuntimeError):
+    """A proposal cannot be represented safely by the numerical solver."""
 
 
 class LinearModel:
@@ -82,8 +87,28 @@ class LinearModel:
         lp.a_matrix_.start_ = self.matrix.indptr.astype(np.int32)
         lp.a_matrix_.index_ = self.matrix.indices.astype(np.int32)
         lp.a_matrix_.value_ = self.matrix.data
-        if h.passModel(lp) != highspy.HighsStatus.kOk:
-            raise RuntimeError('HiGHS rejected model')
+        # HiGHS warnings can describe accepted models (e.g. tiny coefficients).
+        # Only kError means model submission failed. Preserve diagnostics even
+        # though normal solver console output is disabled.
+        messages = deque(maxlen=12)
+        def record_message(event):
+            messages.append(event.message.strip())
+        h.cbLogging.subscribe(record_message)
+        h.setOptionValue('log_to_console', False)
+        h.setOptionValue('output_flag', True)
+        try:
+            status = h.passModel(lp)
+        finally:
+            h.setOptionValue('output_flag', False)
+            h.cbLogging.unsubscribe(record_message)
+        if status == highspy.HighsStatus.kError:
+            largest = float(np.max(np.abs(self.matrix.data), initial=0))
+            largest_cost = float(np.max(np.abs(self.cost), initial=0))
+            raise SolverModelError(
+                f'HiGHS rejected proposal: maximum matrix coefficient={largest:.6g}, '
+                f'maximum objective coefficient={largest_cost:.6g}; '
+                'check extreme terrain/water costs and non-finite model values. '
+                + ' '.join(messages))
         return h
 
 
@@ -150,11 +175,15 @@ class NetworkModel(LinearModel):
         self.capital, self.operating, self.revenue, self.time = {}, {}, {}, {}
         self.asset_kind = {}
         self.total_demand = sum(d['volume'] for d in problem.demand)
-        maximum_capture = {city['id']: max((s['capture_fraction'] for s in problem.stations if s['city'] == city['id']), default=0)
-                           for city in problem.cities}
-        self.capture_upper_bound = sum(d['volume']*maximum_capture[d['origin']]*maximum_capture[d['destination']] for d in problem.demand)
         if capture_upper_bound is not None:
             self.capture_upper_bound = capture_upper_bound
+        else:
+            maximum_capture = defaultdict(float)
+            for station in problem.stations:
+                city = station['city']
+                maximum_capture[city] = max(maximum_capture[city], station['capture_fraction'])
+            self.capture_upper_bound = sum(d['volume']*maximum_capture[d['origin']]*maximum_capture[d['destination']]
+                                           for d in problem.demand)
         # Normalize rider/time objectives by a fixed optimistic capture bound,
         # rather than by millions of inaccessible potential trips. Otherwise small
         # center-location penalties can overwhelm all achievable rider benefit.
@@ -256,8 +285,15 @@ class NetworkModel(LinearModel):
             self._connectivity()
         capacities = {}
         all_served, served_by_origin = {}, {city['id']: {} for city in problem.cities}
+        origin_demands = defaultdict(float)
         for od in problem.demand:
-            conservation = {loc['id']: {} for loc in problem.locations}
+            origin_demands[od['origin']] += od['volume']
+        for od in problem.demand:
+            # No passengers can enter or leave a market without a station.
+            # Keep full demand totals and origin service floors below.
+            if not self.by_city[od['origin']] or not self.by_city[od['destination']]:
+                continue
+            conservation = defaultdict(dict)
             served, journey = {}, {}
             for a in self.by_city[od['origin']]:
                 for b in self.by_city[od['destination']]:
@@ -320,7 +356,7 @@ class NetworkModel(LinearModel):
             self.row(terms, upper=0)
         self.row(all_served, lower=c.minimum_served_fraction * self.total_demand)
         for city, terms in served_by_origin.items():
-            origin_demand = sum(d['volume'] for d in problem.demand if d['origin'] == city)
+            origin_demand = origin_demands[city]
             if origin_demand:
                 self.row(terms, lower=c.minimum_origin_served_fraction*origin_demand)
                 selected_terms = dict(terms)
@@ -463,8 +499,11 @@ class NetworkModel(LinearModel):
                 line['frequency_per_hour_per_direction'] * (1 if location in (line['a'], line['b']) else 2)
                 for line in lines if location in line['stops'])
         accessible = 0
+        served_by_od = defaultdict(float)
+        for (od_id, _, _), index in self.q.items():
+            served_by_od[od_id] += float(v[index])
         for od in p.demand:
-            volume = float(sum(v[index] for (d, _, _), index in self.q.items() if d == od['id']))
+            volume = served_by_od[od['id']]
             captured = od['volume']*selected_capture[od['origin']]*selected_capture[od['destination']]
             accessible += captured
             pairs.append(dict(**od, served=volume, unmet=max(0, od['volume']-volume),

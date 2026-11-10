@@ -40,6 +40,9 @@ def configuration_dataclass(cls):
 
 @configuration_dataclass
 class Config:
+    gravity_heuristic: bool
+    gravity_heuristic_demand_threshold: float
+    speed_up: bool
     # Input files and study region
     # Choose source datasets and the bounding box [west, south, east, north].
     # Population cells are filtered by bbox and country polygons; cities supply labels only.
@@ -183,6 +186,8 @@ class Config:
     # Snapshots count solver progress callbacks; GIF frame duration is milliseconds.
     solver_method: str # annealing, heuristic or milp
     annealing_proposal_cost_exponent: float # Demand / estimated corridor capital ** exponent
+    annealing_action_fraction: float # Fraction of move families eligible per proposal
+    annealing_candidate_pair_limit: int # Sampled regional pairs; zero restores exhaustive scanning
     annealing_growth_probability: float # Extra probability of choosing a corridor addition
     annealing_coverage_metric: str # needs, markets, population, or legacy demand
     annealing_consolidation_coverage: float
@@ -222,6 +227,12 @@ class Config:
         return config
 
     def validate(self):
+        if type(self.gravity_heuristic) is not bool or type(self.speed_up) is not bool:
+            raise ValueError('gravity_heuristic and speed_up must be booleans')
+        if not 0 < self.gravity_heuristic_demand_threshold <= 1:
+            raise ValueError('gravity_heuristic_demand_threshold must be in (0, 1]')
+        if self.gravity_heuristic and 'CR' not in self.train_types:
+            raise ValueError('gravity_heuristic requires CR in train_types')
         if (not isinstance(self.train_types, list) or not self.train_types
                 or any(t not in ('CR', 'HSR') for t in self.train_types)
                 or len(set(self.train_types)) != len(self.train_types)):
@@ -301,6 +312,12 @@ class Config:
             raise ValueError('maximum_journey_detour_ratio must be zero or at least 1')
         if not 0 <= self.annealing_proposal_cost_exponent <= 4:
             raise ValueError('annealing_proposal_cost_exponent must be in [0, 4]')
+        if not 0 < self.annealing_action_fraction <= 1:
+            raise ValueError('annealing_action_fraction must be in (0, 1]')
+        if (isinstance(self.annealing_candidate_pair_limit, bool)
+                or not isinstance(self.annealing_candidate_pair_limit, int)
+                or self.annealing_candidate_pair_limit < 0):
+            raise ValueError('annealing_candidate_pair_limit must be a nonnegative integer')
         if not 0 <= self.annealing_growth_probability <= 1:
             raise ValueError('annealing_growth_probability must be in [0, 1]')
         if self.annealing_coverage_metric not in ('needs', 'markets', 'population', 'demand'):

@@ -766,3 +766,67 @@ choices and passenger assignment. Dual-type annealing evaluations therefore use
 a small mixed-integer solve and may take longer. Results include `train_type` and
 `speed_kmh` for lines in JSON and `latest_lines.csv`, and track infrastructure type
 in JSON. Changing train types or ratios requires a new run/checkpoint.
+
+Regional annealing proposal sampling is controlled by `annealing_action_fraction`
+(default `0.67`) and `annealing_candidate_pair_limit` (default `256`). Each growth
+proposal draws a fresh subset of seed-region, frontier, bridge, frequency, through,
+extend-stop, and station-move families. An empty network always starts with a seed.
+Only eligible regional families build candidate lists. Demand records, possible
+bridges, and novelty reference cities are sampled without replacement up to the
+pair limit, avoiding exhaustive pair enumeration during regional proposals.
+Sampling uses `random_seed`; set the fraction to `1` and the pair limit to `0`
+to consider all growth families and scan regional pairs exhaustively.
+
+This trades candidate-ranking accuracy for cheaper proposals: a sampled bridge
+score uses sampled cross-component demand, and useful moves may be deferred to
+later proposals. Full passenger demand, technology selection, validation, and
+consolidation safeguards remain unchanged. Initial demand construction still processes all demand pairs. Terrain cost
+screening is lazy and cached for sampled pairs. Passenger-model construction
+skips markets without stations and allocates flow conservation only at touched
+locations; total demand and coverage denominators still include all markets.
+Passenger solving can still grow quadratically or faster as the network expands.
+
+Move eligibility and selection use phase-specific relative weights:
+
+| Move family | Exploration | Integration |
+| --- | ---: | ---: |
+| Seed a new regional line | 12 | 1 |
+| Extend the network to a new market | 8 | 4 |
+| Bridge existing components | 2 | 12 |
+| Change service frequency | 1 | 3 |
+| Join through services | 1 | 5 |
+| Extend a line with a stop | 4 | 3 |
+| Move a station | 1 | 2 |
+
+Consolidation samples cost-saving families: track reuse (10), cheaper alignment
+(8), hub rerouting and station moves (6 each), frequency reduction (5), line
+removal and junction stations (4 each), and through services (3). Within a
+selected family, candidates with higher estimated savings are more likely to
+be tested. Untested candidates stay queued so random omission cannot trigger
+a false neighborhood-exhaustion stop. A consolidation move is still accepted
+only when it reduces annual cost and preserves the protected service targets.
+These weights are relative priorities rather than fixed selection percentages.
+
+Gravity seeding and faster sampling can be enabled together:
+
+```sh
+python optimize.py --profile europe --gravity-heuristic --speed-up --output runs/europe-gravity
+```
+
+`--gravity-heuristic` starts annealing by adding feasible conventional-rail pairs
+in descending population-gravity order (population product / distance raised to
+`gravity_beta`). Existing station sites are reused; new markets use their best
+capture site. Each pair is attempted once, using its cheapest routed alignment.
+Feasible additions are accepted without annealing rejection. The phase ends when
+served trips reach 75% of the fixed capturable demand, or all pairs have been
+attempted. Set `--gravity-demand-threshold 0.6` to change that share. Normal
+exploration, integration, and cost reduction then continue with configured train
+types, including HSR. Hard budget and feasibility limits still apply. Resuming a
+validated checkpoint continues the normal phases without reseeding.
+
+`--speed-up` samples at most 10 regional demand/bridge candidates and 10 queued
+cost moves per selection, using the configured random seed. Untested cost moves
+remain queued. This reduces selection work but can affect solution quality;
+routing and passenger optimization still use their normal accuracy. The flags
+also have JSON settings `gravity_heuristic`,
+`gravity_heuristic_demand_threshold`, and `speed_up`.

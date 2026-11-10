@@ -1,10 +1,10 @@
 """Regional exploration and demand-ranked connections between existing networks."""
 from collections import defaultdict
-import itertools
 
 import numpy as np
 
 from .geography import haversine
+from .sampling import sample_indices, sample_pairs
 
 
 def components(sites, links):
@@ -76,9 +76,12 @@ def growth_energy(values, record, financial_weight, pressure, config, coverage, 
             -pressure*config.annealing_network_effect_weight*config.served_weight*trips/max(1, capture_bound))
 
 
-def regional_proposal(problem, pool, design, rng, frequencies, stage):
+def regional_proposal(problem, pool, design, rng, frequencies, stage, allowed=None, preferred_action=None):
     from .annealing import canonical
     c = problem.config
+    allowed = set(allowed if allowed is not None else ('seed_region', 'frontier', 'bridge'))
+    limit = min(c.annealing_candidate_pair_limit or 10, 10) if c.speed_up else c.annealing_candidate_pair_limit
+    indices = sample_indices(len(problem.demand), limit, rng)
     live = {site for stops, ids, f in design for site in stops}
     active = {problem.locations[site]['city']: site for site in live}
     groups = components(live, [(a, b) for stops, ids, f in design for a, b in zip(stops, stops[1:])])
@@ -86,9 +89,14 @@ def regional_proposal(problem, pool, design, rng, frequencies, stage):
     existing = {frozenset(stops) for stops, ids, f in design if len(stops) == 2}
     city_pair = {frozenset(problem.locations[site]['city'] for site in stops)
                  for stops, ids, f in design if len(stops) == 2}
-    centers = {city['id']: city.get('center', next((s['coordinate'] for s in problem.locations
-               if s['city'] == city['id']), None)) for city in problem.cities}
-    base = pool.demand_weights()
+    if not hasattr(pool, '_market_centers'):
+        fallback = {}
+        for site in problem.locations:
+            fallback.setdefault(site['city'], site['coordinate'])
+        pool._market_centers = {city['id']: city.get('center', fallback.get(city['id']))
+                                for city in problem.cities}
+    centers = pool._market_centers
+    base = pool.demand_weights(indices)
     if not hasattr(pool, '_market_distances'):
         pool._market_distances = {}
     def distance(a, b):
@@ -96,16 +104,24 @@ def regional_proposal(problem, pool, design, rng, frequencies, stage):
         if key not in pool._market_distances:
             pool._market_distances[key] = haversine(centers[a], centers[b])
         return pool._market_distances[key]
-    nearest = {city: min((distance(city, old) for old in active), default=c.annealing_exploration_radius_km)
-               for city in centers if city not in active and centers[city] is not None}
+    nearest = {}
+    def novelty_distance(city):
+        if city not in nearest:
+            reference = sorted(active)
+            sampled = sample_indices(len(reference), limit, rng)
+            nearest[city] = min((distance(city, reference[i]) for i in sampled),
+                                default=c.annealing_exploration_radius_km)
+        return nearest[city]
     capture = {s['city']: s['capture_fraction'] for s in problem.stations if s['location'] in live}
     cross = defaultdict(float)
-    for od in problem.demand:
+    for index in indices:
+        od = problem.demand[index]
         a, b = od['origin'], od['destination']
         if a in component and b in component and component[a] != component[b]:
             cross[tuple(sorted((component[a], component[b])))] += od['volume']*capture[a]*capture[b]
     categories = dict(seed_region=[], frontier=[], bridge=[])
-    for index, od in enumerate(problem.demand):
+    for index in indices:
+        od = problem.demand[index]
         a, b = od['origin'], od['destination']
         if centers[a] is None or centers[b] is None or base[index] <= 0 or frozenset((a, b)) in city_pair:
             continue
@@ -114,16 +130,16 @@ def regional_proposal(problem, pool, design, rng, frequencies, stage):
             continue
         # A local seed must have a plausible passenger journey; full access,
         # capacity, waits and terrain are still evaluated by the LP afterward.
-        if a not in active and b not in active:
+        if 'seed_region' in allowed and a not in active and b not in active:
             if km/c.train_speed_kmh+.5/frequencies[0] > c.maximum_journey_hours:
                 continue
-            novelty = .05+.95*min(1, min(nearest[a], nearest[b])/c.annealing_exploration_radius_km)
+            novelty = .05+.95*min(1, min(novelty_distance(a), novelty_distance(b))/c.annealing_exploration_radius_km)
             categories['seed_region'].append((index, base[index]*novelty))
-        elif (a in active) != (b in active):
+        elif 'frontier' in allowed and (a in active) != (b in active):
             categories['frontier'].append((index, base[index]))
     # Endpoints need not themselves form an OD market: a short bridge can
     # unlock demand between other stations on either side of the connection.
-    for a, b in itertools.combinations(sorted(active), 2):
+    for a, b in sample_pairs(sorted(active), limit, rng) if 'bridge' in allowed else ():
         if component[a] == component[b] or frozenset((a, b)) in city_pair:
             continue
         km = distance(a, b)
@@ -141,8 +157,10 @@ def regional_proposal(problem, pool, design, rng, frequencies, stage):
     else:
         preferred = 'bridge' if rng.random() < .7 else 'frontier'
         order = [preferred, 'frontier' if preferred == 'bridge' else 'bridge', 'seed_region']
+    if preferred_action is not None:
+        order = [preferred_action] + [kind for kind in order if kind != preferred_action]
     for kind in order:
-        options = categories[kind]
+        options = categories[kind] if kind in allowed else []
         if not options:
             continue
         weights = np.asarray([w for _, w in options], dtype=float)
