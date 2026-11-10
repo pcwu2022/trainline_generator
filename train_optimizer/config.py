@@ -7,20 +7,22 @@ import math
 class Config:
     # Input files and study region
     # Choose source datasets and the bounding box [west, south, east, north].
-    # City records provide labels only. bbox controls geography; countries is legacy metadata.
+    # Population cells are filtered by bbox and country polygons; cities supply labels only.
     population_file: str = 'data/europe_3km.geojson'
     cities_file: str = 'data/cities50000.json'
+    country_boundaries_file: str = 'data/country_boundaries.geojson'
     terrain_file: str = ''
     land_file: str = ''
     bbox: list = field(default_factory=lambda: [2.5, 49.4, 7.5, 53.7])
     countries: list = field(default_factory=lambda: ['NL', 'BE'])
 
     # Population and city selection
-    # Rank eligible population cells by nearby population, then enforce separation.
+    # Greedy marginal coverage from eligible population cells.
     # Legacy city setting names now apply to population-derived markets.
+    minimum_seed_spacing_km: float = 0  # Zero uses market_radius_km, independent of adaptive radius
     max_cities: int = 100
-    market_radius_km: float = 15  # Unified scoring, market, center and catchment radius
-    minimum_city_population: int = 50000  # Minimum eligible population within seed radius
+    market_radius_km: float = 15  # Maximum scoring and density-adaptive market radius
+    minimum_city_population: int = 50000  # Target eligible population for adaptive radius; minimum seed score
     density_threshold: float = 100
     population_subdivision: int = 0
 
@@ -46,6 +48,7 @@ class Config:
     p_max: float = 0.6
     uptake_a: float = 0.1
     uptake_alpha: float = 1
+    uptake_reference_radius_km: float = 0  # Zero uses catchment radius; positive decouples uptake from market sizing
 
     # Track routing and terrain
     # Control candidate corridor connections, routing resolution and connectivity.

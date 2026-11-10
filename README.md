@@ -14,6 +14,14 @@ Set the shared-track budget to zero to disable this additional pool. Hubs must
 be existing candidate station sites; geometric track crossings alone do not
 create junctions or shared infrastructure.
 
+The Netherlands/Belgium profile sets `maximum_extra_lines=120` (the generic
+default remains 40). With the 40-pattern pool, the Jette–Delft–Amstelveen
+through service was excluded even though its route is only about 2.8% longer
+than the direct Jette–Amstelveen corridor. Increasing the pool admits this
+shared-track option without changing fares, construction prices, objective
+weights, or the detour limit. A larger pool also makes the MILP harder; a
+time-limited fresh run is not guaranteed to discover the shared solution.
+
 Objective defaults prioritize ridership (`served_weight=10`), population within
 operating station catchments (`population_weight=1`), and shorter passenger
 journeys (`time_weight=0.5`, including access, waiting and transfers).
@@ -23,7 +31,7 @@ economic values. Population coverage uses fixed exclusive zones to avoid double
 counting; `latest.json` reports its population count and fraction.
 
 `configs/netherlands.json` now requires service at 75% of candidate markets
-(six of eight), at least 10% of fixed regional potential demand, and at least
+(15 of 20), at least 10% of fixed regional potential demand, and at least
 5% of each selected market's outbound demand. Every selected line operates at
 least twice per hour in each direction. Station circles may overlap; fixed
 nearest-market population zones prevent double counting. These thresholds are
@@ -31,8 +39,7 @@ scenario assumptions, not calibrated service standards.
 The scenario uses five neighboring markets and a 250 km corridor limit to
 connect the candidate graph; the previous three-neighbor/180 km graph split
 into components of five and three markets, making six-market coverage impossible.
-The bounding box includes German markets: `countries` remains legacy metadata
-and does not filter population geography.
+Country boundaries restrict population-based discovery to the configured countries.
 
 `minimum_city_served_fraction`, `minimum_selected_origin_served_fraction`, and
 `minimum_service_frequency` control these requirements. Set `upfront_budget`
@@ -90,10 +97,9 @@ with an explicit status, rather than inventing a profitable solution.
 
 ### Example assumptions
 
-`configs/netherlands.json` selects eight population-derived markets in a rectangular
-region. Its monetary and demand defaults are uncalibrated; it may be infeasible.
+`configs/netherlands.json` selects up to 20 population-derived markets. Its monetary and demand defaults are uncalibrated; it may be infeasible.
 The bounding box defines the study area and can include neighboring countries.
-`countries` is retained as legacy metadata; it does not filter seeds or population.
+`countries` filters population cells using the configured boundary dataset.
 City-file records provide optional labels only. Verify source coverage before
 interpreting national totals.
 
@@ -269,28 +275,37 @@ Exit codes: `0` feasible result (inspect optimality gap), `2` proven infeasible,
 `market_radius_km: 25` replaces `center_search_km`, `service_radii_km`,
 `minimum_city_spacing_km` and `seed_search_radius_km`. Custom configurations
 must remove those old keys. `max_cities` and `minimum_city_population` retain
-legacy names for the population-derived market count and screening threshold.
+legacy names for the population-derived market count and target population.
 
 
-1. **Population and centers.** Calculate actual area/density with H3. Rank eligible
-   source tile centers by eligible population within `market_radius_km` (25 km).
-   Break ties by H3 ID and greedily retain seeds at least 25 km apart, up to
-   `max_cities`. `minimum_city_population` now means minimum nearby population,
-   not city-file population. City records never enter the score or seed selection.
-   Subdivision controls later sampling detail, not seed ranking.
-   Locate a population-weighted geometric median within each seed's 25 km
-   neighborhood and generate nearby station alternatives. Every station has one
-   25 km catchment. `peak` and `circle` modes also use this unified radius.
+1. **Population and centers.** Filter population cells by `bbox` and country
+   polygons from `country_boundaries_file`. Empty `countries` means bbox only.
+   Discover markets directly from eligible population cell centers, with no
+   predefined city anchors. Rank by distance-weighted population within `market_radius_km`
+   using a Gaussian weight with scale `market_radius_km / 3`, favoring compact
+   urban centers over positions between towns;
+   after each pick, rescore using only population outside previously selected
+   scoring neighborhoods. Require at least `minimum_city_population` new population
+   per pick. Enforce `minimum_seed_spacing_km` (zero uses `market_radius_km`), up to
+   `max_cities`. Expand each seed's radius to reach the target population, capped
+   at `market_radius_km` and floored at the nearest eligible cell's equivalent disk
+   radius (also capped). Use this radius for center calculation and catchments.
+   Seeds remain fixed while the solver chooses markets and connections.
 2. **Fixed origin zones.** Assign eligible samples to their nearest population
-   seed, capped at 25 km. Overlaps have one owner. Samples below
-   `density_threshold` or farther than 25 km from every seed contribute no demand.
+   seed, capped at that seed’s adaptive radius. Overlaps have one owner. Samples
+   below `density_threshold` or outside their owner’s radius contribute no demand.
+   Exclusive ownership can reduce final market population below the target.
    Station catchments must also fall within their owning market. Optional city
-   records label the finalized market centers using the nearest city within
+   records label finalized centers using the nearest city within
    30 km; repeated labels receive a market-number suffix. Missing labels use
-   `Market N`. Labels and country names have no effect on optimization.
+   `Market N`. City records have no effect on seed selection. Country filtering
+   uses cell/sample centers; tracks can still cross political boundaries.
 3. **Catchments.** Select at most one station/location/radius option per city.
    Eligible residents of that origin zone within the radius supply coverage.
-   Uptake is `p_max*(1-exp(-uptake_a*radius**uptake_alpha))`. Capture is covered
+   Uptake is `p_max*(1-exp(-uptake_a*R**uptake_alpha))`, with `R` equal to
+   `uptake_reference_radius_km` when positive, otherwise the catchment radius.
+   Regional scenarios use a 25 km reference to decouple uptake from adaptive
+   geometry. Capture is covered
    population / zone population times uptake. Selected circles may overlap;
    fixed exclusive origin zones and one station per market prevent double counting.
    Cross-zone access to another market's station is not yet modeled.

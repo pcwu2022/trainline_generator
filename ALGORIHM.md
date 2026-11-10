@@ -6,17 +6,21 @@ solved by HiGHS.
 
 1. **Read settings and geography.** Load `config.json`, apply the selected regional
    configuration and command-line options, and read population cells and cities.
-   Keep the requested bounding box. City records supply labels only; country codes do not filter population.
-2. **Create station choices.** Rank eligible population tiles by population within 25 km,
-   select the strongest seeds at least 25 km apart, and retain up to `max_cities`.
-   Find population-weighted central locations and nearby alternatives. Use the
-   unified `market_radius_km = 25` for scoring, center evaluation, market extent
-   and station catchments. Assign overlap residents to their nearest seed;
-   residents beyond 25 km of all seeds do not contribute demand. Attach nearby
-   city names afterward for station labels and map reference.
+   Filter population by the requested bbox and country polygons. City records provide labels only.
+2. **Discover markets and station choices.** Use eligible population tile centers
+   as candidates. Greedily select up to `max_cities` seeds by newly represented
+   population within `market_radius_km`, weighted by a Gaussian with scale
+   `market_radius_km / 3` to favor dense urban centers. Rescore after each pick. Enforce
+   independent `minimum_seed_spacing_km` (zero uses the maximum market radius).
+   Expand each market radius until reaching the target population, with a cell-size
+   floor and `market_radius_km` cap. Use this adaptive radius for center evaluation
+   and catchments. Assign residents to their nearest seed within its radius. Final
+   assigned populations can fall below the target. Attach optional city labels
+   afterward. Seeds and demand stay fixed while the solver chooses connections.
 3. **Estimate travel demand.** Generate directional trips between cities using
    population and distance. Station capture at both endpoints limits how much
-   of that demand can use rail.
+   of that demand can use rail. Regional configs use `uptake_reference_radius_km`
+   to keep uptake independent of adaptive market geometry.
 4. **Create track and service choices.** Connect nearby candidate locations,
    estimate construction costs from population density and available terrain,
    retain a direct geodesic and a cheaper any-angle terrain detour when found,

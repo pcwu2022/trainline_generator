@@ -1,5 +1,6 @@
-"""Population-only market seeds and optional geographic labels."""
+"""Population-discovered market seeds with marginal coverage."""
 import json
+import math
 from pathlib import Path
 
 import numpy as np
@@ -8,44 +9,79 @@ from scipy.spatial import cKDTree
 
 
 def population_seeds(cells, config):
-    """Rank eligible cell centers by population within a metric neighborhood.
+    """Greedy marginal population coverage with independent seed separation.
 
-    Greedily retain geographically separated centers. H3 IDs break ties so
-    feature order and city-label records cannot affect the network candidates.
+    All candidates come from population cells; city records only supply labels.
     """
     from .geography import haversine
-    candidates = sorted((c for c in cells if c['density'] >= config.density_threshold
-                         and c['population'] > 0), key=lambda c: c['h3'])
-    if not candidates:
+    eligible = sorted((c for c in cells if c['density'] >= config.density_threshold
+                       and c['population'] > 0), key=lambda c: c['h3'])
+    if not eligible:
         return []
     w, s, e, n = config.bbox
     projection = Transformer.from_crs('EPSG:4326',
         f'+proj=aeqd +lat_0={(s+n)/2} +lon_0={(w+e)/2} +datum=WGS84 +units=m', always_xy=True)
-    xy = np.array([projection.transform(c['lon'], c['lat']) for c in candidates]) / 1000
+    xy = np.array([projection.transform(c['lon'], c['lat']) for c in eligible]) / 1000
     tree = cKDTree(xy)
-    population = np.array([c['population'] for c in candidates])
-    scores = [float(population[tree.query_ball_point(point, config.market_radius_km)].sum())
-              for point in xy]
+    population = np.array([c['population'] for c in eligible])
+    candidates = [dict(coordinate=(c['lon'], c['lat']), name='', country='') for c in eligible]
+    neighborhoods = []
+    positions = []
+    weights = []
+    for candidate in candidates:
+        point = np.asarray(projection.transform(*candidate['coordinate'])) / 1000
+        positions.append(point)
+        near = np.asarray(tree.query_ball_point(point, config.market_radius_km), dtype=int)
+        neighborhoods.append(near)
+        # Favor compact urban concentrations over circles spanning several towns.
+        distance = np.linalg.norm(xy[near] - point, axis=1)
+        weights.append(np.exp(-0.5 * (distance / (config.market_radius_km / 3))**2))
+    totals = np.array([population[near].sum() for near in neighborhoods])
+    scores = np.array([np.dot(population[near], weight)
+                       for near, weight in zip(neighborhoods, weights)])
+    available = totals >= config.minimum_city_population
+    represented = np.zeros(len(eligible), dtype=bool)
     seeds = []
-    for i in sorted(range(len(candidates)), key=lambda i: (-scores[i], candidates[i]['h3'])):
-        if scores[i] < config.minimum_city_population:
-            continue
-        cell = candidates[i]
-        point = (cell['lon'], cell['lat'])
-        if all(haversine(point, seed['coordinate']) >= config.market_radius_km for seed in seeds):
-            seeds.append(dict(name=f'Market {len(seeds)+1}', country='', coordinate=point,
-                              seed_population=scores[i], seed_h3=cell['h3']))
-            if len(seeds) >= config.max_cities:
-                break
+    spacing = config.minimum_seed_spacing_km or config.market_radius_km
+    while len(seeds) < config.max_cities and available.any():
+        # Re-score after every choice so overlapping metropolitan neighborhoods
+        # do not repeatedly claim the same population as a new benefit.
+        gains = [(float(np.dot(population[near] * (~represented[near]), weights[i]))
+                  if available[i] and population[near[~represented[near]]].sum() >= config.minimum_city_population
+                  else -1) for i, near in enumerate(neighborhoods)]
+        i = int(np.argmax(gains))
+        if gains[i] <= 0:
+            break
+        point = positions[i]
+        near = neighborhoods[i]
+        ordered = sorted(near, key=lambda j: (float(np.linalg.norm(xy[j]-point)), eligible[j]['h3']))
+        cumulative = np.cumsum(population[ordered])
+        target = min(int(np.searchsorted(cumulative, config.minimum_city_population)), len(ordered)-1)
+        nearest = ordered[0]
+        cell_radius = math.sqrt(eligible[nearest]['population'] / eligible[nearest]['density'] / math.pi)
+        radius = min(config.market_radius_km, max(cell_radius, float(np.linalg.norm(xy[ordered[target]]-point))))
+        seed = dict(candidates[i])
+        seed.update(name=seed['name'] or f'Market {len(seeds)+1}',
+                    seed_population=float(totals[i]), seed_score=float(scores[i]),
+                    seed_marginal_population=gains[i],
+                    seed_h3=eligible[nearest]['h3'], radius_km=radius)
+        seeds.append(seed)
+        represented[near] = True
+        available[i] = False
+        for j, candidate in enumerate(candidates):
+            if available[j] and haversine(seed['coordinate'], candidate['coordinate']) < spacing:
+                available[j] = False
     return seeds
 
 
-def label_markets(cities, path, maximum_distance_km=30):
+def label_markets(cities, path, maximum_distance_km=30, countries=None):
     """Attach nearest-city labels after candidate positions are finalized."""
     from .geography import haversine
     if not path or not Path(path).exists():
         return
     records = json.loads(Path(path).read_text())
+    if countries:
+        records = [r for r in records if r.get('country') in countries]
     if not records:
         return
     for city in cities:
@@ -61,8 +97,9 @@ def label_markets(cities, path, maximum_distance_km=30):
             city['name'] += f" (market {city['id']+1})"
 
 
-def market_membership(sample_xy, seed_xy, density, config):
-    """Nearest-seed ownership, capped at the unified market radius (metric km)."""
+def market_membership(sample_xy, seed_xy, density, config, radii=None):
+    """Nearest-seed ownership, capped at each owner's radius (metric km)."""
     distance, owner = cKDTree(seed_xy).query(sample_xy)
-    eligible = (np.asarray(density) >= config.density_threshold) & (distance <= config.market_radius_km)
+    limits = config.market_radius_km if radii is None else np.asarray(radii)[owner]
+    eligible = (np.asarray(density) >= config.density_threshold) & (distance <= limits + 1e-9)
     return owner, eligible

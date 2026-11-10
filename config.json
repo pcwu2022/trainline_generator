@@ -14,7 +14,7 @@
     "BE"
   ],
 
-  "max_cities": 8,
+  "max_cities": 20,
   "market_radius_km": 25,
   "minimum_city_population": 50000,
   "density_threshold": 100,

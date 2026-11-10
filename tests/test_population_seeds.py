@@ -16,9 +16,63 @@ class PopulationSeedTests(unittest.TestCase):
                  dict(h3='c', lon=1, lat=50, population=900, density=20),
                  dict(h3='d', lon=2, lat=50, population=10000, density=1)]
         seeds = population_seeds(cells, config)
-        self.assertEqual([s['seed_h3'] for s in seeds], ['a', 'c'])
-        self.assertEqual(seeds[0]['seed_population'], 1100)
+        self.assertEqual([s['seed_h3'] for s in seeds], ['c', 'a'])
+        self.assertEqual(seeds[1]['seed_population'], 1100)
         self.assertEqual(seeds, population_seeds(list(reversed(cells)), config))
+
+    def test_country_polygon_filter_excludes_germany(self):
+        from shapely.geometry import Point
+        from train_optimizer.geography import country_mask
+        region = country_mask(Config(countries=['NL', 'BE']))
+        self.assertTrue(region.covers(Point(4.9, 52.37)))  # Amsterdam
+        self.assertTrue(region.covers(Point(4.35, 50.85)))  # Brussels
+        self.assertFalse(region.covers(Point(7.0, 51.45)))  # Essen
+        self.assertIsNone(country_mask(Config(countries=[])))
+        with self.assertRaisesRegex(ValueError, 'missing codes'):
+            country_mask(Config(countries=['XX']))
+
+    def test_city_catalogue_cannot_affect_seed_selection(self):
+        cells = [dict(h3='a', lon=4, lat=51, population=1000, density=100)]
+        first = population_seeds(cells, Config(cities_file='/missing/catalogue'))
+        second = population_seeds(cells, Config(cities_file=''))
+        self.assertEqual(first, second)
+
+    def test_marginal_scoring_prefers_unrepresented_population(self):
+        config = Config(bbox=[0, 49, 3, 52], market_radius_km=25,
+                        minimum_seed_spacing_km=1, minimum_city_population=100,
+                        density_threshold=10, max_cities=2)
+        cells = [dict(h3='a', lon=0, lat=50, population=800, density=20),
+                 dict(h3='b', lon=.1, lat=50, population=700, density=20),
+                 dict(h3='c', lon=1, lat=50, population=900, density=20)]
+        self.assertEqual([s['seed_h3'] for s in population_seeds(cells, config)], ['a', 'c'])
+
+    def test_compact_city_beats_larger_diffuse_population(self):
+        config = Config(bbox=[-1, 49, 3, 52], market_radius_km=25,
+                        minimum_city_population=100, density_threshold=10, max_cities=1)
+        compact = [dict(h3=f'a{i}', lon=i*.01, lat=50, population=200, density=100)
+                   for i in range(3)]
+        diffuse = [dict(h3=f'b{i}', lon=1+i*.06, lat=50, population=100, density=100)
+                   for i in range(-4, 4)]
+        # The diffuse region has more people, but the city has a stronger center.
+        seed = population_seeds(compact+diffuse, config)[0]
+        self.assertLess(seed['coordinate'][0], .1)
+        self.assertEqual(seed['seed_population'], 600)
+
+    def test_dense_population_reaches_target_at_smaller_radius(self):
+        config = Config(bbox=[0, 49, 3, 52], market_radius_km=25,
+                        minimum_city_population=100, density_threshold=10, max_cities=1)
+        def radius(spacing):
+            cells = [dict(h3=str(i), lon=1 + i*spacing, lat=50,
+                          population=40, density=1000) for i in range(3)]
+            return population_seeds(cells, config)[0]['radius_km']
+        self.assertLess(radius(.01), radius(.1))
+        self.assertLessEqual(radius(.1), config.market_radius_km)
+
+    def test_membership_uses_owner_radius(self):
+        owner, eligible = market_membership([[3, 0], [7, 0], [19, 0]],
+                                            [[0, 0], [20, 0]], [100]*3,
+                                            Config(), radii=[5, 2])
+        self.assertEqual(eligible.tolist(), [True, False, True])
 
     def test_labels_are_optional_and_do_not_move_markets(self):
         cities = [dict(id=0, name='Market 1', country='', center=(4.3, 50.8),

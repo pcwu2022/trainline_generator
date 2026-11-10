@@ -11,13 +11,16 @@
     "BE"
   ],
 
-  "max_cities": 8,
+  "uptake_reference_radius_km": 25,
+  "minimum_seed_spacing_km": 25,
+  "max_cities": 10,
   "density_threshold": 100,
   "population_subdivision": 0,
 
   "center_method": "access",
   "neighbors_per_city": 5,
   "maximum_edge_km": 250,
+  "maximum_extra_lines": 120,
 
   "operating_start_hour": 6,
   "operating_end_hour": 22,

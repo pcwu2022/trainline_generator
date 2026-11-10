@@ -38,8 +38,11 @@ units, coverage and reference year require source verification. Missing cells
 are unknown. City records provide optional labels only; their populations never affect seeds
 or demand and are never added to the population cells.
 
-The bounding box filters population points. Seeds are derived from those points.
-`countries` is legacy metadata; the rectangle can include neighboring countries. Local distances use a regional azimuthal equidistant projection;
+The bounding box and `countries` polygons filter population points. Seeds are
+derived only from those points. `country_boundaries_file` supplies country
+polygons; an empty country list disables the polygon filter. Missing country
+codes are an error. Cells and subdivided samples are included by their centers.
+Routes are not constrained to political boundaries. Local distances use a regional azimuthal equidistant projection;
 corridor and direct OD distances use great-circle distances.
 
 ## 2. Population samples, city centers and station candidates
@@ -49,14 +52,40 @@ and full population. Values 1 or 2 distribute population among finer H3 children
 in proportion to their areas, assuming uniform population within the parent.
 Child centers outside the bounding box are excluded.
 
-Eligible source H3 centers are ranked by eligible population within
-`market_radius_km` (25 km). Ties use H3 IDs. Greedily retain centers at least
-25 km from prior seeds, with score >= `minimum_city_population`, up to
-`max_cities`. At least two separated population markets are required.
-City labels are attached afterward and do not change coordinates or markets.
+All seed candidates are eligible population cell centers. City records never
+participate in seeding. Score centers using a distance-weighted sum of eligible
+population within `market_radius_km`:
+
+```text
+sigma = market_radius_km / 3
+weight(d) = exp(-0.5 * (d / sigma)**2) for d <= market_radius_km
+score(center) = sum(population_g * weight(distance(center, g)))
+```
+
+This favors compact urban centers over locations between multiple towns.
+`seed_population` reports the unweighted neighborhood total; `seed_score` and
+`seed_marginal_population` report weighted scores. After every selection, remove its scoring neighborhood
+from the remaining candidates' scores. This greedy marginal-coverage score
+rewards newly represented population rather than repeatedly rewarding the same
+metropolitan population. Require at least `minimum_city_population` of new
+unweighted population. H3 IDs break ties deterministically. Retain up to `max_cities` seeds,
+separated by `minimum_seed_spacing_km` (zero means `market_radius_km`). Spacing
+is independent of the smaller density-adaptive catchment radius.
+
+For each selected seed, expand its radius until eligible cell-center population
+reaches `minimum_city_population`, capped at `market_radius_km` and floored at
+the nearest eligible cell's equivalent disk radius (also capped). Dense areas
+usually reach the target sooner. Scoring neighborhoods measure geographic
+representation; they are not the final demand zones. At least two markets are
+required. City names are optional labels attached only after centers are fixed.
+
+The MILP chooses which candidate markets to serve. Seeds are fixed during a solve:
+moving them would change origin populations and demand and invalidate comparisons
+between incumbent solutions. Greedy coverage improves geographic representation,
+not guaranteed network optimality; optimality remains relative to the candidates.
 
 For `center_method="access"`, collect population samples within
-`market_radius_km` of the population seed and numerically minimize:
+the adaptive radius of the population seed and numerically minimize:
 
 ```text
 center_i = argmin_z sum(g in local_i, n_g * distance(g, z)) / sum(g in local_i, n_g)
@@ -68,28 +97,35 @@ population samples before demand eligibility and origin-zone restrictions.
 If there are no local samples, the city seed is the center.
 
 Two legacy options remain configurable: `peak` picks the highest-density sample;
-`circle` uses the same `R = market_radius_km` and compares
+`circle` uses the market’s adaptive radius and compares
 covered population at the seed and local sample centers. Neither is the default.
 
 Station locations include the computed center, the seed when sufficiently
 separated, and nearby population-sample centers ordered by proximity to the
 computed center. Sites must be more than 1 km apart within a city, and at most
-`locations_per_city` are retained. Every location has exactly one catchment with radius `market_radius_km` (25 km). The optimization selects among these finite options;
+`locations_per_city` are retained. Every location has exactly one catchment with the market’s adaptive radius. The optimization selects among these finite options;
 it does not move stations continuously.
 
 ## 3. Fixed origin zones, catchments and uptake
 
 Assign each population sample to its nearest population seed, independently of
-station-opening decisions. Only samples within 25 km of that seed and with density
+station-opening decisions. Only samples within the adaptive radius of that seed and with density
 at least `density_threshold` contribute to the city's eligible population N_i and demand.
-A station cannot capture residents assigned to another city's zone.
+A station cannot capture residents assigned to another city's zone. The target
+is evaluated before exclusive ownership; final market population and station
+coverage can therefore be below the target. Population is counted in whole cells.
+
+The regional scenarios set `uptake_reference_radius_km=25`, separating modeled
+willingness to use rail from the density-adaptive geometry. This remains an
+uncalibrated assumption; zero preserves catchment-dependent uptake.
 
 For station/radius option s belonging to city i:
 
 ```text
 G_s = eligible samples in zone_i with distance(g, station_s) <= radius_s
 covered_s = sum(g in G_s, n_g)
-uptake_s = p_max * (1 - exp(-uptake_a * radius_s**uptake_alpha))
+uptake_radius_s = uptake_reference_radius_km if positive, otherwise radius_s
+uptake_s = p_max * (1 - exp(-uptake_a * uptake_radius_s**uptake_alpha))
 capture_s = (covered_s / N_i) * uptake_s
 ```
 

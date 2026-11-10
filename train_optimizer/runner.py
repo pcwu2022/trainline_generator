@@ -159,7 +159,7 @@ def main(argv=None):
                                       iteration_unit='solver_progress_callback', gif_frame_ms=args.gif_frame_ms),
                         variables=len(model.names), constraints=len(model.row_lower),
                         input_sha256={path: hashlib.sha256(Path(path).read_bytes()).hexdigest()
-                                      for path in (config.population_file, config.cities_file, config.terrain_file, config.land_file) if path and Path(path).exists()},
+                                      for path in (config.population_file, config.cities_file, config.country_boundaries_file, config.terrain_file, config.land_file) if path and Path(path).exists()},
                         versions=dict(highs=highspy.Highs().version(), numpy=np.__version__),
                         warnings=problem.warnings)
         atomic_text(output/'manifest.json', json.dumps(manifest, indent=2))

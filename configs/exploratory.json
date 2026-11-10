@@ -10,7 +10,7 @@
     "BE"
   ],
 
-  "max_cities": 8,
+  "max_cities": 20,
 
   "demand_model": "production",
   "trips_per_person_hour": 0.01,

@@ -190,6 +190,19 @@ class Router:
         return min(self.routes(a, b), key=lambda route: route['track_capital'], default=None)
 
 
+def country_mask(config):
+    """Prepared country union, or None for bbox-only discovery."""
+    if not config.countries:
+        return None
+    raw = json.loads(Path(config.country_boundaries_file).read_text())
+    requested = set(config.countries)
+    features = [f for f in raw['features'] if f['properties'].get('iso_a2') in requested]
+    found = {f['properties']['iso_a2'] for f in features}
+    if requested - found:
+        raise ValueError(f'Country boundaries missing codes: {sorted(requested - found)}')
+    return prep(unary_union([shape(f['geometry']) for f in features]))
+
+
 def prepare(config, progress=lambda message: None, publish=lambda problem: None):
     config.validate()
     warnings = [
@@ -197,7 +210,7 @@ def prepare(config, progress=lambda message: None, publish=lambda problem: None)
         'Population counts/coverage require source verification; absent cells are unknown.',
         'Population is distributed uniformly among child H3 cells for catchment estimates.',
         'Demand outside the bounding box is excluded; border effects can be large.',
-        'Population seeds and demand are clipped by bbox; countries is legacy metadata and does not filter geography.',
+        'Population cells are filtered by bbox and country polygons; track routes are not constrained by political borders.',
         'Access uses fixed nearest-city origin zones; cross-zone access to another city station is excluded.',
         'Line patterns are a finite set of all-stop services; optimality is relative to these candidates.',
         'Direct geodesic and finite any-angle terrain alternatives use sampled costs; sub-sample obstacles may be missed.',
@@ -215,9 +228,11 @@ def prepare(config, progress=lambda message: None, publish=lambda problem: None)
     west, south, east, north = config.bbox
     raw = json.loads(Path(config.population_file).read_text())
     cells = []
+    region = country_mask(config)
     for feature in raw['features']:
         lon, lat = feature['geometry']['coordinates'][:2]
-        if west <= lon <= east and south <= lat <= north:
+        if (west <= lon <= east and south <= lat <= north
+                and (region is None or region.covers(Point(lon, lat)))):
             p = feature['properties']
             index = p['h3Index']
             population = float(p['population'])
@@ -226,7 +241,7 @@ def prepare(config, progress=lambda message: None, publish=lambda problem: None)
             cells.append(dict(h3=index, lon=lon, lat=lat, population=population,
                               density=population/h3.cell_area(index, unit='km^2')))
     if not cells:
-        raise ValueError('No population cells in bbox')
+        raise ValueError('No population cells in bbox and configured countries')
     if len({c['h3'] for c in cells}) != len(cells):
         raise ValueError('Duplicate H3 population cells would count residents twice')
     if len({h3.get_resolution(c['h3']) for c in cells}) != 1:
@@ -250,7 +265,8 @@ def prepare(config, progress=lambda message: None, publish=lambda problem: None)
         weights = areas / areas.sum()
         for child, weight in zip(children, weights):
             lat, lon = h3.cell_to_latlng(child)
-            if not west <= lon <= east or not south <= lat <= north:
+            if (not west <= lon <= east or not south <= lat <= north
+                    or (region is not None and not region.covers(Point(lon, lat)))):
                 continue
             x, y = forward.transform(lon, lat)
             sample_xy.append((x/1000, y/1000))
@@ -264,10 +280,10 @@ def prepare(config, progress=lambda message: None, publish=lambda problem: None)
     for city_id, seed in enumerate(seeds):
         sx, sy = forward.transform(*seed['coordinate'])
         seed_xy = np.array([sx/1000, sy/1000])
-        local = tree.query_ball_point(seed_xy, config.market_radius_km)
+        local = tree.query_ball_point(seed_xy, seed['radius_km'] + 1e-9)
         if local:
             peak = local[int(np.argmax(density[local]))]
-            radius = config.market_radius_km
+            radius = seed['radius_km']
             if config.center_method == 'access':
                 center, _, _ = access_statistics(xy[local], population[local], seed_xy, config)
             elif config.center_method == 'peak':
@@ -296,15 +312,15 @@ def prepare(config, progress=lambda message: None, publish=lambda problem: None)
                                       xy=point.tolist(), center_offset_km=float(np.linalg.norm(point-center))))
                 if len(accepted) == config.locations_per_city:
                     break
-    label_markets(cities, config.cities_file)
+    label_markets(cities, config.cities_file, countries=config.countries)
     # Fixed origin zones use population seeds; labels never move their boundaries.
     seed_points = np.array([np.array(forward.transform(*s['coordinate'])) / 1000 for s in seeds])
-    owner, eligible = market_membership(xy, seed_points, density, config)
+    owner, eligible = market_membership(xy, seed_points, density, config, [s['radius_km'] for s in seeds])
     for city in cities:
         city['population'] = float(population[(owner == city['id']) & eligible].sum())
     stations = []
     for location in locations:
-        for radius in (config.market_radius_km,):
+        for radius in (cities[location['city']]['radius_km'],):
             near = np.asarray(tree.query_ball_point(location['xy'], radius), dtype=int)
             near = near[(owner[near] == location['city']) & eligible[near]]
             covered = float(population[near].sum())
@@ -314,10 +330,11 @@ def prepare(config, progress=lambda message: None, publish=lambda problem: None)
                 xy[near], population[near], location['xy'], config)
             access = mean_access_km / config.access_speed_kmh
             total = cities[location['city']]['population']
+            uptake_radius = config.uptake_reference_radius_km or radius
             stations.append(dict(id=len(stations), location=location['id'], city=location['city'],
                                  radius_km=radius, covered_population=covered,
-                                 uptake=uptake(radius, config.p_max, config.uptake_a, config.uptake_alpha),
-                                 capture_fraction=covered / total * uptake(radius, config.p_max, config.uptake_a, config.uptake_alpha),
+                                 uptake=uptake(uptake_radius, config.p_max, config.uptake_a, config.uptake_alpha),
+                                 capture_fraction=covered / total * uptake(uptake_radius, config.p_max, config.uptake_a, config.uptake_alpha),
                                  access_hours=access, mean_access_km=mean_access_km,
                                  access_multiplier=access_multiplier))
     live_locations = {s['location'] for s in stations}
