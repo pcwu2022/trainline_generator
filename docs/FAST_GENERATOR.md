@@ -41,6 +41,12 @@ neighbours evaluated per incremental update, or the NSGA population size.
 search time including live rendering, after geography preparation. Ctrl+C
 finishes the current update and saves its accepted network and evaluated front.
 A second Ctrl+C interrupts immediately.
+Service sizing allows one departure every three hours, two hours or 90 minutes
+(`1/3`, `1/2`, `2/3` trains/hour/direction), followed by integer hourly frequencies
+up to each track's frequency cap. `operations.low_frequencies` controls these
+choices and `minimum_frequency` defaults to `1/3`. Expected waiting time is half
+the headway: 90, 60 or 45 minutes respectively, without a one-hour cap. Train-km,
+operating costs and capacity use the actual fractional frequency.
 Iteration logs and saved metrics include `need_satisfaction_ratio`: completed
 two-way annual trips divided by fixed two-way annual gravity demand across all
 candidate OD pairs, including unserved pairs. The denominator includes fixed
@@ -70,6 +76,40 @@ non-finite numbers, invalid frequencies and invalid load factors are rejected.
 Paths resolve relative to the working directory, as in the existing optimizer.
 
 ## Inputs and calibration status
+
+### Experimental connect-and-repair search
+
+On `experiment/connect-and-repair-capacity`, enable the experiment explicitly:
+
+```sh
+.venv/bin/python optimize.py --solver pareto --profile europe \
+  --config configs/capacity-repair.json --output runs/europe-capacity-repair \
+  --iterations 500 --snapshot-every 50
+```
+
+Use a fresh output path or add `--overwrite` to replace a previous experiment.
+The default model still uses one train unit per departure. The experiment permits
+up to two coupled units, sizing each corridor's formation to its predicted demand
+after frequency assignment. Each additional unit pays full train-unit operating
+cost and fleet capital, including turnaround and spare allowances. Frequency
+limits, station/track capital and the 15% spill limit are unchanged. Formation size
+is derived deterministically from a network, rather than encoded as another gene.
+`train_units` is saved per corridor in GeoJSON and the cost log; aggregate formation
+metrics are included in `latest.json` and iteration history.
+
+If single-edge integration exhausts its neighbourhood, the experiment also tests
+two approaches to an unserved city and a bounded sequence of additions/upgrades
+near saturated corridors. Infeasible intermediate networks remain internal; only
+the complete feasible package can be accepted. `capacity_repair_steps` (3) and
+`capacity_repair_candidates` (8) bound the repair depth and beam/expansion width;
+zero steps disables package repair. Accepted packages are labelled `capacity_repair`
+in history, with evaluation counts and feasibility diagnostics. Time limits and
+Ctrl+C are checked between package evaluations.
+
+This is a strategic capacity experiment: two-unit formations assume compatible
+platform lengths, traction and coupling. Platform extension costs and separate
+parallel-track capacity are not modeled. Alternative routes use only existing
+candidate alignments, so the experiment can still stop with incomplete coverage.
 
 The supplied `data/cities50000.json` contains city populations and includes
 suburbs/administrative districts. **It is not a verified metropolitan table.**
@@ -312,3 +352,39 @@ Optional artificial hubs, alternative alignment genes, CO2 objectives, AMOSA,
 full line pools and cross-sea hand-built links are not implemented. NSGA-III is
 the available many-objective alternative; the installed pymoo MOEA/D does not
 support the required constraint mechanism. There is no global optimality claim.
+
+### Financial map and ranked station/corridor dashboard
+
+Each live snapshot now publishes `latest_revenue_cost.png` alongside the usual
+satisfaction map. It uses the same geometry, viewport, route thickness and
+single-CR/double-HSR symbols. Color is annual allocated revenue divided by annual
+allocated cost: red below 1, gold at break-even, green above 1, saturated at 2.
+Gray denotes an undefined ratio with no positive cost. Annual cost includes
+operating expense, maintenance and annualized infrastructure/station/fleet
+capital, following the evaluator's existing shared-cost allocation.
+
+`analysis.png` contains eight top-ten rankings: station satisfaction, station
+endpoint trips, corridor satisfaction, revenue/cost, annual cost, annual revenue,
+best annual net results and largest annual losses. Satisfaction bars show both
+percentages and carried/eligible annual trip counts. `analysis.json` contains
+all station and active-corridor metrics, the genome, and metric definitions.
+The live report links both images and the JSON. Pareto representatives receive
+matching `design_XXXX_revenue_cost.png` and `design_XXXX_analysis.png/.json` files.
+
+Station satisfaction uses a station's fixed capturable OD endpoint demand,
+including destinations that are unserved. Transfers are excluded from station
+endpoint totals, and each trip is counted at both endpoints. Corridor
+satisfaction matches the existing map and counts each ridden transfer leg.
+"Lines" are modeled city-pair corridors, not reconstructed through services.
+Annual allocated profit is revenue minus annual cost; it is not the savings
+from independently closing a corridor.
+
+Regenerate just these images for a saved network, without a new search:
+
+```sh
+.venv/bin/python -m rail_gen.analysis --run-dir runs/europe-live --cache-dir runs/railgen-cache
+```
+
+This uses the run's saved configuration and exact cached candidate graph, and
+re-evaluates its saved genome. Regenerating old runs with changed evaluator
+logic can change their financial/passenger estimates.

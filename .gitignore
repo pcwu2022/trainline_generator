@@ -41,3 +41,7 @@ runs/
 # Downloaded DEM tiles and generated elevation grids
 data/copernicus_dem/
 data/europe_terrain_*km.tif
+
+# Public elevation tiles and the slope-cost trial DEM
+data/slope_tiles/
+data/slope_trial/

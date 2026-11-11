@@ -101,7 +101,8 @@ class PopulationMapTests(unittest.TestCase):
                              viewport=background.viewport)
                     background.draw(result, Path(temporary) / 'populated.png', 'Populated')
                     background.draw(e.evaluate([0, 0, 0]), Path(temporary) / 'empty.png', 'Empty')
-            original, populated, empty = captured
+                    background.draw(result, Path(temporary) / 'financial.png', 'Financial', color_by='revenue_cost')
+            original, populated, empty, financial = captured
             self.assertEqual(populated['palette'], original['palette'])
             self.assertEqual(populated['norm'], original['norm'])
             np.testing.assert_allclose(populated['values'], original['values'])
@@ -109,8 +110,13 @@ class PopulationMapTests(unittest.TestCase):
                 np.testing.assert_allclose(actual[0], expected[0])
                 self.assertEqual(actual[1:], expected[1:])
             self.assertEqual(len(populated['tracks']), 2)
+            self.assertEqual(len(financial['tracks']), 2)
+            for actual, expected in zip(financial['tracks'], populated['tracks']):
+                self.assertEqual(actual[1:], expected[1:])
+                self.assertFalse(np.allclose(actual[0], expected[0]))
             for key in ('position', 'xlim', 'ylim'):
                 np.testing.assert_allclose(empty[key], populated[key], atol=1e-12)
+                np.testing.assert_allclose(financial[key], populated[key], atol=1e-12)
             with Image.open(Path(temporary) / 'populated.png') as full, Image.open(Path(temporary) / 'empty.png') as blank:
                 self.assertEqual(full.size, blank.size)
 

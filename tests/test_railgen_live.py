@@ -192,6 +192,11 @@ class LiveOutputTests(unittest.TestCase):
             np.testing.assert_array_equal(latest['genome'], run.current_genome)
             expected = Evaluator(g, c).evaluate(run.current_genome, details=True)
             self.assertEqual(latest['metrics'], expected.metrics)
+            analysis = json.loads((directory / 'analysis.json').read_text())
+            self.assertEqual(analysis['genome'], latest['genome'])
+            self.assertEqual(analysis['metrics'], latest['metrics'])
+            self.assertAlmostEqual(sum(r['annual_cost_eur'] for r in analysis['corridors']) / 1e6,
+                                   latest['metrics']['annual_cost_eur'] / 1e6)
             self.assertGreater(expected.metrics['passengers'], 0)
             with Image.open(directory / 'progress.gif') as animation:
                 self.assertEqual(animation.n_frames, 4)
@@ -200,7 +205,7 @@ class LiveOutputTests(unittest.TestCase):
                 first = animation.convert('RGB').copy()
                 animation.seek(animation.n_frames - 1)
                 self.assertNotEqual(first.tobytes(), animation.convert('RGB').tobytes())
-            self.assertEqual({p.name for p in directory.glob('*.png')}, {'latest.png', 'progress.png'})
+            self.assertEqual({p.name for p in directory.glob('*.png')}, {'latest.png', 'progress.png', 'latest_revenue_cost.png', 'analysis.png'})
             self.assertEqual(list(directory.glob('*.tmp*')), [])
             self.assertEqual(list(directory.glob('.*.tmp*')), [])
             rows = [json.loads(line) for line in (directory / 'history.jsonl').read_text().splitlines()]

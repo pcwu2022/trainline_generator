@@ -35,6 +35,7 @@ def geojson(graph, result):
                 track_type=track, length_km=alignment.length_km, capex_meur=alignment.capex_meur,
                 directional_annual_load=float(result.directional_load[i]),
                 frequency_per_hour_direction=float(result.frequency[i]),
+                train_units=int(result.train_units[i]),
                 allocated_net_eur=float(result.edge_net[i]), pct_water=alignment.pct_water,
                 pct_steep=alignment.pct_steep)))
     for i, city in enumerate(graph.cities):
@@ -44,10 +45,10 @@ def geojson(graph, result):
     return dict(type='FeatureCollection', features=features)
 
 
-def plot_map(graph, result, path, title, config, background=None):
+def plot_map(graph, result, path, title, config, background=None, color_by='satisfaction'):
     from .maps import MapBackground
     background = background if background is not None else MapBackground(graph, config)
-    background.draw(result, path, title)
+    background.draw(result, path, title, color_by=color_by)
 
 
 def sensitivity(graph, config, baseline, progress=print):
@@ -164,7 +165,14 @@ def write_report(graph, config, run, directory, calibration=None, sensitivity_re
         title = f'Design {i}: {result.metrics["passengers"]/1e6:.2f}M annual trips · net EUR {result.metrics["net_eur"]/1e6:.1f}M/year'
         map_name = f'design_{i:04d}.png'
         plot_map(graph, result, directory / map_name, title, config, background=map_background)
-        lines += ['', f'### Design {i}', '', f'![Map]({map_name})', '',
+        financial_name = f'design_{i:04d}_revenue_cost.png'
+        analysis_name = f'design_{i:04d}_analysis.png'
+        plot_map(graph, result, directory / financial_name, title, config, background=map_background, color_by='revenue_cost')
+        from .analysis import write_analysis
+        write_analysis(graph, config, result, directory / analysis_name,
+            directory / f'design_{i:04d}_analysis.json', title=f'Design {i}', evaluator=evaluator)
+        lines += ['', f'### Design {i}', '', f'![Map]({map_name})', '', f'![Revenue/cost map]({financial_name})', '',
+                  f'![Station and corridor rankings]({analysis_name})', '',
                   '| Corridor | Type | km | Capex EUR M | Directional annual load | Trains/h/dir | Allocated net EUR M/y |',
                   '| --- | --- | ---: | ---: | ---: | ---: | ---: |']
         for edge_id in np.flatnonzero(result.genome):

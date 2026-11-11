@@ -876,3 +876,43 @@ Cumulative selection, routing, model-build and solve seconds are recorded under
 The flags
 also have JSON settings `gravity_heuristic`,
 `gravity_heuristic_demand_threshold`, and `speed_up`.
+
+### Trial: slope-based construction difficulty
+
+Fetch the trial elevation grid with `.venv/bin/python fetch_slope_terrain.py`.
+Then use `--config configs/slope-terrain.json` with `optimize.py`, or
+`--config configs/slope-fast.json` with `python -m rail_gen run`.
+These configurations set `terrain_dem_file`, an optional single-band elevation
+GeoTIFF in metres. The RGB `terrain_file` remains in use for water detection;
+DEM slopes replace the uniform brown-pixel land cost, including mountains that
+the RGB classifier misses. Empty `terrain_dem_file` preserves relief-only costs.
+The original optimizer's trial config uses the region in the main defaults;
+the fast generator still accepts its named `--profile` regions.
+
+Ground slope is rise/run calculated from metric elevation gradients. Costs are
+linearly interpolated between these provisional anchors, capped at the final
+anchor. The original optimizer uses its configured range endpoints; the table
+shows the supplied defaults. `terrain_cost_position` applies to relief/JSON
+classes, not the DEM interpolation. Fast-generator rates multiply each track's
+base cost by the common difficulty curve, rather than applying two slope premiums.
+
+| Ground slope | Original cost (M€/km) | Fast cost / track base |
+| --- | ---: | ---: |
+| 0% | 10 | 1.0 |
+| 1% | 15 | 1.5 |
+| 2% | 25 | 2.5 |
+| 5% | 40 | 4.0 |
+| 10% | 70 | 7.0 |
+| 20% and above | 120 | 12.0 |
+
+Maps shade mountain cells above the 2%/mountain-cost threshold from light to dark
+brown, using conventional terrain cost before urban/water surcharges. Routing
+uses the same cost curve, with its usual track-type and urban adjustments.
+Missing elevations remain unavailable; they are never treated as flat terrain.
+
+Ground slope measures regional construction difficulty, not the railway's
+longitudinal gradient. The relief+DEM trial uses it for cost only; explicit fast
+`terrain_kind="dem"` retains the existing grade-limit scenario. Neither mode
+models engineered tunnels or viaduct alternatives. The anchors are uncalibrated
+scenario assumptions, and 3 km averaging underestimates local slope variation.
+See [trial data sources and attribution](data/SLOPE_TERRAIN.md).

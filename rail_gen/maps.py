@@ -13,8 +13,9 @@ from shapely.ops import unary_union
 from shapely.prepared import prep
 
 from train_optimizer.map_style import (CITY_STYLE, STATION_STYLE, CATCHMENT_STYLE,
-    population_collection, satisfaction_scale, track_style)
-from train_optimizer.outputs import map_figure_size, map_projector
+    population_collection, satisfaction_scale, track_style, add_track_reference)
+from train_optimizer.outputs import city_label_indices, map_figure_size, map_projector
+from train_optimizer.map_terrain import fast_terrain, add_terrain
 from .alignment import TRACKS
 from .evaluator import Evaluator
 
@@ -25,6 +26,7 @@ class MapBackground:
         self.graph, self.config = graph, config
         self.project = map_projector(SimpleNamespace(bbox=config['bbox']))
         self.evaluator = Evaluator(graph, config)
+        self.terrain = fast_terrain(config)
         west, south, east, north = config['bbox']
         self.country_lines = []
         region = None
@@ -94,8 +96,8 @@ class MapBackground:
         self.viewport = (float(lower[0] - margin), float(upper[0] + margin),
                          float(lower[1] - margin), float(upper[1] + margin))
         self.figure_size = map_figure_size(self.viewport)
-        self.labelled_cities = set(sorted(range(len(graph.cities)),
-                                         key=lambda i: -graph.cities[i].population)[:20])
+        self.labelled_cities = city_label_indices(
+            [dict(population=city.population) for city in graph.cities])
 
     def satisfaction(self, result):
         """Carried trips / fixed capturable OD markets using each edge, transfers included.
@@ -105,26 +107,22 @@ class MapBackground:
         Each unordered OD is counted once in both numerator and denominator,
         using two-way annual units. The denominator is independent of frequency.
         """
-        e = self.evaluator
-        active = np.flatnonzero(result.genome)
-        length = e.lengths[np.arange(e.m), result.genome]
-        speeds = np.choose(result.genome, [1, self.config['tracks']['CR']['speed_kmh'],
-                                         self.config['tracks']['HSR']['speed_kmh']])
-        time = length / speeds + (result.genome > 0) * self.config['operations']['dwell_hours']
-        incidence, _, _, _ = e._paths(active, time)
-        eligible = np.asarray(incidence @ np.where(result.trips > 0, 2 * e.base, 0)).ravel()
-        ratios = np.divide(2 * result.directional_load, eligible,
-                           out=np.zeros(e.m), where=eligible > 0)
-        return np.clip(ratios, 0, 1)
+        from .analysis import corridor_satisfaction
+        return corridor_satisfaction(self.evaluator, result)[0]
 
-    def draw(self, result, path, title):
+    def draw(self, result, path, title, color_by='satisfaction'):
+        if color_by not in {'satisfaction', 'revenue_cost'}:
+            raise ValueError('Unknown map coloring: ' + color_by)
+        financial = color_by == 'revenue_cost'
+        if financial:
+            financial_result = self.evaluator.evaluate(result.genome, details=True)
         import matplotlib
         matplotlib.use('Agg')
         import matplotlib.pyplot as plt
         # Use the original fixed axes positions: colorbars cannot shift the map
         # when the network changes or a local matplotlibrc enables tight layout.
         figure = plt.figure(figsize=self.figure_size, layout='none')
-        ax = figure.add_axes([.09, .11, .72, .77])
+        ax = figure.add_axes([.09, .16, .72, .72])
         density_axis = figure.add_axes([.85, .28, .025, .46])
         ratio_axis = figure.add_axes([.85, .08, .025, .13])
         try:
@@ -135,22 +133,37 @@ class MapBackground:
             ax.add_collection(collection)
             figure.colorbar(collection, cax=density_axis,
                             label='Population density (people/km², log scale)')
-            cmap, norm = satisfaction_scale()
-            figure.colorbar(ScalarMappable(norm=norm, cmap=cmap), cax=ratio_axis,
-                            label='Rail-market satisfaction')
+            add_terrain(ax, figure, self.terrain, self.project)
+            if financial:
+                from matplotlib.colors import LinearSegmentedColormap, Normalize
+                cmap = LinearSegmentedColormap.from_list('cost_recovery', ['#ad3035', '#edca79', '#124625'])
+                norm = Normalize(0, 2, clip=True)
+                colorbar = figure.colorbar(ScalarMappable(norm=norm, cmap=cmap), cax=ratio_axis,
+                    label='Annual revenue / cost', ticks=[0, 1, 2], extend='max')
+                colorbar.ax.set_yticklabels(['0', '1', '≥2'])
+            else:
+                cmap, norm = satisfaction_scale()
+                figure.colorbar(ScalarMappable(norm=norm, cmap=cmap), cax=ratio_axis,
+                                label='Rail-market satisfaction')
             for i, city in enumerate(self.graph.cities):
                 xy = self.node_xy[i]
                 ax.plot(*xy, **CITY_STYLE)
                 if i in self.labelled_cities:
                     ax.annotate(city.name, xy, xytext=(4, 5), textcoords='offset points', fontsize=8, zorder=6)
-            ratios = self.satisfaction(result)
+            if financial:
+                costs = financial_result.edge_revenue - financial_result.edge_net
+                ratios = np.divide(financial_result.edge_revenue, costs, out=np.full(len(costs), np.nan), where=costs > 0)
+            else:
+                ratios = self.satisfaction(result)
             served = set()
             for i in np.flatnonzero(result.genome):
                 edge = self.graph.edges[i]
                 track = TRACKS[result.genome[i] - 1]
                 coordinates = self.edge_xy[i, track]
-                ax.plot(coordinates[:, 0], coordinates[:, 1],
-                        **track_style(result.frequency[i], track, ratios[i]))
+                style = track_style(result.frequency[i], track, 0 if financial else ratios[i])
+                if financial:
+                    style['color'] = cmap(norm(ratios[i])) if np.isfinite(ratios[i]) else '#777777'
+                ax.plot(coordinates[:, 0], coordinates[:, 1], **style)
                 served.update((edge.a, edge.b))
             for i in sorted(served):
                 xy = self.node_xy[i]
@@ -161,10 +174,12 @@ class MapBackground:
                    xlabel='East of regional center (km)', ylabel='North of regional center (km)')
             ax.set_aspect('equal')
             ax.grid(alpha=.15)
-            ax.set_title('Rail network optimization\n' + title, fontsize=11)
-            figure.supxlabel('Color: carried passengers / fixed capturable OD market using each segment (including transfers).\n'
-                'Solid: high-speed · Dashed: conventional · Width: trains/hour/direction\n'
-                'White dots: stations · Dashed green circles: catchments', fontsize=8)
+            heading = 'Rail network optimization · revenue / cost' if financial else 'Rail network optimization'
+            ax.set_title(heading + '\n' + title, fontsize=11)
+            add_track_reference(figure)
+            color_label = ('Color: annual revenue / allocated annual cost · Red: below break-even · Green: surplus · Gray: undefined.'
+                           if financial else 'Color: carried passengers / fixed capturable OD market using each segment (including transfers).')
+            figure.supxlabel(color_label + '\nDouble: HSR · Single: CR · White dots: stations · Dashed green: catchments', fontsize=8, y=.005)
             with matplotlib.rc_context({'savefig.bbox': None}):
                 figure.savefig(path, dpi=130)
         finally:

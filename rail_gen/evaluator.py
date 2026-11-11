@@ -29,6 +29,7 @@ class Evaluation:
     edge_net: np.ndarray
     trips: np.ndarray
     generalized_time: np.ndarray
+    train_units: np.ndarray
 
     @property
     def feasible(self):
@@ -143,17 +144,20 @@ class Evaluator:
         frequency = np.minimum(max_frequency, np.maximum(o['minimum_frequency'], o['initial_frequency'])) * (x > 0)
         hours = o['hours_per_day'] * o['days_per_year']
         seats = parameter('seats')
+        levels = np.array(sorted(set(o['low_frequencies'] +
+            list(range(1, math.ceil(max(t['max_frequency'] for t in tracks.values())) + 1)))))
         def assign():
             bottleneck = np.full(len(self.base), np.inf)
             np.minimum.at(bottleneck, path_pairs, frequency[path_edges])
-            wait = np.minimum(1, np.divide(.5, bottleneck, out=np.zeros_like(bottleneck), where=bottleneck > 0))
+            wait = np.divide(.5, bottleneck, out=np.zeros_like(bottleneck), where=bottleneck > 0)
             gt = overhead_time + wait + ivt
             # Each upper-triangle market represents TWO symmetric one-way ODs.
             return 2 * self.base * rail_share(gt, c['demand']), gt
         for _ in range(o['assignment_iterations']):
             trips, gt = assign()
             load = np.asarray(incidence @ (trips / 2)).ravel()
-            needed = np.ceil(o['peak_factor'] * load / hours / np.maximum(1, seats * o['target_load_factor']))
+            required = o['peak_factor'] * load / hours / np.maximum(1, seats * o['target_load_factor'])
+            needed = levels[np.minimum(np.searchsorted(levels, required), len(levels) - 1)]
             updated = np.where(x > 0, np.clip(needed, o['minimum_frequency'], max_frequency), 0)
             if np.array_equal(updated, frequency):
                 break
@@ -161,7 +165,13 @@ class Evaluator:
         trips, gt = assign()  # Always evaluate demand at the returned frequencies.
         unspilled = float(trips.sum())
         load = np.asarray(incidence @ (trips / 2)).ravel()
-        capacity = seats * frequency * o['maximum_load_factor'] * hours / o['peak_factor']
+        # Size formations after frequency assignment. More units increase seats,
+        # fleet and unit-km costs, but do not change headway or journey time.
+        unit_capacity = seats * frequency * o['maximum_load_factor'] * hours / o['peak_factor']
+        required_units = np.ceil(np.divide(load, unit_capacity,
+            out=np.zeros(self.m), where=unit_capacity > 0))
+        train_units = np.where(x > 0, np.clip(required_units, 1, o['maximum_train_units']), 0).astype(int)
+        capacity = unit_capacity * train_units
         ratios = np.minimum(1, np.divide(capacity, load, out=np.ones(self.m), where=load > 0))
         spill_scale = np.ones(len(trips))
         np.minimum.at(spill_scale, path_pairs, ratios[path_edges])
@@ -170,8 +180,8 @@ class Evaluator:
         spilled = unspilled - float(trips.sum())
         spill_fraction = spilled / unspilled if unspilled else 0.0
         train_km = 2 * frequency * length * hours
-        train_opex = train_km * parameter('opex_eur_trainkm')
-        in_service = 2 * frequency * time
+        train_opex = train_km * train_units * parameter('opex_eur_trainkm')
+        in_service = 2 * frequency * time * train_units
         fleets = {}
         fleet_capital = 0.0
         for state, track in enumerate(TRACKS, 1):
@@ -224,6 +234,9 @@ class Evaluator:
             track_km=float(length.sum()), active_edges=int(len(active)),
             unserved_stations=int(self.n - served.sum()), active_components=int(active_components),
             active_stations=int(served.sum()), train_km_per_year=float(train_km.sum()))
+        metrics.update(multi_unit_edges=int(np.count_nonzero(train_units > 1)),
+                       maximum_train_units_used=int(train_units.max()) if self.m else 0,
+                       train_unit_km_per_year=float((train_km * train_units).sum()))
         edge_revenue = np.zeros(self.m)
         edge_net = np.zeros(self.m)
         if details:
@@ -248,4 +261,4 @@ class Evaluator:
                     edge_fleet[mask] = in_service[mask] / total * fleets[track] * tracks[track]['train_meur'] * 1e6
             edge_net = edge_revenue - train_opex * (1 + f['overhead_rate']) - edge_track * (self.crf['track'] + f['track_maintenance_rate']) - edge_station * (self.crf['station'] + f['station_opex_rate']) - edge_fleet * self.crf['fleet']
         return Evaluation(x, np.asarray(objectives), constraints, metrics, frequency, load,
-                          edge_revenue, edge_net, trips, gt)
+                          edge_revenue, edge_net, trips, gt, train_units)

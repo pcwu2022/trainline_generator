@@ -1,0 +1,5 @@
+{
+  "terrain_kind": "relief",
+  "terrain_file": "data/exportImage.tiff",
+  "terrain_dem_file": "data/slope_trial/europe_terrain_3km.tif"
+}

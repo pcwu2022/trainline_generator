@@ -19,8 +19,9 @@ import numpy as np
 from PIL import GifImagePlugin, Image
 from pyproj import Transformer
 from .cost_log import cost_breakdown_log
+from .map_terrain import legacy_terrain, add_terrain
 from .map_style import (CITY_STYLE, STATION_STYLE, CATCHMENT_STYLE,
-                        population_collection, satisfaction_scale, track_style)
+                        population_collection, satisfaction_scale, track_style, add_track_reference)
 
 
 def clean(value):
@@ -57,9 +58,9 @@ def network_geojson(result):
 
 
 def city_label_indices(cities):
-    """Label the twenty largest cities, preserving all city markers."""
+    """Label the largest quarter of cities (rounded down), capped at fifty."""
     return set(sorted(range(len(cities)),
-                      key=lambda i: -float(cities[i].get('population', cities[i].get('pop', 0))))[:20])
+                      key=lambda i: -float(cities[i].get('population', cities[i].get('pop', 0))))[:min(50, len(cities) // 4)])
 
 
 def map_projector(config):
@@ -164,7 +165,7 @@ def draw_map(path, config, problem, result, viewport=None, demand_only=False):
     # Explicit axes prevent the colorbar from stealing space from the map.
     # Disable automatic layout/cropping even when enabled in local matplotlibrc.
     figure = plt.figure(figsize=map_figure_size(viewport), layout='none')
-    ax = figure.add_axes([0.09, 0.11, 0.72, 0.77])
+    ax = figure.add_axes([0.09, 0.16, 0.72, 0.72])
     color_axis = figure.add_axes([0.85, 0.28, 0.025, 0.46])
     color_axis.set_visible(problem is not None)
     ax.set_facecolor('#eef2f5')
@@ -178,6 +179,7 @@ def draw_map(path, config, problem, result, viewport=None, demand_only=False):
         ax.add_collection(collection)
         figure.colorbar(collection, cax=color_axis,
                         label='Population density (people/km², log scale)')
+        add_terrain(ax, figure, legacy_terrain(config, problem.cells), project)
         labeled_cities = city_label_indices(problem.cities)
         for city_index, city in enumerate(problem.cities):
             xy = project([city['center']])[0]
@@ -255,9 +257,10 @@ def draw_map(path, config, problem, result, viewport=None, demand_only=False):
               'Scenario estimates; H3 terrain routing is coarse and is not an engineering alignment.')
     footer = ('Width: total two-way demand (trips/hour). Demand is fixed before network selection.' if demand_only else
               'Color: carried passengers / fixed rail-eligible OD needs using each segment (including transfers).\n'
-              'Solid: high-speed · Dashed: conventional · Width: trains/hour/direction\n'
-              'White dots: stations · Dashed green circles: catchments')
-    figure.supxlabel(footer, fontsize=8)
+              'Double: HSR · Single: CR · White dots: stations · Dashed green: catchments')
+    if not demand_only:
+        add_track_reference(figure)
+    figure.supxlabel(footer, fontsize=8, y=.005)
     try:
         with matplotlib.rc_context({'savefig.bbox': None}):
             figure.savefig(path, dpi=130)

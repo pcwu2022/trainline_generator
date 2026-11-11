@@ -4,6 +4,7 @@
     "cities_file": "data/cities50000.json",
     "country_boundaries_file": "data/country_boundaries.geojson",
     "terrain_file": "data/exportImage.tiff",
+    "terrain_dem_file": "",
     "land_file": "",
     "bbox": [
       2.5,
@@ -178,7 +179,7 @@
         72
       ],
       "countries": [],
-      "max_cities": 500
+      "max_cities": 1000
     },
     "exploratory": {
       "bbox": [

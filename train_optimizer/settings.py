@@ -49,6 +49,7 @@ class Config:
     population_file: str
     cities_file: str
     country_boundaries_file: str
+    terrain_dem_file: str # Optional elevation DEM in metres; overrides land difficulty, preserves relief water
     terrain_file: str
     land_file: str
     bbox: list

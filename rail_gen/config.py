@@ -26,7 +26,8 @@ def merge(base, overrides, prefix=''):
 def validate(c):
     schema = json.loads(DEFAULT_CONFIG.read_text())['defaults']
     integer_keys = {'prep.max_cities', 'prep.neighbors', 'prep.force_pairs',
-        'operations.assignment_iterations', 'search.population', 'search.generations',
+        'operations.assignment_iterations', 'operations.maximum_train_units',
+        'search.capacity_repair_steps', 'search.capacity_repair_candidates', 'search.population', 'search.generations',
         'search.seed', 'search.workers', 'search.representatives', 'search.stagnation_generations',
         'reporting.snapshot_every', 'reporting.gif_frame_ms'}
     def check(values, defaults, prefix=''):
@@ -61,9 +62,9 @@ def validate(c):
         'prep': ['max_cities', 'catchment_km', 'access_speed_kmh', 'neighbors', 'max_edge_km'],
         'alignment': ['cell_km', 'window_factor'],
         'demand': ['a', 'beta', 'minimum_distance_km', 'maximum_distance_km', 'sigma_hours', 'value_of_time_eur', 'fare_reference_km'],
-        'operations': ['hours_per_day', 'days_per_year', 'minimum_frequency', 'target_load_factor', 'maximum_load_factor', 'assignment_iterations', 'peak_factor'],
+        'operations': ['maximum_train_units', 'hours_per_day', 'days_per_year', 'minimum_frequency', 'target_load_factor', 'maximum_load_factor', 'assignment_iterations', 'peak_factor'],
         'finance': ['track_life_years', 'station_life_years', 'fleet_life_years'],
-        'search': ['population', 'generations', 'workers', 'representatives', 'stagnation_generations'],
+        'search': ['capacity_repair_candidates', 'population', 'generations', 'workers', 'representatives', 'stagnation_generations'],
         'reporting': ['snapshot_every'],
     }.items():
         if any(c[section][key] <= 0 for key in keys):
@@ -90,6 +91,10 @@ def validate(c):
         raise ValueError('Target load factor exceeds maximum')
     if c['operations']['initial_frequency'] <= 0:
         raise ValueError('Initial frequency must be positive')
+    low = c['operations']['low_frequencies']
+    if any(isinstance(v, bool) or not isinstance(v, (int, float)) or not math.isfinite(v)
+           or not 0 < v < 1 for v in low) or low != sorted(set(low)):
+        raise ValueError('operations.low_frequencies must be sorted unique finite frequencies between zero and one')
     if c['operations']['hours_per_day'] > 24 or c['operations']['days_per_year'] > 366:
         raise ValueError('Operating hours/days exceed a calendar year')
     if c['operations']['transfer_angle_degrees'] > 180:

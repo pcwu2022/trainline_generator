@@ -1,0 +1,9 @@
+{
+  "operations": {
+    "maximum_train_units": 2
+  },
+  "search": {
+    "capacity_repair_steps": 3,
+    "capacity_repair_candidates": 8
+  }
+}

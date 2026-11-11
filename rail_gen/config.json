@@ -4,6 +4,7 @@
     "population_file": "data/europe_3km.geojson",
     "boundaries_file": "data/country_boundaries.geojson",
     "terrain_file": "data/exportImage.tiff",
+    "terrain_dem_file": "data/slope_trial/europe_terrain_3km.tif",
     "terrain_kind": "relief",
     "land_class_file": "",
     "exclusions_file": "",
@@ -75,10 +76,12 @@
       }
     },
     "operations": {
+      "maximum_train_units": 1,
       "hours_per_day": 16,
       "days_per_year": 360,
       "initial_frequency": 2,
-      "minimum_frequency": 1,
+      "minimum_frequency": 0.3333333333333333,
+      "low_frequencies": [0.3333333333333333, 0.5, 0.6666666666666666],
       "target_load_factor": 0.625,
       "maximum_load_factor": 0.85,
       "peak_factor": 1.4,
@@ -109,6 +112,8 @@
       "minimum_component_share": 0
     },
     "search": {
+      "capacity_repair_steps": 0,
+      "capacity_repair_candidates": 8,
       "algorithm": "incremental",
       "population": 150,
       "generations": 200,
@@ -221,7 +226,7 @@
         "BY"
       ],
       "prep": {
-        "max_cities": 120
+        "max_cities": 100
       }
     },
     "smoke": {

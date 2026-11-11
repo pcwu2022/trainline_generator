@@ -17,7 +17,7 @@ from scipy.spatial import cKDTree
 
 from .prep import City, TO_METRIC, TO_WGS84
 
-CACHE_VERSION = 2
+CACHE_VERSION = 3
 TRACKS = ('CR', 'HSR')
 
 
@@ -72,7 +72,7 @@ class CandidateGraph:
 
 def fingerprint(config):
     keys = ('cities_file', 'population_file', 'boundaries_file', 'terrain_file',
-            'land_class_file', 'exclusions_file', 'terrain_kind', 'bbox', 'countries',
+            'land_class_file', 'exclusions_file', 'terrain_dem_file', 'terrain_kind', 'bbox', 'countries',
             'metro_populations_verified', 'prep', 'alignment', 'demand', 'tracks')
     digest = hashlib.sha256(json.dumps({k: config[k] for k in keys}, sort_keys=True).encode())
     digest.update(str(CACHE_VERSION).encode())
@@ -91,8 +91,9 @@ def _projected_shapes(path):
     return [transform(TO_METRIC.transform, shape(f['geometry'])) for f in raw['features']]
 
 
-def cost_surfaces(config, samples):
+def cost_surfaces(config, samples, terrain_only=False):
     import rasterio
+    from train_optimizer.slope import elevation_gradient, slope_multiplier
     from rasterio.features import rasterize
     from rasterio.transform import from_origin
     from rasterio.warp import reproject, Resampling, transform_bounds
@@ -145,28 +146,40 @@ def cost_surfaces(config, samples):
         blocked |= ~np.isfinite(r + g + b)
         water = (b > r * 1.12) & (b > g * 1.04)
         terrain[(r > g * 1.05) & (r > b * 1.15)] = 1.8
-    elif config['terrain_kind'] == 'dem':
-        elevation = warp(config['terrain_file'], [1], Resampling.average)[0]
+    slope_based = config['terrain_kind'] == 'dem' or (config['terrain_kind'] != 'flat' and config.get('terrain_dem_file'))
+    if slope_based:
+        path = config['terrain_file'] if config['terrain_kind'] == 'dem' else config['terrain_dem_file']
+        with rasterio.open(path) as source:
+            if source.count != 1:
+                raise ValueError('Slope terrain requires a single-band elevation DEM in metres')
+        elevation = warp(path, [1], Resampling.average)[0]
         blocked |= ~np.isfinite(elevation)
-        # Missing DEM cells are blocked; gradients adjacent to them are blocked too.
-        gy, gx = np.gradient(elevation, step)
-        grade = np.hypot(gx, gy)
+        grade = elevation_gradient(elevation, step)
         blocked |= ~np.isfinite(grade)
-        terrain = np.select([grade < .01, grade < .02, grade < .03], [1, 1.3, 1.8], default=3.0)
+        terrain = slope_multiplier(grade)
     if config['land_class_file']:
         # Class codes: 0 land, 1 inland water, 2 open sea, 3 excluded/protected.
         classes = warp(config['land_class_file'], [1], Resampling.nearest)[0]
         blocked |= ~np.isfinite(classes) | (classes >= 2)
         water |= classes == 1
-    if not config['boundaries_file'] and not config['land_class_file'] and config['terrain_kind'] != 'flat':
+    if not terrain_only and not config['boundaries_file'] and not config['land_class_file'] and config['terrain_kind'] != 'flat':
         raise ValueError('Sea blocking requires boundaries_file or land_class_file')
-    slope = np.select([grade <= .01, grade <= .02, grade <= .03], [1, 1.2, 1.6], default=2.5)
+    # Water keeps its dedicated crossing premium rather than bathymetric slope costs.
+    terrain = np.where(water, 1.0, terrain)
+    # The continuous terrain multiplier already contains the ground-slope premium.
+    if terrain_only:
+        rate = config['tracks']['CR']['base_meur_km'] * terrain
+        rate[blocked | water] = np.nan
+        return rate, water, grade, transform
     surfaces = []
     for track in TRACKS:
         t = config['tracks'][track]
-        rate = t['base_meur_km'] * terrain * slope + water * a['water_meur_km']
+        rate = t['base_meur_km'] * terrain + water * a['water_meur_km']
         rate += a['urban_meur_per_density_km'] * np.maximum(0, raster_density - a['urban_reference'])
-        rate[blocked | (grade > t['grade_limit'])] = np.inf
+        # A relief+DEM overlay prices ground difficulty only. Preserve the
+        # existing explicit DEM mode's grade-limit scenario separately.
+        forbidden_grade = (grade > t['grade_limit']) if config['terrain_kind'] == 'dem' else False
+        rate[blocked | forbidden_grade] = np.inf
         surfaces.append(rate)
     return np.asarray(surfaces), water, grade, transform
 

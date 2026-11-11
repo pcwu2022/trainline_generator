@@ -73,7 +73,8 @@ def cost_log(graph, result, iteration, phase):
         edge = graph.edges[i]
         track = TRACKS[result.genome[i] - 1]
         lines.append(f'{graph.cities[edge.a].name} — {graph.cities[edge.b].name} [{track}]: '
-            f'{result.frequency[i]:g} trains/h/direction; {result.directional_load[i]:,.0f} annual trips/direction; '
+            f'{result.frequency[i]:g} trains/h/direction; {result.train_units[i]} units/train; '
+            f'{result.directional_load[i]:,.0f} annual trips/direction; '
             f'allocated annual net EUR {result.edge_net[i]:,.2f}')
     return '\n'.join(lines) + '\n'
 
@@ -135,6 +136,9 @@ class LiveReporter:
         try:
             plot_map(self.graph, result, map_temp, title, self.config, background=self.background)
             map_temp.replace(self.output / 'latest.png')
+            from .analysis import write_visual_analysis
+            write_visual_analysis(self.graph, self.config, result, self.output,
+                                  self.background, title, evaluator=self.evaluator)
             draw_progress(chart_temp, self.history, self.unit)
             chart_temp.replace(self.output / 'progress.png')
         finally:
@@ -177,6 +181,9 @@ class LiveReporter:
             f'Need satisfaction: **{m["need_satisfaction_ratio"]:.2%}** '
             '(carried trips / fixed two-way annual capturable gravity demand across all candidate OD pairs).', '',
             '[Animated evolution](progress.gif) · [Current GeoJSON](latest.geojson) · [Current metrics](latest.json) · [Cost breakdown](cost_breakdown.log)', '',
+            '![Revenue / annual cost map](latest_revenue_cost.png)', '',
+            '![Station and corridor rankings](analysis.png)', '',
+            '[Full station and corridor metrics](analysis.json)', '',
             '![Progress over iterations](progress.png)', '',
             'The live network is the accepted state carried between iterations. '
             'Rejected proposals leave it unchanged. Growth and integration aim to serve all candidate cities in one component '

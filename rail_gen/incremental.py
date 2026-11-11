@@ -6,6 +6,7 @@ alternatives also populate a Pareto archive, independently of the live network.
 from collections import OrderedDict
 from concurrent.futures import ThreadPoolExecutor
 import math
+from itertools import combinations, product
 import time
 
 import numpy as np
@@ -95,6 +96,110 @@ def integration_choice(current, candidates, evaluator):
         -candidate.metrics['passengers'])) if eligible else None
 
 
+def capacity_packages(current, evaluator, should_stop=lambda: False):
+    """Bounded connect-and-repair search; infeasible intermediates stay private.
+
+    Train formations are sized and costed by the evaluator. For connections that
+    still spill, try additional routes or upgrades near saturated corridors.
+    Only fully evaluated feasible packages may become accepted network states.
+    """
+    p = evaluator.config['search']
+    width = p['capacity_repair_candidates']
+    old_missing, old_components = topology(current.genome, evaluator)
+    scored = {}
+    evaluations = 0
+
+    def improves(result):
+        missing, components = topology(result.genome, evaluator)
+        return missing <= old_missing and missing + components < old_missing + old_components
+
+    def score(x):
+        nonlocal evaluations
+        key = tuple(x)
+        if key not in scored:
+            if should_stop():
+                return None
+            scored[key] = evaluator.evaluate(x, repair=True)
+            evaluations += 1
+        return scored[key]
+
+    def rank(result):
+        return (float(np.maximum(result.constraints, 0).sum()),
+                sum(topology(result.genome, evaluator)), result.objectives[0])
+
+    seeds = dict(neighbours(current, evaluator))
+    served = np.zeros(evaluator.n, dtype=bool)
+    active = np.flatnonzero(current.genome)
+    served[evaluator.a[active]] = served[evaluator.b[active]] = True
+    # Two approaches can distribute the new city's demand over separate routes.
+    for city in np.flatnonzero(~served):
+        incident = [i for i, edge in enumerate(evaluator.graph.edges)
+                    if city in (edge.a, edge.b) and not current.genome[i]]
+        incident.sort(key=lambda i: min(a.capex_meur for a in evaluator.graph.edges[i].alignments.values()))
+        for a, b in combinations(incident[:3], 2):
+            for sa, sb in product(np.flatnonzero(evaluator.allowed[a, 1:]) + 1,
+                                  np.flatnonzero(evaluator.allowed[b, 1:]) + 1):
+                x = current.genome.copy()
+                x[a], x[b] = sa, sb
+                seeds[tuple(x)] = (x, 1)
+    frontier = []
+    feasible = []
+    for x, _ in seeds.values():
+        if should_stop():
+            break
+        result = score(x)
+        if result is not None and improves(result):
+            if result.feasible:
+                feasible.append(result)
+            # Financial limits cannot be repaired by adding more infrastructure.
+            elif np.all(result.constraints[[0, 1, 3]] <= 1e-9):
+                frontier.append(result)
+    demand = gravity_scores(evaluator)
+    for _ in range(p['capacity_repair_steps']):
+        if feasible or not frontier or should_stop():
+            break
+        following = []
+        for result in sorted(frontier, key=rank)[:width]:
+            x = result.genome
+            seats = np.choose(x, [0, evaluator.config['tracks']['CR']['seats'],
+                                  evaluator.config['tracks']['HSR']['seats']])
+            o = evaluator.config['operations']
+            capacity = seats * result.train_units * result.frequency * o['maximum_load_factor'] * o['hours_per_day'] * o['days_per_year'] / o['peak_factor']
+            pressure = np.divide(result.directional_load, capacity,
+                                 out=np.zeros(evaluator.m), where=capacity > 0)
+            stressed = np.flatnonzero(pressure >= .95)
+            nodes = np.zeros(evaluator.n, dtype=bool)
+            nodes[evaluator.a[stressed]] = nodes[evaluator.b[stressed]] = True
+            options = []
+            for i, edge in enumerate(evaluator.graph.edges):
+                if not (nodes[edge.a] or nodes[edge.b]):
+                    continue
+                for state in np.flatnonzero(evaluator.allowed[i, 1:]) + 1:
+                    if state == x[i]:
+                        continue
+                    proposal = x.copy()
+                    proposal[i] = state
+                    if tuple(proposal) in scored:
+                        continue
+                    capital = edge.alignments['CR' if state == 1 else 'HSR'].capex_meur
+                    priority = demand[i] * (1 + int(nodes[edge.a]) + int(nodes[edge.b])) / max(1, capital)
+                    options.append((priority, proposal))
+            for _, proposal in sorted(options, key=lambda v: -v[0])[:width]:
+                repaired = score(proposal)
+                if repaired is None or not improves(repaired):
+                    continue
+                if repaired.feasible:
+                    feasible.append(repaired)
+                elif rank(repaired) < rank(result):
+                    following.append(repaired)
+        frontier = following
+    diagnostics = dict(evaluations=evaluations, feasible_packages=len(feasible),
+        maximum_train_units=evaluator.config['operations']['maximum_train_units'],
+        best_remaining_spill=min((r.metrics['spill_fraction'] for r in scored.values()
+                                  if improves(r)), default=None))
+    return feasible, diagnostics
+
+
 def search_incremental(graph, config, progress=print, observer=None, interrupted=None):
     p = config['search']
     evaluator = Evaluator(graph, config)
@@ -108,6 +213,7 @@ def search_incremental(graph, config, progress=print, observer=None, interrupted
     cache = OrderedDict()
     baseline = None
     status = 'completed'
+    package_diagnostics = None
     workers = ThreadPoolExecutor(p['workers']) if p['workers'] > 1 else None
 
     def publish(iteration, phase, previous=None, accepted=False):
@@ -122,6 +228,8 @@ def search_incremental(graph, config, progress=print, observer=None, interrupted
             front_size=len(archive), evaluations=evaluations, seconds=elapsed)
         if baseline is not None:
             record['growth_baseline'] = baseline.copy()
+        if package_diagnostics is not None:
+            record['capacity_repair'] = package_diagnostics.copy()
         history.append(record)
         if observer:
             observer(SearchUpdate(iteration, phase, current, len(archive), evaluations,
@@ -155,6 +263,28 @@ def search_incremental(graph, config, progress=print, observer=None, interrupted
             if not pending:
                 if baseline is None:
                     if not complete:
+                        if p['capacity_repair_steps']:
+                            def should_stop():
+                                return ((interrupted is not None and interrupted.is_set()) or
+                                    (p['time_limit_seconds'] > 0 and
+                                     time.perf_counter() - started >= p['time_limit_seconds']))
+                            packages, package_diagnostics = capacity_packages(current, evaluator, should_stop)
+                            evaluations += package_diagnostics['evaluations']
+                            selected = integration_choice(current, packages, evaluator)
+                            for candidate in packages:
+                                archive[tuple(candidate.genome)] = candidate.objectives.copy()
+                            if archive:
+                                keys = sorted(archive)
+                                front = nondominated([archive[key] for key in keys])
+                                archive = {keys[i]: archive[keys[i]] for i in front}
+                            if selected is not None:
+                                current = selected
+                                attempted.clear()
+                                publish(iteration, 'capacity_repair', previous, True)
+                                continue
+                            if should_stop():
+                                status = 'interrupted' if interrupted is not None and interrupted.is_set() else 'time_limit'
+                                break
                         publish(iteration, phase, previous)
                         status = 'coverage_incomplete'
                         break
