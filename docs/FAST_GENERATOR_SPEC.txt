@@ -1,0 +1,338 @@
+Fast Multi-Objective Railway Network Generator: Specification v0.1
+Draft for implementation, November 10, 2026. Replaces the annealing/MILP solver of the original railway optimizer with a two-layer design.
+1. Purpose and scope
+Generate a small set of plausible, internally consistent European railway networks from scratch, in minutes rather than hours.
+Required properties:
+• Relative realism. Ridership ranks follow real corridors: Paris-Lyon carries far more than Toulon-Perpignan.
+• Magnitude realism. Trains per hour, annual passengers, fleet size, capital and operating cost are within roughly a factor of 2-3 of real analogues. A single route must not show a loss of the order of EUR 1B per year.
+• Speed. One network evaluation takes milliseconds; a full multi-objective run takes minutes.
+• Multi-objective. The output is a Pareto front of networks, not one answer.
+• Geography-aware. Track alignment uses terrain, water and population-density tiles.
+Non-goals: demand forecasting, timetables, engineering design, brownfield upgrades, freight, cross-border regulation and signalling, political feasibility.
+2. Architecture
+The problem is split so that expensive geography is computed once and the optimizer only sees abstract links with fixed costs.
+Stage
+Name
+When it runs
+Output
+0
+Preprocess
+Once per region
+City nodes, station capture, candidate edge list
+1
+Alignment routing
+Once per region, cached
+Per-edge length, capital cost per track type, tile set, geometry
+2
+Evaluator
+Every candidate network
+Passengers, times, fleet, cost, revenue
+3
+Search
+Per run
+Pareto front of networks
+4
+Calibration and backtest
+Before trusting results
+Fitted demand parameters, pass/fail report
+Data flow: Stage 0 and 1 produce a static candidate graph G = (V, E). Stage 3 chooses a state for each edge; Stage 2 scores that choice.
+3. Inputs
+Input
+Content
+Notes
+City table
+Name, coordinates, metropolitan population
+Top 80-120 European metros; real populations, not density seeds
+Population raster
+Density per cell
+For station capture, access time, land-acquisition cost
+Terrain raster
+Elevation (DEM) and land/water class
+Slope and water crossings
+Exclusion layer
+Sea, protected areas, optional
+Blocked tiles
+Backtest table
+Observed annual passengers on 10-20 corridors
+From operator reports, UIC, Eurostat; user supplied
+Config file
+All parameters in Section 10
+Single JSON file, named profiles
+Grid abstraction: either a raster (preferred for speed) or the existing H3 grid. For H3, build the cell adjacency graph and use scipy.sparse.csgraph.dijkstra in place of the raster routines below.
+4. Stage 0: Preprocessing
+4.1 Nodes
+Each city is one node with population P_i. Station placement is the cell nearest the city centre (v1). Multiple stations per metro are a v2 extension.
+4.2 Station capture and access time
+From the population raster, for each node compute:
+• kappa_i: share of metro population within the station catchment radius (default 15 km, or center_coefficient * sqrt(density) as in the original model), times an uptake factor p_max (default 0.8-1.0).
+• A_i: mean population-weighted access time in hours to the station, using an access speed (default 25 km/h).
+These are fixed per node and are the only place where population density enters demand.
+4.3 Candidate edges
+Build the candidate edge set as the union of:
+1. k nearest neighbours of each city (k = 6-8) within d_max (default 600 km).
+2. Delaunay triangulation edges within d_max.
+3. The top N_force pairs by gravity demand (default 30), even if long, so that major corridors are always available.
+Prune an edge A-C when a third city B lies within via_tolerance km (default 15) of the A-C line and d(A,B) + d(B,C) <= 1.05 d(A,C). Such links are represented as A-B and B-C. Also drop edges whose cheapest alignment crosses open sea or exceeds a cost cap.
+Optional hub nodes: add up to H candidate junction nodes (default 0-20) at locations where many corridors converge or near large cities, so branches can merge. Hubs have no population and no demand, only transfer capability.
+5. Stage 1: Alignment routing on tiles
+5.1 Cost surface
+For each track type t in {CR (conventional/upgraded), HSR} build a cost raster, in EUR million per km, per cell:
+c_t(x) = base_t * terrain_mult(x) * slope_mult_t(x) + water_term(x) + density_term(x)
+density_term(x) = c_u * max(0, density(x) - density_ref)
+• terrain_mult: flat 1.0, rolling 1.3, hilly 1.8, mountain 3.0 (includes tunnelling). Starting values to verify.
+• slope_mult_t: 0-1% grade 1.0, 1-2% 1.2, 2-3% 1.6, 3-4% 2.5; above the grade limit (HSR about 4%, CR about 3%) the cell is blocked.
+• water_term: cost per km of crossing, optionally growing with continuous water run length as in the original model. Sea cells are blocked.
+• density_term: urban land acquisition and tunnelling premium.
+• Blocked cells have infinite cost.
+Use separate rasters for CR and HSR because the slope limits and base costs differ.
+5.2 Cost-distance routing
+For each city node, run a multi-source least-cost sweep on a window of radius d_max around the city. In Python use skimage.graph.MCP_Geometric; on H3 use scipy csgraph Dijkstra. One sweep gives the cost to every tile, so every candidate edge from that city is resolved at once.
+For each candidate edge A-B and track type t:
+1. Read the cost at B from A's surface. This is the edge capital K_e,t (EUR million).
+2. Trace back the path to obtain geometry, tile set and length d_e,t.
+3. Smooth the path (Douglas-Peucker followed by Chaikin, tolerance about one cell) and recompute length.
+4. Record the share of the path that is water or high-slope, for reporting.
+Resolution guidance: 1-2 km cells for the continental extent, with windowed sweeps. With about 100 nodes and 2 track types this is about 200 sweeps of roughly 1-2 s each, so about 5-10 minutes, run once and cached.
+5.3 Alternatives
+Optional. For selected edges generate one or two alternative alignments by the corridor method (sum of the surface from A and the surface from B, then take a second path after penalizing tiles within a buffer of the first). Alternatives become extra candidate edges with distinct tile sets.
+5.4 Output record per edge
+edge_id, node_a, node_b, track_type,
+length_km, capex_meur, tile_indices (sorted int array),
+geometry (polyline), pct_water, pct_steep, feasible (bool)
+Persist to disk (parquet and a sparse matrix, see 9.4). Stage 3 never touches the rasters again.
+6. Demand model
+6.1 Annual OD trips
+For each pair of distinct cities (i, j) within max_trip_km (default 1200):
+T_ij = k * (P_i * kappa_i)^a * (P_j * kappa_j)^a / d_ij^beta * s(GT_ij)
+• d_ij: great-circle distance, floored at d_min (default 30 km).
+• a in 0.8-1.0, beta in 1.3-2.0, k fitted (Section 11).
+• T_ij is annual one-way trips in the rail-served market, not an hourly rate.
+• Pairs not connected by the network have s = 0 and carry nothing.
+6.2 Rail share
+s(GT) = 1 / (1 + exp((GT - t0) / sigma))
+GT_ij = A_i + A_j + t_wait + t_ivt + n_transfers * t_transfer + fare_ij / VOT
+• t0 about 3 h and sigma about 0.7 h as starting values: share about 80-90% near 2 h, about 50% near 3 h, under 20% beyond 4-5 h.
+• VOT (value of time) about EUR 20-25 per hour; including the fare term makes demand respond to fare level and lets track-type choice matter.
+• Optional refinement: let t0 grow with distance to reflect air competition on long pairs.
+This replaces hard journey-time cutoffs. Slow routes lose demand smoothly instead of being excluded or forced.
+7. Stage 2: Network evaluator
+Input is a design x: for each candidate edge a state in {0 = not built, 1 = CR, 2 = HSR}. Where two candidate edges share both endpoints, at most one is active.
+7.1 Graph and travel times
+1. Build a weighted graph of active edges. Edge in-vehicle time is d_e / v_t + dwell * (stops), with commercial speed v_CR about 120-160 km/h and v_HSR about 200-250 km/h (average including stops).
+2. Compute all-pairs shortest in-vehicle paths with scipy.sparse.csgraph.shortest_path (C implementation). For N under 150 this takes about 1-5 ms.
+3. Transfers (v1): add t_transfer (default 0.25 h) at any degree-3 or higher node where a path turns by more than 60 degrees. Straight-through running at a node incurs no transfer. A full line-pool model is a v2 option.
+7.2 Assignment and frequency (fixed-point loop, at most 3 iterations)
+1. Start with f_e = f_init (default 2 trains/hour/direction) on every active edge.
+2. Compute t_wait = min(1.0, 0.5 / f) using the lowest frequency along the path (first boarding), then GT_ij, s(GT_ij) and T_ij.
+3. All-or-nothing assignment of each T_ij to its shortest path. Accumulate directional annual load L_e on each edge (half of the two-way flow each way, with an optional directional imbalance factor).
+4. Update frequency:
+   avg_hourly_load = L_e / (days * H_op)
+   f_e = clamp(ceil(peak_factor * avg_hourly_load / (S_t * LF)), f_min, f_max)
+   Defaults: peak_factor 1.3-1.5, LF 0.60-0.65, f_min 1, f_max 4-6 (track throughput limit).
+5. Repeat until no f_e changes or 3 iterations are done.
+6. Capacity spill: if load on an edge still exceeds S_t * f_max * LF_max (default LF_max 0.85), scale down every OD flow crossing it by the overload ratio (one pass) and lose the excess trips.
+7.3 Fleet, operating cost, revenue
+n_trains_in_service = sum_e 2 * f_e * (d_e / v_t + dwell)
+fleet = ceil(n_trains_in_service * (1 + turnaround_overhead)) * (1 + spare_ratio)
+train_km_per_year = sum_e 2 * f_e * d_e * H_op * days
+opex_trains = sum_e c_trainkm_t * train_km_e
+revenue = sum_ij T_ij * fare_ij
+fare_ij = yield_path * d_ij_GC
+yield_path is the distance-weighted mean yield (EUR per passenger-km) of the edges on the path; d_ij_GC is the great-circle OD distance. Fare is based on OD distance, not ridden distance, so detours earn nothing extra. Optional taper: multiply by (d / d_ref)^(-0.15) for long trips.
+Default turnaround_overhead 0.15, spare_ratio 0.10.
+8. Finance
+All values constant-price euros, annualized.
+8.1 Capital
+• Track: union of tiles over active edges (see 9.4), priced per track type. HSR on a tile overrides CR. Shared tiles are paid once.
+• Stations: K_station_i = station_base + station_per_Mpop * P_i (million euros, capped), for every node with at least one active edge.
+• Fleet: fleet_HSR * train_cost_HSR + fleet_CR * train_cost_CR.
+8.2 Annualization
+Capital recovery factor CRF(r, L) = r / (1 - (1 + r)^(-L)), with r about 4% and lifetimes: track 50 y, stations 50 y, fleet 30 y. Annualized capital C_cap = sum_b K_b * CRF(r, L_b). This is about 5% of capital per year for track.
+8.3 Recurring cost
+C_op = opex_trains + maint_rate * K_track + station_opex_rate * K_station + overhead_rate * opex_trains
+C_total = C_cap + C_op
+Net = Revenue - C_total          (EUR per year; negative means subsidy needed)
+Defaults: maint_rate 1.5% of track capital per year, station_opex_rate 2-3%, overhead_rate 10%.
+9. Stage 3: Multi-objective search
+9.1 Genome
+Integer vector of length |E|, entries in {0, 1, 2} as in Section 7. Optional hub-node genes are implicit: a hub is active if any incident edge is active.
+9.2 Objectives (all minimized; negate to maximize)
+ID
+Objective
+Definition
+O1
+Net annual cost
+-(Revenue - C_total) in EUR per year
+O2
+Passengers
+-sum T_ij actually carried, trips per year
+O3
+Population served
+-sum_{i active} P_i * kappa_i
+O4 (optional)
+Mean generalized time
+Trip-weighted mean GT of carried trips
+O5 (optional)
+CO2 saving
+-(avoided emissions) via assumed mode mix
+Default run uses O1-O3. O4 is trip-weighted over served trips only, so use it together with O2 to avoid favouring a handful of fast short links.
+9.3 Constraints
+Handled through the solver's constraint-violation mechanism (not penalties inside objectives):
+• Upfront capital <= upfront_budget (0 disables).
+• Annual net subsidy <= max_annual_subsidy (0 disables).
+• Edge frequency within f_max after spill; fraction of demand lost to spill <= 15%.
+• Optional: network connected (largest component share >= L_min). Off by default. Disconnected networks are allowed because coverage floors are exactly what forced loss-making links in the original model.
+There are no hard coverage floors. Coverage is an objective (O3), not a constraint.
+9.4 Shared infrastructure by tile union
+Build a sparse binary matrix M of shape (edges x tiles) per track type from the stored tile sets, plus a per-tile cost vector. For a design:
+used_HSR = (M_HSR.T @ (x == 2)) > 0
+used_CR = ((M_CR.T @ (x == 1)) > 0) & ~used_HSR
+K_track = tile_cost_HSR . used_HSR + tile_cost_CR . used_CR
+This is a few sparse matrix-vector products, microseconds to a millisecond. It makes two corridors that share a trunk pay only once, which gives natural junction behaviour without a routing step inside the optimizer.
+9.5 Algorithm
+Primary: NSGA-II via pymoo with integer variables. Alternatives behind the same interface: NSGA-III or MOEA/D for 4 or more objectives; AMOSA to stay closest to the original annealing moves.
+• Population 100-200, generations 100-300, parallel evaluation across cores.
+• Crossover: uniform on the edge vector.
+• Mutation: per-gene flip (low rate), plus structured mutations: add the cheapest path joining two components, remove the edge with the lowest marginal net value, upgrade CR to HSR on the busiest edge, downgrade HSR on a lightly used edge.
+• Repair (Lamarckian): after evaluation, remove active edges with essentially zero load and write the repaired genome back.
+• Seeding: 20-30% of the initial population from greedy growth runs (start from the best corridor and add the link with highest marginal net value per euro of capital, repeated at several stopping budgets), the rest random sparse subsets (2-10% of edges active) and subsets biased toward the top demand corridors.
+• Termination: generation cap, or hypervolume improvement under a threshold for 20 generations.
+9.6 Post-processing
+Deduplicate designs, recompute with full precision, and select 5-10 representative designs from the front by k-medoids on normalized objectives. Always include: best net financial result, maximum passengers with Net >= -x for a user-set subsidy x, and the knee point.
+10. Parameters (starting values, all to be replaced by your own sources)
+Parameter
+CR (conventional / upgraded)
+HSR
+Commercial average speed
+120-160 km/h
+200-250 km/h
+Track capex, flat baseline
+4-8 EUR M/km
+15-25 EUR M/km
+Seats per train
+250-400
+400-500
+Train capex
+15-25 EUR M
+30-40 EUR M
+Operating cost per train-km
+10-15 EUR
+15-25 EUR
+Yield
+0.07-0.10 EUR/pkm
+0.09-0.13 EUR/pkm
+Track throughput limit
+6 per hour per direction
+6 per hour per direction
+Global parameter
+Default
+Operating hours per day / days per year
+16 / 360
+Discount rate / lifetimes
+4% / track 50, station 50, fleet 30 years
+Station capex
+40 EUR M + 20 EUR M per million metro population, cap 300
+Transfer penalty / dwell per stop
+0.25 h / 0.05 h
+Load factor target / peak factor
+0.60-0.65 / 1.3-1.5
+Demand: a, beta, t0, sigma, VOT
+0.9, 1.6, 3 h, 0.7 h, 22 EUR/h (fit or verify)
+These are ballpark values from general knowledge, not sourced figures. Replace them from operator and procurement data before drawing conclusions. Keep them as fixed constants in a profile file, not as tunable objective weights.
+11. Calibration and validation
+No result is trusted until this stage passes.
+11.1 Backtest corridors
+Assemble 10-20 corridors with observed annual passengers, deliberately mixing strong and thin ones. Examples to consider: Paris-Lyon, Paris-Brussels, Madrid-Barcelona, Milan-Rome, Berlin-Munich, and thin pairs such as Toulon-Perpignan. Hold out about one third for testing.
+11.2 Fitting
+Evaluate each corridor on the actual existing line parameters (length, speed, frequency) with the demand function. Fit k (and optionally a, beta, t0) by least squares on the log of ridership over the training corridors. Fix the fitted values for all later runs.
+11.3 Acceptance criteria (v1)
+Test
+Pass condition
+Ranking
+Spearman correlation of modelled vs observed ridership at least 0.8 on held-out corridors
+Anchor magnitude
+Median absolute log error at most ln(2) on anchor corridors; none worse than a factor of 3
+Strong vs thin
+Paris-Lyon class corridor exceeds Toulon-Perpignan class corridor by at least one order of magnitude
+Operations
+Best corridors show 1-4 trains/hour/direction and a fleet of tens of trainsets, not hundreds
+Finance
+Best corridors roughly cover operating cost; weak links are rejected by the optimizer, not built
+Loss sanity
+Flag any single built route with net loss above EUR 200M per year as a probable bug or parameter error
+Capex arithmetic
+Annualized track capital is about 5% of capital (for example a EUR 8B line needs about EUR 400M per year net revenue to break even)
+11.4 Sensitivity
+Rerun the front with demand parameters, capex and yield each varied by plus or minus 25%. Report which designs persist across variations.
+12. Outputs
+• pareto.csv: one row per non-dominated design with O1-O5, capital, fleet, passengers, population served.
+• designs/*.geojson: edges with track type, length, capex, load, frequency; nodes with population and served flag.
+• report.md or report.html: front plot, selected representative designs, per-edge table, backtest results.
+• run_config.json: full parameters and random seed for reproducibility.
+• Map plot per representative design.
+13. Performance budget
+Item
+Target
+Stage 1 precompute, about 100 nodes, 2 track types
+5-30 minutes once, cached
+Evaluator, about 100 nodes, 300 edges
+under 10 ms per design
+Search, population 150, 200 generations
+under 5 minutes on 8 cores
+Whole pipeline after caching
+under 10 minutes
+If the budget is missed, reduce |E| (smaller k, tighter pruning), coarsen the raster, or lower the generation count first.
+14. Module layout and milestones
+rail_gen/
+  config.py          profiles and parameters
+  data/              city table, rasters, backtest table
+  prep.py            nodes, kappa, access time, candidate edges
+  alignment.py       cost surfaces, cost-distance sweeps, edge records, tile matrix
+  demand.py          gravity model and rail share
+  evaluator.py       graph, assignment, frequency loop, fleet, finance
+  search.py          pymoo problem, operators, seeding, repair
+  calibrate.py       fitting and backtest report
+  report.py          outputs and plots
+  tests/             unit tests per module, regression on frozen results
+Milestone
+Deliverable
+M1
+City table, candidate graph, demand function; reproduce corridor ranking with fixed line parameters
+M2
+Alignment stage on a small region (for example France) with cached edge records
+M3
+Evaluator with finance; backtest passes Section 11.3
+M4
+NSGA-II search with seeding and repair; Pareto front on one country
+M5
+Whole-Europe run, representative designs, report
+15. Risks and open questions
+• Demand calibration dominates everything. Poor or inconsistent ridership data will bias all outputs. Choose one consistent source set per country.
+• All-or-nothing assignment ignores route choice and congestion. The capacity spill step is crude.
+• Station-level realism. One station per city ignores multi-station metros and peripheral stations.
+• Sea and border crossings (Channel, Scandinavia, Strait of Gibraltar) need explicit hand-built edges and cost overrides.
+• Greenfield assumption remains. Without existing track, thin and mid-size corridors will rarely pay back; consider a CR-discount option to approximate partial reuse.
+• Objective gaming. Check that no objective can be improved by serving only a few very short or very fast links. O4 should always be paired with O2.
+• Search coverage. NSGA-II may miss parts of the front with 100+ edges; compare with a weight-sweep greedy baseline.
+• Parameter provenance. Every constant in Section 10 needs a source before publication use.
+Appendix: mapping from the original model
+Original element
+New treatment
+Density-based seed markets
+Real metro city table with populations
+Hourly directional gravity demand with hard coverage floors
+Annual gravity demand times logistic rail share; no hard floors
+Hard journey-time constraints
+Smooth rail share in generalized time
+Per-design MILP with HiGHS
+Closed-form evaluator with shortest paths and load-based frequency
+Simulated annealing with consolidation
+NSGA-II Pareto search with structured mutations
+On-demand Theta* routing
+Cached cost-distance routing, Theta* only to refine presented alignments
+Revenue on ridden pkm
+Revenue on OD distance
+Weighted-sum objective J
+Separate objectives and Pareto front
+Terrain, water and density cost model
+Retained in Stage 1 cost surface

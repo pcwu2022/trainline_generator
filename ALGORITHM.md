@@ -1,3 +1,7 @@
+> The new cached multi-objective pipeline is documented in
+> [docs/FAST_GENERATOR.md](docs/FAST_GENERATOR.md). This document describes the
+> earlier `train_optimizer` annealing/HiGHS implementation.
+
 # Railway network optimization
 
 The default solver (`solver_method="annealing"`) searches over station sites,

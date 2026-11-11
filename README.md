@@ -1,3 +1,19 @@
+# Fast Pareto railway generator
+
+The new `rail_gen` pipeline implements the [v0.1 two-layer design](docs/FAST_GENERATOR.md):
+cached geography, a millisecond annual-demand/finance evaluator, and NSGA-II/III
+search producing a Pareto front with maps and GeoJSON. The supplied city and
+relief data support uncalibrated development runs; sourced metro populations
+and corridor backtests are required before interpreting the results.
+
+```sh
+.venv/bin/python -m pip install -r requirements-railgen.txt
+.venv/bin/python -m rail_gen run --profile france --output runs/railgen-france
+```
+
+See [configuration, calibration, outputs and limitations](docs/FAST_GENERATOR.md).
+The earlier optimizer is documented below and remains runnable via `optimize.py`.
+
 # Population-driven railway optimizer
 
 ## Annealing search (default)
