@@ -187,6 +187,7 @@ class Evaluator:
         total_cost = annual_capital + operating_cost
         net = revenue - total_cost
         passengers = float(trips.sum())
+        eligible_needs = float(2 * self.base.sum())
         mean_gt = float(np.sum(trips[trips > 0] * gt[trips > 0]) / passengers) if passengers else 0.0
         upfront = track_capital + station_capital + fleet_capital
         if active.size:
@@ -194,9 +195,11 @@ class Evaluator:
                 (np.r_[self.a[active], self.b[active]], np.r_[self.b[active], self.a[active]])),
                 shape=(self.n, self.n))
             _, labels = connected_components(links, directed=False)
+            active_components = len(np.unique(labels[served]))
             component_share = float(np.bincount(labels[served]).max() / served.sum())
         else:
             component_share = 0.0
+            active_components = 0
         limits = c['constraints']
         constraints = np.array([
             upfront / limits['upfront_budget_eur'] - 1 if limits['upfront_budget_eur'] else 0,
@@ -213,10 +216,13 @@ class Evaluator:
             train_opex_eur=float(train_opex.sum()), upfront_eur=upfront,
             track_capital_eur=track_capital, station_capital_eur=station_capital,
             fleet_capital_eur=fleet_capital, passengers=passengers,
+            eligible_need_trips=eligible_needs,
+            need_satisfaction_ratio=passengers / eligible_needs if eligible_needs else 0.0,
             population_served=float(self.population[served].sum()), mean_generalized_hours=mean_gt,
             spill_fraction=spill_fraction, lost_trips=spilled, component_share=component_share,
             fleet_CR=fleets['CR'], fleet_HSR=fleets['HSR'],
             track_km=float(length.sum()), active_edges=int(len(active)),
+            unserved_stations=int(self.n - served.sum()), active_components=int(active_components),
             active_stations=int(served.sum()), train_km_per_year=float(train_km.sum()))
         edge_revenue = np.zeros(self.m)
         edge_net = np.zeros(self.m)

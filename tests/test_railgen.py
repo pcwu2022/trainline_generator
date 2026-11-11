@@ -19,7 +19,7 @@ from rail_gen.search import bridge_components, nondominated, representative_indi
 
 
 def config():
-    return load_config(profile=None, overrides={'demand': {'k': .05}, 'search': {'population': 12, 'generations': 4,
+    return load_config(profile=None, overrides={'demand': {'k': .05}, 'search': {'algorithm': 'nsga2', 'population': 12, 'generations': 4,
         'greedy_fraction': .25, 'representatives': 3, 'hypervolume_tolerance': 0}})
 
 

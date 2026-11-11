@@ -1,7 +1,10 @@
 """Run with python -m rail_gen {precompute,run,calibrate,benchmark}."""
 import argparse
 from pathlib import Path
+import shutil
+import signal
 import sys
+import threading
 import time
 
 import numpy as np
@@ -21,13 +24,20 @@ def parser():
         if name != 'calibrate':
             sub.add_argument('--cache-dir', type=Path, default=Path('runs/railgen-cache'))
         if name in ('run', 'calibrate'):
-            sub.add_argument('--output', type=Path, required=True)
+            sub.add_argument('--output', type=Path, required=name == 'calibrate')
         if name == 'run':
+            sub.add_argument('--overwrite', action='store_true',
+                             help='Delete the output directory contents before starting a fresh run')
             sub.add_argument('--population', type=int)
-            sub.add_argument('--generations', type=int)
+            sub.add_argument('--generations', '--iterations', dest='generations', type=int,
+                             help='Network updates (incremental) or population generations')
             sub.add_argument('--seed', type=int)
             sub.add_argument('--workers', type=int)
             sub.add_argument('--sensitivity', action='store_true')
+            sub.add_argument('--algorithm', choices=['incremental', 'nsga2', 'nsga3'])
+            sub.add_argument('--time-limit', type=float, help='Total search seconds, excluding geography preparation')
+            sub.add_argument('--snapshot-every', type=int, help='Network iterations between live map/GIF updates')
+            sub.add_argument('--gif-frame-ms', type=int, help='GIF playback time per frame, in multiples of 10 ms')
         if name == 'benchmark':
             sub.add_argument('--evaluations', type=int, default=200)
     return p
@@ -42,11 +52,31 @@ def main(argv=None):
             overrides['search'] = {key: getattr(args, key) for key in ('population', 'generations', 'seed', 'workers') if getattr(args, key) is not None}
             if args.sensitivity:
                 overrides['search']['sensitivity'] = True
+            if args.algorithm:
+                overrides['search']['algorithm'] = args.algorithm
+            if args.time_limit is not None:
+                if args.time_limit <= 0:
+                    raise ValueError('--time-limit must be positive')
+                overrides['search']['time_limit_seconds'] = args.time_limit
+            overrides['reporting'] = {key: value for key, value in
+                [('snapshot_every', args.snapshot_every), ('gif_frame_ms', args.gif_frame_ms)]
+                if value is not None}
+            if args.output is None:
+                args.output = Path('runs') / f'{args.profile}-pareto'
         config = load_config(args.config, args.profile, overrides)
         if args.backtest:
             config['backtest_file'] = str(args.backtest)
-        if args.command == 'run' and args.output.exists() and any(args.output.iterdir()):
-            raise ValueError(f'Output directory is not empty: {args.output}. Choose a new directory.')
+        if args.command == 'run':
+            if args.output.exists() and not args.output.is_dir():
+                raise ValueError('--output must be a directory')
+            if args.overwrite:
+                resolved_output = args.output.resolve()
+                if resolved_output == Path.cwd() or resolved_output in Path.cwd().parents:
+                    raise ValueError('--overwrite cannot delete the working directory or its ancestors')
+                if args.output.is_symlink():
+                    raise ValueError('--overwrite requires an output directory that is not a symlink')
+            elif args.output.exists() and any(args.output.iterdir()):
+                raise ValueError(f'Output directory is not empty: {args.output}. Use --overwrite or a new directory.')
         from .calibrate import calibrate
         calibration = None
         if config['backtest_file']:
@@ -62,6 +92,8 @@ def main(argv=None):
             write_json(args.output, calibration)
             print(f'Saved calibration report: {args.output}', flush=True)
             return 0 if calibration['status'] == 'passed' else 2
+        if args.command == 'run' and args.overwrite and args.output.exists():
+            shutil.rmtree(args.output)
         from .alignment import cached_graph
         graph = cached_graph(config, args.cache_dir)
         print(f'Candidate graph: {len(graph.cities)} cities, {len(graph.edges)} pairs; {graph.tile_costs.shape[1]} infrastructure cells', flush=True)
@@ -85,13 +117,43 @@ def main(argv=None):
             return 0
         from .search import search
         from .report import sensitivity, write_report
-        run = search(graph, config)
-        variations = sensitivity(graph, config, run.genomes) if config['search']['sensitivity'] else None
-        rows = write_report(graph, config, run, args.output, calibration, variations)
-        print(f'Saved {len(rows)} Pareto designs: {args.output / "report.md"}', flush=True)
+        from .live import LiveReporter
+        reporter = LiveReporter(graph, config, args.output, calibration)
+        interrupted = threading.Event()
+        def stop(signum, frame):
+            if interrupted.is_set():
+                raise KeyboardInterrupt
+            interrupted.set()
+            print('Stopping after the current update; saving the evolving network.', flush=True)
+        previous_handler = signal.signal(signal.SIGINT, stop)
+        try:
+            run = search(graph, config, observer=reporter, interrupted=interrupted)
+            reporter.finish(run)
+        finally:
+            signal.signal(signal.SIGINT, previous_handler)
+        variations = (sensitivity(graph, config, run.genomes)
+                      if config['search']['sensitivity'] and run.status != 'interrupted' else None)
+        rows = write_report(graph, config, run, args.output / 'pareto', calibration, variations,
+                            map_background=reporter.background)
+        # Keep the existing machine-readable front paths while grouping all
+        # comparison maps/designs separately from the evolving current network.
+        for name in ('pareto.csv', 'genomes.npz', 'loss_sanity.json'):
+            temporary = args.output / ('.' + name + '.tmp')
+            shutil.copyfile(args.output / 'pareto' / name, temporary)
+            temporary.replace(args.output / name)
+        reason = ('No feasible topology-improving move remains, or the iteration limit was reached, '
+                  'before all candidate cities were connected.' if run.status == 'coverage_incomplete'
+                  else 'No acceptable move remains in the local neighbourhood.'
+                  if run.status == 'neighbourhood_exhausted' else '')
+        print(f'Search status: {run.status}' + (f' — {reason}' if reason else ''), flush=True)
+        print(f'Current map: {args.output / "latest.png"}\n'
+              f'Animation: {args.output / "progress.gif"}\n'
+              f'Progress charts: {args.output / "progress.png"}\n'
+              f'Report: {args.output / "report.md"}\n'
+              f'Pareto alternatives: {len(rows)} designs in {args.output / "pareto"}', flush=True)
         if calibration is None:
             print('Uncalibrated scenario: supply sourced observations with --backtest before trusting ridership or finance.', flush=True)
-        return 0 if rows else 2
+        return 130 if run.status == 'interrupted' else 0 if rows else 2
     except (ValueError, OSError, ImportError) as error:
         p.exit(1, f'Railway generator failed: {error}\n')
 

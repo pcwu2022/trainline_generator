@@ -2,12 +2,13 @@
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 import time
+from typing import Optional
 
 import numpy as np
 from scipy import sparse
 from scipy.sparse.csgraph import connected_components, shortest_path
 
-from .evaluator import Evaluator
+from .evaluator import Evaluation, Evaluator
 
 
 @dataclass
@@ -17,6 +18,21 @@ class SearchResult:
     history: list
     evaluations: int
     elapsed_seconds: float
+    current_genome: Optional[np.ndarray] = None
+    status: str = 'completed'
+
+
+@dataclass
+class SearchUpdate:
+    iteration: int
+    phase: str
+    result: Evaluation
+    front_size: int
+    evaluations: int
+    elapsed_seconds: float
+    accepted: bool = False
+    changes: tuple = ()
+    parent_genome: Optional[np.ndarray] = None
 
 
 def nondominated(objectives):
@@ -125,7 +141,15 @@ def structured_mutation(x, evaluator, rng):
     return x
 
 
-def search(graph, config, progress=print):
+def search(graph, config, progress=print, observer=None, interrupted=None):
+    """Run an evolving incumbent by default, or explicitly select a population search."""
+    if config['search']['algorithm'] == 'incremental':
+        from .incremental import search_incremental
+        return search_incremental(graph, config, progress, observer, interrupted)
+    return _search_population(graph, config, progress, observer, interrupted)
+
+
+def _search_population(graph, config, progress, observer, interrupted):
     from pymoo.algorithms.moo.nsga2 import NSGA2
     from pymoo.algorithms.moo.nsga3 import NSGA3
     from pymoo.core.callback import Callback
@@ -142,6 +166,10 @@ def search(graph, config, progress=print):
     started = time.perf_counter()
     archive = {}
     history = []
+    current = evaluator.evaluate(np.zeros(evaluator.m, dtype=int))
+    status = 'completed'
+    if observer:
+        observer(SearchUpdate(0, 'initializing', current, 0, 0, 0.0))
     workers = ThreadPoolExecutor(p['workers']) if p['workers'] > 1 else None
 
     class NetworkProblem(Problem):
@@ -203,6 +231,7 @@ def search(graph, config, progress=print):
             self.stagnant = 0
 
         def notify(self, algorithm):
+            nonlocal current, status
             hv = 0.0
             if archive:
                 F = np.array(list(archive.values()))
@@ -219,8 +248,24 @@ def search(graph, config, progress=print):
                     self.stagnant += 1
                 if p['hypervolume_tolerance'] and self.stagnant >= p['stagnation_generations']:
                     algorithm.termination.terminate()
-            history.append(dict(generation=int(algorithm.n_gen), front_size=len(archive),
-                evaluations=problem.evaluations, hypervolume=hv, seconds=time.perf_counter() - started))
+            elapsed = time.perf_counter() - started
+            if interrupted is not None and interrupted.is_set():
+                status = 'interrupted'
+                algorithm.termination.terminate()
+            elif p['time_limit_seconds'] and elapsed >= p['time_limit_seconds']:
+                status = 'time_limit'
+                algorithm.termination.terminate()
+            if archive:
+                keys = sorted(archive)
+                values = np.array([archive[key] for key in keys])
+                normalized = (values - values.min(axis=0)) / np.maximum(1, np.ptp(values, axis=0))
+                current = evaluator.evaluate(keys[int(np.argmin(np.linalg.norm(normalized, axis=1)))])
+            history.append(dict(generation=int(algorithm.n_gen), iteration=int(algorithm.n_gen),
+                phase='evolving_population', front_size=len(archive), evaluations=problem.evaluations,
+                hypervolume=hv, seconds=elapsed, genome=current.genome.tolist(), metrics=current.metrics))
+            if observer:
+                observer(SearchUpdate(int(algorithm.n_gen), 'evolving_population', current,
+                                      len(archive), problem.evaluations, elapsed))
             if progress:
                 progress(f'Generation {algorithm.n_gen}/{p["generations"]}: {len(archive)} Pareto designs, {problem.evaluations} evaluations', flush=True)
 
@@ -255,10 +300,12 @@ def search(graph, config, progress=print):
             workers.shutdown()
     if not archive:
         return SearchResult(np.empty((0, evaluator.m), dtype=int),
-            np.empty((0, problem.n_obj)), history, problem.evaluations, time.perf_counter() - started)
+            np.empty((0, problem.n_obj)), history, problem.evaluations, time.perf_counter() - started,
+            current.genome.copy(), status)
     keys = sorted(archive)
     return SearchResult(np.array(keys, dtype=int), np.array([archive[key] for key in keys]),
-                        history, problem.evaluations, time.perf_counter() - started)
+                        history, problem.evaluations, time.perf_counter() - started,
+                        current.genome.copy(), status)
 
 
 def gravity_scores(evaluator):

@@ -44,46 +44,10 @@ def geojson(graph, result):
     return dict(type='FeatureCollection', features=features)
 
 
-def plot_map(graph, result, path, title, config):
-    plt = _plotting()
-    fig, ax = plt.subplots(figsize=(10, 9), layout='constrained')
-    if config['boundaries_file']:
-        from shapely.geometry import shape
-        raw = json.loads(Path(config['boundaries_file']).read_text())
-        west, south, east, north = config['bbox']
-        for feature in raw['features']:
-            geom = shape(feature['geometry'])
-            if geom.bounds[2] < west or geom.bounds[0] > east or geom.bounds[3] < south or geom.bounds[1] > north:
-                continue
-            polygons = geom.geoms if geom.geom_type == 'MultiPolygon' else [geom]
-            for polygon in polygons:
-                x, y = polygon.exterior.xy
-                ax.plot(x, y, color='#c2c8c5', linewidth=.6, zorder=0)
-    for i in np.flatnonzero(result.genome):
-        edge = graph.edges[i]
-        track = TRACKS[result.genome[i] - 1]
-        coordinates = np.asarray(edge.alignments[track].geometry)
-        ax.plot(coordinates[:, 0], coordinates[:, 1], color='#156b9e' if track == 'CR' else '#df622f',
-                linewidth=1 + .35 * result.frequency[i], alpha=.8)
-    active_nodes = {n for i in np.flatnonzero(result.genome) for n in (graph.edges[i].a, graph.edges[i].b)}
-    west, south, east, north = config['bbox']
-    labelled = []
-    for i, city in enumerate(graph.cities):
-        ax.scatter(city.lon, city.lat, s=12 + 12 * np.sqrt(city.population / 1e6),
-                   color='#182f3e' if i in active_nodes else '#adb5b8', zorder=3)
-        position = np.array([city.lon / (east - west), city.lat / (north - south)])
-        crowded = any(np.linalg.norm((position - other) / [.04, .02]) < 1 for other in labelled)
-        if i in active_nodes and (len(graph.cities) <= 35 or city.population >= 300000) and not crowded:
-            right = city.lon > east - .08 * (east - west)
-            ax.annotate(city.name, (city.lon, city.lat), xytext=(-3 if right else 3, 3),
-                        textcoords='offset points', fontsize=7, ha='right' if right else 'left')
-            labelled.append(position)
-    west, south, east, north = config['bbox']
-    ax.set(xlim=(west, east), ylim=(south, north), xlabel='Longitude', ylabel='Latitude',
-           title=title + '\nBlue: CR · Orange: HSR · Width: trains/hour/direction')
-    ax.set_aspect(1 / np.cos(np.radians((south + north) / 2)))
-    fig.savefig(path, dpi=140)
-    plt.close(fig)
+def plot_map(graph, result, path, title, config, background=None):
+    from .maps import MapBackground
+    background = background if background is not None else MapBackground(graph, config)
+    background.draw(result, path, title)
 
 
 def sensitivity(graph, config, baseline, progress=print):
@@ -119,7 +83,7 @@ def sensitivity(graph, config, baseline, progress=print):
     return dict(method='Fresh search on fixed candidate alignments; exact genome persistence; demand varies k only', variations=results)
 
 
-def write_report(graph, config, run, directory, calibration=None, sensitivity_report=None):
+def write_report(graph, config, run, directory, calibration=None, sensitivity_report=None, map_background=None):
     directory = Path(directory)
     directory.mkdir(parents=True, exist_ok=True)
     (directory / 'designs').mkdir(exist_ok=True)
@@ -192,11 +156,14 @@ def write_report(graph, config, run, directory, calibration=None, sensitivity_re
     for i in selected:
         r = rows[i]
         lines.append(f'| {r["design_id"]} | {r["net_eur"]/1e6:.1f} | {r["passengers"]/1e6:.2f} | {r["population_served"]/1e6:.2f} | {r["fleet_CR"]}/{r["fleet_HSR"]} |')
+    if selected and map_background is None:
+        from .maps import MapBackground
+        map_background = MapBackground(graph, config)
     for i in selected:
         result = evaluated[i]
         title = f'Design {i}: {result.metrics["passengers"]/1e6:.2f}M annual trips · net EUR {result.metrics["net_eur"]/1e6:.1f}M/year'
         map_name = f'design_{i:04d}.png'
-        plot_map(graph, result, directory / map_name, title, config)
+        plot_map(graph, result, directory / map_name, title, config, background=map_background)
         lines += ['', f'### Design {i}', '', f'![Map]({map_name})', '',
                   '| Corridor | Type | km | Capex EUR M | Directional annual load | Trains/h/dir | Allocated net EUR M/y |',
                   '| --- | --- | ---: | ---: | ---: | ---: | ---: |']

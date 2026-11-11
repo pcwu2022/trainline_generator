@@ -13,14 +13,14 @@ import h3
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-from matplotlib.collections import PolyCollection
-from matplotlib.colors import LinearSegmentedColormap, LogNorm, Normalize
 from matplotlib.cm import ScalarMappable
 from matplotlib.patches import Circle
 import numpy as np
 from PIL import GifImagePlugin, Image
 from pyproj import Transformer
 from .cost_log import cost_breakdown_log
+from .map_style import (CITY_STYLE, STATION_STYLE, CATCHMENT_STYLE,
+                        population_collection, satisfaction_scale, track_style)
 
 
 def clean(value):
@@ -174,16 +174,14 @@ def draw_map(path, config, problem, result, viewport=None, demand_only=False):
             boundary = [(lon, lat) for lat, lon in h3.cell_to_boundary(cell['h3'])]
             polygons.append(project(boundary))
             values.append(max(0.1, cell['density']))
-        collection = PolyCollection(polygons, array=np.asarray(values), cmap='YlOrRd',
-                                    norm=LogNorm(vmin=1, vmax=max([10] + values)),
-                                    edgecolors='#ffffff', linewidths=0.2, alpha=0.65)
+        collection = population_collection(polygons, values)
         ax.add_collection(collection)
         figure.colorbar(collection, cax=color_axis,
                         label='Population density (people/km², log scale)')
         labeled_cities = city_label_indices(problem.cities)
         for city_index, city in enumerate(problem.cities):
             xy = project([city['center']])[0]
-            ax.plot(*xy, marker='+', color='#5d6370', markersize=7, zorder=3)
+            ax.plot(*xy, **CITY_STYLE)
             if city_index in labeled_cities:
                 ax.annotate(city['name'], xy, xytext=(4, 5), textcoords='offset points', fontsize=8, zorder=6)
         if demand_only:
@@ -199,26 +197,22 @@ def draw_map(path, config, problem, result, viewport=None, demand_only=False):
             ax.legend(title='Two-way demand', loc='lower left', fontsize=8)
         elif result.get('feasible') or result.get('exploratory'):
             ratios = segment_satisfaction(problem, result) if hasattr(problem, 'demand') else {}
-            cmap = LinearSegmentedColormap.from_list('rail_satisfaction', ['#b2f2a5', '#00cc33'])
-            norm = Normalize(0, 1)
+            cmap, norm = satisfaction_scale()
             ratio_axis = figure.add_axes([0.85, 0.08, 0.025, 0.13])
             figure.colorbar(ScalarMappable(norm=norm, cmap=cmap), cax=ratio_axis,
                             label='Rail-eligible satisfaction')
             for line in result['lines']:
                 frequency = line['frequency_per_hour_per_direction']
-                linestyle = '-' if line.get('train_type', 'CR') == 'HSR' else '--'
                 edges = line.get('edges', [])
                 geometries = [problem.edges[edge]['geometry'] for edge in edges] or [line['geometry']]
                 for segment, geometry in enumerate(geometries):
                     xy = project(geometry)
-                    ax.plot(xy[:, 0], xy[:, 1], color=cmap(norm(ratios.get((line['id'], segment), 0))),
-                            linewidth=1.7+frequency*0.6, linestyle=linestyle, zorder=4)
+                    ax.plot(xy[:, 0], xy[:, 1], **track_style(frequency, line.get('train_type', 'CR'),
+                                                          ratios.get((line['id'], segment), 0)))
             for station in result['stations']:
                 xy = project([station['coordinate']])[0]
-                ax.add_patch(Circle(xy, station['radius_km'], fill=False, color='#217c55',
-                                    linewidth=1, linestyle='--', alpha=0.6, zorder=3))
-                ax.plot(*xy, marker='o', markerfacecolor='white', markeredgecolor='#124625',
-                        markeredgewidth=2, markersize=7, zorder=5)
+                ax.add_patch(Circle(xy, station['radius_km'], **CATCHMENT_STYLE))
+                ax.plot(*xy, **STATION_STYLE)
     xmin, xmax, ymin, ymax = viewport
     ax.set_xlim(xmin, xmax)
     ax.set_ylim(ymin, ymax)

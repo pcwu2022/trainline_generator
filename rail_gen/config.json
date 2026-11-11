@@ -109,7 +109,7 @@
       "minimum_component_share": 0
     },
     "search": {
-      "algorithm": "nsga2",
+      "algorithm": "incremental",
       "population": 150,
       "generations": 200,
       "seed": 42,
@@ -122,7 +122,15 @@
       "representative_subsidy_eur": 200000000,
       "hypervolume_tolerance": 0.0001,
       "stagnation_generations": 20,
-      "sensitivity": false
+      "sensitivity": false,
+      "time_limit_seconds": 0,
+      "growth_fraction": 0.7,
+      "retained_ridership": 0.98,
+      "journey_time_allowance": 0.05
+    },
+    "reporting": {
+      "snapshot_every": 5,
+      "gif_frame_ms": 500
     }
   },
   "profiles": {

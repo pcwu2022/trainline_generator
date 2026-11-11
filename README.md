@@ -1,18 +1,36 @@
 # Fast Pareto railway generator
 
-The new `rail_gen` pipeline implements the [v0.1 two-layer design](docs/FAST_GENERATOR.md):
-cached geography, a millisecond annual-demand/finance evaluator, and NSGA-II/III
-search producing a Pareto front with maps and GeoJSON. The supplied city and
-relief data support uncalibrated development runs; sourced metro populations
-and corridor backtests are required before interpreting the results.
+The new `rail_gen` pipeline uses cached geography and a millisecond annual-demand/
+finance evaluator. Its default incremental search starts empty and edits the
+previous accepted network at every iteration, then reduces net annual cost while
+retaining service. It also saves a Pareto archive of evaluated alternatives.
 
 ```sh
 .venv/bin/python -m pip install -r requirements-railgen.txt
-.venv/bin/python -m rail_gen run --profile france --output runs/railgen-france
+.venv/bin/python optimize.py --solver pareto --profile france \
+  --output runs/france-live --iterations 200 --snapshot-every 5 --gif-frame-ms 500
 ```
 
-See [configuration, calibration, outputs and limitations](docs/FAST_GENERATOR.md).
-The earlier optimizer is documented below and remains runnable via `optimize.py`.
+Watch `latest.png` for the evolving network, `progress.png` for its metrics, and
+`progress.gif` for the animation. Maps use the original population-density
+background, green demand-satisfaction colors, frequency-scaled widths, dashed
+conventional track and solid high-speed track. `latest.json`, `latest.geojson` and
+`cost_breakdown.log` describe that same accepted state. Comparison designs and
+maps are grouped under `pareto/`; they are not successive iterations.
+
+The existing `python -m rail_gen run ...` command uses the same incremental
+default. Select `--algorithm nsga2` / `--algorithm nsga3`, or
+`optimize.py --solver nsga2` / `--solver nsga3`, for population evolution.
+Parameters for the fast pipeline are in `rail_gen/config.json`.
+Use a new or empty output directory, or add `--overwrite` to delete its previous
+contents and start a fresh run. Both fast-generator entry points accept this flag.
+The supplied city and relief data support uncalibrated development runs;
+sourced metro populations and corridor backtests are required before
+interpreting the results. See [configuration, calibration, outputs and
+limitations](docs/FAST_GENERATOR.md).
+
+The earlier optimizer is documented below and remains available with
+`optimize.py --solver annealing`, `heuristic`, or `milp`.
 
 # Population-driven railway optimizer
 

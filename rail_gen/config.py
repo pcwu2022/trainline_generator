@@ -27,7 +27,8 @@ def validate(c):
     schema = json.loads(DEFAULT_CONFIG.read_text())['defaults']
     integer_keys = {'prep.max_cities', 'prep.neighbors', 'prep.force_pairs',
         'operations.assignment_iterations', 'search.population', 'search.generations',
-        'search.seed', 'search.workers', 'search.representatives', 'search.stagnation_generations'}
+        'search.seed', 'search.workers', 'search.representatives', 'search.stagnation_generations',
+        'reporting.snapshot_every', 'reporting.gif_frame_ms'}
     def check(values, defaults, prefix=''):
         for key, value in values.items():
             name = prefix + key
@@ -54,8 +55,8 @@ def validate(c):
         raise ValueError('bbox must be west, south, east, north in WGS84')
     if c['terrain_kind'] not in ('relief', 'dem', 'flat'):
         raise ValueError('terrain_kind must be relief, dem, or flat')
-    if c['search']['algorithm'] not in ('nsga2', 'nsga3'):
-        raise ValueError('search.algorithm must be nsga2 or nsga3')
+    if c['search']['algorithm'] not in ('incremental', 'nsga2', 'nsga3'):
+        raise ValueError('search.algorithm must be incremental, nsga2 or nsga3')
     for section, keys in {
         'prep': ['max_cities', 'catchment_km', 'access_speed_kmh', 'neighbors', 'max_edge_km'],
         'alignment': ['cell_km', 'window_factor'],
@@ -63,6 +64,7 @@ def validate(c):
         'operations': ['hours_per_day', 'days_per_year', 'minimum_frequency', 'target_load_factor', 'maximum_load_factor', 'assignment_iterations', 'peak_factor'],
         'finance': ['track_life_years', 'station_life_years', 'fleet_life_years'],
         'search': ['population', 'generations', 'workers', 'representatives', 'stagnation_generations'],
+        'reporting': ['snapshot_every'],
     }.items():
         if any(c[section][key] <= 0 for key in keys):
             raise ValueError(f'{section}: required positive parameter is zero')
@@ -77,6 +79,13 @@ def validate(c):
                          ('search', 'mutation_rate'), ('search', 'structured_probability')]:
         if not 0 <= c[section][key] <= 1:
             raise ValueError(f'{section}.{key} must be between 0 and 1')
+    if not 0 < c['search']['growth_fraction'] <= 1:
+        raise ValueError('search.growth_fraction must be in (0, 1]')
+    if not 0 < c['search']['retained_ridership'] <= 1:
+        raise ValueError('search.retained_ridership must be in (0, 1]')
+    duration = c['reporting']['gif_frame_ms']
+    if not 10 <= duration <= 655350 or duration % 10:
+        raise ValueError('reporting.gif_frame_ms must be a multiple of 10 between 10 and 655350')
     if c['operations']['target_load_factor'] > c['operations']['maximum_load_factor']:
         raise ValueError('Target load factor exceeds maximum')
     if c['operations']['initial_frequency'] <= 0:

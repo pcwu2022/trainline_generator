@@ -3,7 +3,9 @@
 `rail_gen/` implements the two-layer architecture in the supplied
 [v0.1 specification](FAST_GENERATOR_SPEC.txt). Geography is computed once;
 network search uses fixed abstract edges and never calls routing or HiGHS.
-The earlier optimizer remains available through `optimize.py`.
+The default search now follows one persistent network from iteration to iteration.
+NSGA-II/III remain selectable population alternatives. The earlier optimizer
+remains available through `optimize.py --solver annealing`.
 
 ## Run
 
@@ -16,8 +18,37 @@ From the repository root, using Python 3.9 or newer:
 .venv/bin/python -m rail_gen run --profile europe --output runs/railgen-europe
 ```
 
-Choose a new or empty output directory. Existing runs are never deleted.
-`--population`, `--generations`, `--seed`, and `--workers` override search settings.
+For the original entry point and live-output flags:
+
+```sh
+.venv/bin/python optimize.py --solver pareto --profile france \
+  --output runs/france-live --iterations 200 --snapshot-every 5 --gif-frame-ms 500
+```
+
+Both commands run the same fast incremental algorithm. `--solver incremental`
+is an alias for `--solver pareto`. `--algorithm nsga2` / `nsga3` on the module
+command, or `--solver nsga2` / `nsga3` on `optimize.py`, select population search.
+`optimize.py` without a fast solver flag retains its existing default.
+
+Choose a new or empty output directory, or pass `--overwrite` to delete the
+previous output and start a fresh run, as with the older optimizer. This flag
+works with both entry points. It rejects symlinks, the working directory and
+its ancestors.
+`--iterations` and `--generations` are aliases for the number of network updates
+(incremental) or population generations (NSGA). `--population` sets the maximum
+neighbours evaluated per incremental update, or the NSGA population size.
+`--seed` and `--workers` override search settings. `--time-limit SECONDS` caps
+search time including live rendering, after geography preparation. Ctrl+C
+finishes the current update and saves its accepted network and evaluated front.
+A second Ctrl+C interrupts immediately.
+Iteration logs and saved metrics include `need_satisfaction_ratio`: completed
+two-way annual trips divided by fixed two-way annual gravity demand across all
+candidate OD pairs, including unserved pairs. The denominator includes fixed
+station capture and distance screening, before journey-time rail share and
+capacity spill. This is distinct from the fraction of cities with stations.
+The terminal summary prints the search status; `coverage_incomplete` can occur
+before the iteration limit if all local coverage/connectivity improvements are
+rejected, for example by the maximum spill constraint.
 `--workers` uses a shared-memory thread pool for independent evaluations; SciPy
 and NumPy kernels can release the GIL. One worker is the default: parallel
 speedups depend on network size and hardware.
@@ -26,7 +57,7 @@ speedups depend on network size and hardware.
 .venv/bin/python -m rail_gen precompute --profile france
 .venv/bin/python -m rail_gen benchmark --profile france --evaluations 200
 .venv/bin/python -m rail_gen run --profile smoke --sensitivity --output runs/railgen-sensitivity
-.venv/bin/python -m unittest discover -s tests -p 'test_railgen.py'
+.venv/bin/python -m unittest discover -s tests -p 'test_railgen*.py'
 ```
 
 `rail_gen/config.json` is the single parameter source for this pipeline, separate
@@ -123,7 +154,29 @@ forecasts until the data and backtests are independently checked.
   frequency. Fleet includes round-trip service time, turnaround, integer
   trainsets and spares. Fare uses great-circle OD distance and the path's
   length-weighted yield, so detours cannot inflate revenue per trip.
-- `search.py`: integer NSGA-II (default), or NSGA-III for four objectives;
+- `incremental.py`: the default persistent-network search. Start empty; make
+  add/remove/CR–HSR edits or join components by a cheapest candidate path, always
+  from the previous accepted genome. Growth prefers ridership gained per added
+  net annual euro while preserving current ridership and captured population.
+  It can also accept net cost savings that preserve service. When growth stalls,
+  or after `growth_fraction` (default 70% of iterations), integration prioritizes
+  serving missing candidate cities and joining components. Integration can accept
+  higher costs or lower ridership to improve topology, subject to financial and
+  operational constraints. Once every candidate city is served in one component
+  and the growth fraction has elapsed, freeze the baseline and consolidate: lower
+  net annual cost with at least `retained_ridership` (98%) of baseline passengers
+  and captured population, and at most `journey_time_allowance` (5%) more mean
+  generalized time. These are incumbent selection rules; the separate Pareto
+  archive retains all feasible non-dominated evaluated alternatives. There is no
+  additional coverage constraint on the Pareto archive or population algorithms.
+  Consolidation preserves all candidate cities and connectivity. Rejected proposals
+  retain the preceding state. Incomplete coverage at the iteration limit or after
+  exhausting available moves is reported as `coverage_incomplete`, not successful
+  completion; constraints, zero-load repair or disconnected candidate geography
+  may prevent completion. Time limits and interruption retain their own statuses.
+  Coverage refers to the selected city candidates, not every settlement in France.
+  No random restart is performed.
+- `search.py`: optional integer NSGA-II, or NSGA-III for four objectives;
   uniform crossover, flips, cheapest component joining, low-value removal,
   busy-edge upgrade and low-load downgrade. Greedy marginal-net/capital growth
   supplies a fraction of seeds at multiple stopping sizes; the rest are sparse
@@ -131,6 +184,9 @@ forecasts until the data and backtests are independently checked.
   writes the genome back into the pymoo population. Feasible non-dominated
   designs are archived across generations, not just from the final population.
 - `calibrate.py`: fixed-line prediction, log-error fitting and held-out checks.
+- `live.py`: iteration-triggered current map, metrics, GeoJSON, cost log, six
+  progress panels, and a streaming GIF using the original encoder. Images and
+  JSON are atomically replaced; individual frame files are not accumulated.
 - `report.py`: full-precision recomputation/deduplication, k-medoids selection
   with financial/subsidy/knee anchors, maps, finance reconciliation, loss flags,
   and optional six-run sensitivity analysis.
@@ -171,40 +227,86 @@ finance and constraint changes reuse geography. A temporary directory is
 renamed only after a complete cache is written. Only cells used by some
 candidate alignment are retained for evaluation speed.
 
-Each run writes:
+The main output directory describes one evolving network:
 
-- `pareto.csv`: all feasible non-dominated designs, objective values, finance,
-  population, passengers, fleet, spill and topology metrics.
-- `genomes.npz`: integer edge states aligned with the cached edge IDs, plus
-  objective vectors for reproducibility.
-- `designs/*.geojson`: every Pareto design's edges (track, length, standalone
-  capex, directional load, frequency, allocated net) and all city nodes.
-- `report.md`, `pareto.png`, and representative `design_*.png` maps with per-edge
-  tables. The representative anchors include best net, maximum passengers
-  within the requested subsidy ceiling when available, and the knee compromise.
-- `run_config.json`, `alignment_manifest.json`, `search_history.json`,
-  `backtest.json` and `loss_sanity.json`. Every built edge with an allocated
-  annual loss above EUR 200M is flagged.
-- `sensitivity.json` when requested: fresh searches for demand k, capital and
-  yield at ±25%, using fixed candidate geometries and reporting exact genome
-  persistence. It varies the demand scale, not every fitted exponent jointly.
+- `latest.png`: the single map overwritten at snapshot cadence. The first frame
+  contains the real region/city nodes and the empty network. The final accepted
+  network is always rendered, even between scheduled snapshots.
+- `progress.gif`: the map animation, updated atomically at the same cadence.
+  `reporting.snapshot_every` (default 5) and `reporting.gif_frame_ms` (default
+  500) have matching `--snapshot-every` and `--gif-frame-ms` CLI flags. GIF timing
+  must be a multiple of 10 ms. Only compressed past frames are copied when
+  appending; historical image buffers are not retained in memory.
+- `progress.png`: stations/corridors, annual trips, captured population and
+  connectivity, track/fleet, upfront capital, and annual finances versus iteration.
+- `latest.json`, `latest.geojson`, `cost_breakdown.log`: metrics, geometry and
+  reconciled accounting for the same current network shown in `latest.png`.
+  Per-edge costs/revenue use the evaluator's allocation rules.
+- `history.jsonl`: every iteration, including rejected proposals, with parent
+  genome, accepted genome, changed edge IDs/states, metrics and stage. This is
+  the actual incumbent lineage, not a sequence of independently selected front
+  members. `search_history.json` also records search-side history.
+- `checkpoint.npz`: current integer genome, objectives, iteration, graph
+  fingerprint and effective configuration. It is a state export; solver/RNG
+  resumption is not implemented.
+- `report.md`: the current network, animation, progress charts, accounting and
+  a link to Pareto comparisons. `manifest.json`, `run_config.json`,
+  `alignment_manifest.json` and `backtest.json` record assumptions and provenance.
+
+`pareto/` contains comparison outputs written after search: `pareto.csv`,
+`genomes.npz`, `designs/*.geojson`, `pareto.png`, representative `design_*.png`
+maps, per-edge tables in `report.md`, `loss_sanity.json`, and optional
+`sensitivity.json`. The front CSV, genome array and loss diagnostics are also
+available at the output root for compatibility. Every built edge with allocated
+annual loss over EUR 200M is flagged. Sensitivity performs fresh searches for
+demand k, capital and yield at ±25% on fixed alignments, reporting exact genome
+persistence; it does not vary every fitted exponent jointly.
+
+Maps share the original optimizer's visual styling in
+`train_optimizer/map_style.py`: population density uses the `YlOrRd` log scale
+(people/km²), white tile borders and 65% opacity; tracks run from pale green
+(`#b2f2a5`) to bright green (`#00cc33`). Conventional track is dashed, HSR is
+solid, and width is exactly `1.7 + 0.6 × trains/hour/direction`. White station
+markers, dashed green catchment circles and grey city crosses match the original.
+Both live/GIF frames and representative maps use this renderer.
+
+For the fast model, track color measures two-way carried annual trips divided by
+the fixed capturable gravity markets of the OD pairs using that edge, before rail
+share and spill. Transfer ODs contribute to each leg, once per edge. The map
+labels this **rail-market satisfaction**; it is distinct from occupancy and the
+legacy model's separately computed rail-eligible-needs bound. Population is read
+from the actual population cells and divided by cell area, rather than inferred
+from city populations. H3 cells retain their hexagonal footprints; other polygon
+cells retain their shapes, and non-H3 point cells use their declared area as a
+square footprint. Country/bbox filtering follows the original display convention
+when boundary data is available. The prepared population layer and viewport are
+reused across snapshots, with fixed color scales and space reserved for both
+colorbars so animation frames do not shift or resize.
+
+In optional NSGA mode, parents and offspring evolve across generations. The live
+view displays that generation's Pareto compromise, which can change lineage;
+choose the default incremental mode for one continuous network trajectory.
+The final map always follows the live accepted state and is not replaced by a
+financial/coverage extreme from the alternative-design report.
 
 ## Performance and scope
 
 On the development machine, a 100-city / 316-edge France graph evaluated 300
 random designs at **5.62 ms median / 8.54 ms p95**, excluding cache loading.
-Use the benchmark command to measure your own inputs and hardware. Full
+Use the benchmark command to measure your own inputs and hardware. Earlier NSGA-II
 150-member, 200-generation searches produced 449 France designs in 40.36 seconds
 and 484 Europe designs in 41.78 seconds; these timings include seeding and exclude
 geography loading/precomputation and report rendering. Development reports are
 in `runs/railgen-france-v2/` and `runs/railgen-europe-v2/` (ignored by git).
 
-The 25 new generator tests pass. The full suite has 162 passing tests and three
-pre-existing failures, reproduced on the original HEAD: profile time-limit
+The generator and live-output tests cover lineage, fixed-baseline consolidation,
+rejected proposals, interruption/time limits, GIF cadence and final-state consistency.
+All 36 generator/map/live-output tests pass. The full suite has 173 passing tests
+and three pre-existing failures, reproduced on the original HEAD: profile time-limit
 precedence in `test_settings` and two legacy HSR default assumptions in
 `test_train_types`. No legacy model/configuration changes are part of this work.
 
-The v0.1 pipeline supports all mandatory computational stages; empirical
+The v0.1 pipeline, with the incremental search extension, supports all mandatory computational stages; empirical
 validation is pending a curated metro table and sourced corridor observations.
 Optional artificial hubs, alternative alignment genes, CO2 objectives, AMOSA,
 full line pools and cross-sea hand-built links are not implemented. NSGA-III is

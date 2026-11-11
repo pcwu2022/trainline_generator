@@ -86,11 +86,21 @@ def solve(model, state, time_limit, interrupted, checkpoint=None, reporter=None)
 
 
 def main(argv=None):
+    # Route the fast generator before interpreting the legacy schema/options.
+    # Its live output flags share the original spelling and units.
+    routing = argparse.ArgumentParser(add_help=False)
+    routing.add_argument('--solver')
+    selected, remaining = routing.parse_known_args(argv)
+    if selected.solver in ('pareto', 'incremental', 'nsga2', 'nsga3'):
+        from rail_gen.__main__ import main as generate
+        algorithm = 'incremental' if selected.solver == 'pareto' else selected.solver
+        return generate(['run', '--algorithm', algorithm, *remaining])
     parser = argparse.ArgumentParser(description='Optimize stations, corridors, all-stop services and passenger flows.')
     parser.add_argument('--config', default=str(DEFAULT_CONFIG_PATH), help='Optional external JSON overrides')
     parser.add_argument('--profile', help='Named profile from config.json (europe, exploratory, france, italy, netherlands, switzerland, uk)')
     parser.add_argument('--output', help='Output directory (default: runs/<profile>, or runs/netherlands without a profile)')
-    parser.add_argument('--solver', choices=['annealing', 'heuristic', 'milp'], help='Override solver_method')
+    parser.add_argument('--solver', choices=['annealing', 'heuristic', 'milp', 'pareto', 'incremental', 'nsga2', 'nsga3'],
+                        help='Override solver_method; pareto selects the fast incremental generator')
     parser.add_argument('--time-limit', type=float, default=None, help='Total search seconds; selects bounded annealing unless --budget-mode goals is given')
     parser.add_argument('--budget-mode', choices=['goals', 'bounded'],
                         help='Annealing: finish coverage/integration/consolidation goals, or enforce total budgets')
