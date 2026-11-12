@@ -190,8 +190,10 @@ class LiveReporter:
             '![Current network](latest.png)', '',
             f'{m["active_stations"]} stations, {m["active_edges"]} corridors, {m["track_km"]:,.1f} km; '
             f'{m["passengers"]/1e6:.2f} million carried trips/year; net EUR {m["net_eur"]/1e6:.1f} million/year.', '',
-            f'Need satisfaction: **{m["need_satisfaction_ratio"]:.2%}** '
-            '(carried trips / fixed two-way annual capturable gravity demand across all candidate OD pairs).', '',
+            f'Demand fulfillment: **{m["need_satisfaction_ratio"]:.2%}** ' +
+            ('(carried / eligible annual trips: candidate potential for connected pairs, reference rail trips for unreachable pairs).'
+             if self.config['demand']['model'] == 'reference_elasticity' else
+             '(carried trips / fixed two-way annual capturable gravity demand across all candidate OD pairs).'), '',
             '[Animated evolution](progress.gif) · [Current GeoJSON](latest.geojson) · [Current metrics](latest.json) · [Cost breakdown](cost_breakdown.log)', '',
             '![Revenue / annual cost map](latest_revenue_cost.png)', '',
             '![Station and corridor rankings](analysis.png)', '',
@@ -204,6 +206,13 @@ class LiveReporter:
             '[Pareto alternatives and backtests](pareto/report.md) are comparison designs, not animation frames.']
         if data['algorithm'] != 'incremental':
             lines[-3] = 'Population mode displays the current Pareto compromise per generation; it can switch between lineages.'
+        if self.config['demand']['model'] == 'reference_elasticity':
+            lines.extend(['', f'Fixed synthetic reference: {m["reference_rail_trips"]:,.0f} annual rail trips. '
+                f'Potential demand: {m["potential_rail_trips"]:,.0f}; '
+                f'modal shift change: {m["modal_shift_change"]:+,.0f}; '
+                f'induced demand change: {m["induced_demand_change"]:+,.0f}; '
+                f'capacity spill: {m["lost_trips"]:,.0f}. '
+                'Changes are signed, before capacity spill, and apply equally across borders.'])
         lines += ['', '## Train services', '',
             'All infrastructure is newly built and fully charged. Compatible gauge, electrification and signalling are assumed. Infrastructure symbols and train types are separate.', '',
             '| Train type | Route | Trains/h/direction | Units/train | Fleet units |',

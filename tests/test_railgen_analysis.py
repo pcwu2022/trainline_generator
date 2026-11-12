@@ -7,7 +7,7 @@ import unittest
 import numpy as np
 
 from test_railgen import config, graph_fixture
-from rail_gen.analysis import network_analysis, write_analysis
+from rail_gen.analysis import network_analysis, write_analysis, demand_denominator
 from rail_gen.evaluator import Evaluator
 
 
@@ -48,7 +48,7 @@ class NetworkAnalysisTests(unittest.TestCase):
         self.assertGreater(data['stations'][2]['eligible_trips'], 0)
         self.assertEqual(data['stations'][2]['satisfaction'], 0)
         a_market = (e.origins == 0) | (e.destinations == 0)
-        self.assertAlmostEqual(data['stations'][0]['eligible_trips'], (2 * e.base[a_market]).sum())
+        self.assertAlmostEqual(data['stations'][0]['eligible_trips'], demand_denominator(e, result)[a_market].sum())
 
     def test_empty_network_dashboard_is_valid_and_json_has_no_nan(self):
         result = self.evaluator.evaluate([0, 0, 0])

@@ -41,13 +41,21 @@ def validate(c):
                 if not isinstance(value, bool):
                     raise ValueError(f'{name} must be boolean')
             elif isinstance(expected, (float, int)):
-                if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or value < 0:
-                    raise ValueError(f'{name} must be finite and nonnegative')
+                if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or (value < 0 and name not in ('demand.total_elasticity', 'demand.shift_elasticity')):
+                    requirement = 'finite numeric' if name in ('demand.total_elasticity', 'demand.shift_elasticity') else 'finite and nonnegative'
+                    raise ValueError(f'{name} must be {requirement}')
                 if name in integer_keys and not isinstance(value, int):
                     raise ValueError(f'{name} must be an integer')
             elif not isinstance(value, type(expected)):
                 raise ValueError(f'Invalid type for {name}')
     check(c, schema)
+    d = c['demand']
+    if d['model'] not in ('reference_elasticity', 'rail_share'):
+        raise ValueError('demand.model must be reference_elasticity or rail_share')
+    if not d['total_elasticity'] <= d['shift_elasticity'] < 0:
+        raise ValueError('Demand elasticities require total <= shift < 0')
+    if d['reference_speed_kmh'] <= 0 or d['reference_detour_ratio'] < 1:
+        raise ValueError('Reference speed must be positive and detour ratio at least one')
     if c['infrastructure_layout'] not in ('single', 'double', 'four'):
         raise ValueError('infrastructure_layout must be single, double or four')
     if not 1 <= c['services']['plan_trials'] <= 3 or c['services']['max_route_edges'] < 1:

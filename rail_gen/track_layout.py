@@ -3,7 +3,7 @@ import numpy as np
 
 STATE_TRACK = (None, 'CR', 'HSR')
 LAYOUT_BY_COUNT = {1: 'single', 2: 'double', 4: 'four'}
-MODEL_VERSION = 'hybrid-services-v1'
+MODEL_VERSION = 'network-elasticity-v2'
 
 
 def track_type(state):

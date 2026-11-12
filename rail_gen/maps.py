@@ -146,7 +146,7 @@ class MapBackground:
             else:
                 cmap, norm = satisfaction_scale()
                 figure.colorbar(ScalarMappable(norm=norm, cmap=cmap), cax=ratio_axis,
-                                label='Rail-market satisfaction')
+                                label='Rail demand fulfillment')
             for i, city in enumerate(self.graph.cities):
                 xy = self.node_xy[i]
                 ax.plot(*xy, **CITY_STYLE)

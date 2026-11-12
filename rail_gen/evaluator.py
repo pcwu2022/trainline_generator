@@ -8,7 +8,7 @@ from scipy.sparse.csgraph import connected_components
 
 from .alignment import TRACKS
 from .track_layout import LAYOUT_BY_COUNT, MODEL_VERSION
-from .demand import gravity_matrix
+from .demand import gravity_matrix, reference_demand
 from .prep import distances
 from .services import Service, ServiceNetwork, generate_plans
 
@@ -43,6 +43,12 @@ class Evaluation:
     edge_capacity: np.ndarray
     segment_load: np.ndarray
     segment_capacity: np.ndarray
+
+    potential_trips: np.ndarray
+    reference_trips: np.ndarray
+    shift_change: np.ndarray
+    induced_change: np.ndarray
+    journey_time: np.ndarray  # Fare-free hours used by demand elasticities.
 
     @property
     def feasible(self):
@@ -86,6 +92,9 @@ class Evaluator:
         self.gravity_scores = np.array([base[e.a, e.b] for e in graph.edges])
         self.edge_lookup = {tuple(sorted((e.a, e.b))): i for i, e in enumerate(graph.edges)}
         self.od_distance = self.distance[self.origins, self.destinations]
+        self.reference_hours, self.reference_trips = reference_demand(
+            self.base, self.od_distance, self.access[self.origins] + self.access[self.destinations],
+            config['demand'])
         self.allowed = np.zeros((self.m, 3), dtype=bool)
         self.allowed[:, 0] = True
         self.lengths = np.zeros((self.m, 3))
@@ -281,7 +290,10 @@ class Evaluator:
         total_cost = annual_capital + operating_cost
         net = revenue - total_cost
         passengers = float(trips.sum())
-        eligible_needs = float(2 * self.base.sum())
+        elastic = c['demand']['model'] == 'reference_elasticity'
+        eligible_trips = (np.where(np.isfinite(assignment['journey_time']), assignment['trips'],
+                                  self.reference_trips) if elastic else 2 * self.base)
+        eligible_needs = float(eligible_trips.sum())
         gt = assignment['generalized_time']
         mean_gt = float(np.sum(trips[trips > 0] * gt[trips > 0]) / passengers) if passengers else 0.0
         # Normalize before multiplying so the weighted mean cannot overflow
@@ -319,6 +331,17 @@ class Evaluator:
             maximum_train_units_used=int(max_units.max()) if self.m else 0,
             service_count=ns, shared_track_overload=track_overload,
             mean_transfers=mean_transfers)
+        if elastic:
+            metrics.update(
+                demand_model=c['demand']['model'],
+                reference_rail_trips=float(self.reference_trips.sum()),
+                potential_rail_trips=unspilled,
+                modal_shift_change=float(assignment['shift_change'].sum()),
+                induced_demand_change=float(assignment['induced_change'].sum()),
+                carried_reference_trips=float(np.sum(self.reference_trips * scale)),
+                carried_modal_shift_change=float(np.sum(assignment['shift_change'] * scale)),
+                carried_induced_demand_change=float(np.sum(assignment['induced_change'] * scale)),
+                demand_fulfillment_ratio=passengers / eligible_needs if eligible_needs else 0.0)
         per_km = np.divide(trips * assignment['fares'], assignment['ridden'], out=np.zeros_like(trips), where=assignment['ridden'] > 0)
         edge_revenue = np.asarray(edge_incidence @ per_km).ravel() * length
         station_split = np.divide(self.station_capital, degree, out=np.zeros(self.n), where=degree > 0)
@@ -328,4 +351,6 @@ class Evaluator:
         return Evaluation(x.copy(), np.asarray(objectives), constraints, metrics, edge_frequency, edge_load,
             edge_revenue, edge_net, trips, gt, max_units, multipliers, counts.copy(), tuple(final_plan), services,
             edge_incidence, assignment['transfers'], assignment['wait'], assignment['ivt'], edge_capacity,
-            segment_load, segment_capacity)
+            segment_load, segment_capacity, assignment['trips'].copy(), self.reference_trips.copy(),
+            assignment['shift_change'].copy(), assignment['induced_change'].copy(),
+            assignment['journey_time'].copy())

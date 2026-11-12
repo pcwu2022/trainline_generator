@@ -14,7 +14,7 @@ from rail_gen.report import geojson
 
 class CapacityRepairTests(unittest.TestCase):
     def test_sparse_services_include_real_headway_wait_and_cost(self):
-        for k, frequency in [(.001, 1 / 3), (.025, .5), (.035, 2 / 3)]:
+        for k, frequency in [(.001, 1 / 3), (.012, .5), (.015, 2 / 3)]:
             with self.subTest(frequency=frequency):
                 c = config()
                 c['demand']['k'] = k
@@ -34,7 +34,7 @@ class CapacityRepairTests(unittest.TestCase):
 
     def test_paid_formations_repair_spill_without_increasing_frequency_caps(self):
         c = config()
-        c['demand']['k'] = .5
+        c['demand']['k'] = .2
         c['operations']['maximum_train_units'] = 1
         graph = graph_fixture()
         # Independent sections: this test isolates formation capacity.
@@ -57,14 +57,16 @@ class CapacityRepairTests(unittest.TestCase):
         self.assertGreater(double.metrics['train_opex_eur'], single.metrics['train_opex_eur'])
         self.assertEqual(double.metrics['track_capital_eur'], single.metrics['track_capital_eur'])
         train_km = 2 * double.frequency * Evaluator(graph, c).lengths[np.arange(3), double.genome] * c['operations']['hours_per_day'] * c['operations']['days_per_year']
-        expected_opex = (train_km * double.train_units).sum() * c['rolling_stock']['CR']['opex_eur_trainkm']
+        formation_cost = np.where(double.train_units > 0,
+            1 + (double.train_units - 1) * c['operations']['additional_unit_cost_fraction'], 0)
+        expected_opex = (train_km * formation_cost).sum() * c['rolling_stock']['CR']['opex_eur_trainkm']
         self.assertAlmostEqual(double.metrics['train_opex_eur'], expected_opex)
         lines = [f for f in geojson(graph, double)['features'] if f['geometry']['type'] == 'LineString']
         self.assertEqual([f['properties']['train_units'] for f in lines], double.train_units[:2].tolist())
 
     def test_two_connection_package_crosses_infeasible_intermediate_networks(self):
         c = config()
-        c['demand']['k'] = 1.3
+        c['demand']['k'] = .4
         c['operations']['maximum_train_units'] = 1
         c['search'].update(capacity_repair_steps=3, capacity_repair_candidates=8)
         c['services'].update(max_through_routes=0, plan_trials=1)
@@ -85,7 +87,10 @@ class CapacityRepairTests(unittest.TestCase):
         packages, diagnostics = capacity_packages(current, e)
         selected = integration_choice(current, packages, e)
         self.assertIsNotNone(selected)
-        np.testing.assert_array_equal(selected.genome, [1, 1, 1])
+        # Both connecting edges are required; demand may make the original
+        # direct edge redundant when the package is repaired.
+        np.testing.assert_array_equal(selected.genome[:2], [1, 1])
+        self.assertEqual(topology(selected.genome, e), (0, 0))
         self.assertTrue(selected.feasible)
         self.assertLessEqual(selected.metrics['spill_fraction'], .15)
         self.assertGreater(selected.metrics['upfront_eur'], current.metrics['upfront_eur'])
@@ -103,7 +108,7 @@ class CapacityRepairTests(unittest.TestCase):
         c = load_config(profile=None)
         self.assertEqual(c['operations']['maximum_train_units'], 2)
         self.assertGreater(c['search']['capacity_repair_steps'], 0)
-        c['demand']['k'] = .5
+        c['demand']['k'] = .2
         c['services']['plan_trials'] = 1
         expanded = Evaluator(graph_fixture(), c).evaluate([1, 1, 0])
         c['operations']['maximum_train_units'] = 1

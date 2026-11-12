@@ -194,19 +194,26 @@ class ServiceNetwork:
         return self._journey_arrays(incidence, np.maximum(0, boardings - 1), wait, connected)
 
     def _journey_arrays(self, incidence, transfers, wait, connected):
-        from .demand import fare, rail_share
+        from .demand import fare, rail_share, elastic_demand
         e = self.e
         distance = np.asarray(incidence.T @ self.lengths).ravel()
         weighted_yield = np.asarray(incidence.T @ (self.lengths * self.yields)).ravel()
         unit_yield = np.divide(weighted_yield, distance, out=np.zeros_like(distance), where=distance > 0)
         fares = fare(e.od_distance, unit_yield, e.config['demand'])
         ivt = np.asarray(incidence.T @ self.times).ravel()
-        gt = e.access[e.origins] + e.access[e.destinations] + ivt + wait + transfers * e.config['operations']['transfer_hours'] + fares / e.config['demand']['value_of_time_eur']
-        gt[~connected] = np.inf
-        trips = 2 * e.base * rail_share(gt, e.config['demand'])
+        journey_time = e.access[e.origins] + e.access[e.destinations] + ivt + wait + transfers * e.config['operations']['transfer_hours']
+        journey_time[~connected] = np.inf
+        gt = journey_time + fares / e.config['demand']['value_of_time_eur']
+        if e.config['demand']['model'] == 'reference_elasticity':
+            trips, shift, induced = elastic_demand(e.reference_trips, e.reference_hours,
+                                                  journey_time, e.config['demand'])
+        else:
+            trips = 2 * e.base * rail_share(gt, e.config['demand'])
+            shift, induced = np.zeros_like(trips), np.zeros_like(trips)
         edge_incidence = self.segment_to_edge @ incidence
         return dict(incidence=incidence, edge_incidence=edge_incidence, transfers=transfers, wait=wait,
-                    fares=fares, ivt=ivt, generalized_time=gt, trips=trips, ridden=distance)
+                    fares=fares, ivt=ivt, generalized_time=gt, trips=trips, ridden=distance,
+                    journey_time=journey_time, shift_change=shift, induced_change=induced)
 
 
 def generate_plans(e, x, track_counts, *, infrastructure=None, return_networks=False):

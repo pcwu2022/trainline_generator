@@ -9,11 +9,19 @@ from .track_layout import track_type, MODEL_VERSION
 from .evaluator import Evaluator
 
 
+def demand_denominator(evaluator, result):
+    """Candidate potential for connected pairs, reference demand otherwise."""
+    if evaluator.config['demand']['model'] == 'reference_elasticity':
+        return np.where(np.isfinite(result.journey_time), result.potential_trips,
+                        result.reference_trips)
+    return 2 * evaluator.base
+
+
 def corridor_satisfaction(evaluator, result):
-    """Same fixed capturable path markets as the satisfaction map, transfers included."""
+    """Carried / potential assigned demand (legacy mode: fixed gravity markets)."""
     e = evaluator
     incidence = result.edge_incidence
-    eligible = np.asarray(incidence @ np.where(result.trips > 0, 2 * e.base, 0)).ravel()
+    eligible = np.asarray(incidence @ np.where(np.isfinite(result.journey_time), demand_denominator(e, result), 0)).ravel()
     carried = 2 * result.directional_load
     ratios = np.divide(carried, eligible, out=np.zeros(e.m), where=eligible > 0)
     return np.clip(ratios, 0, 1), eligible
@@ -27,7 +35,7 @@ def network_analysis(graph, config, result, evaluator=None, *, reevaluate=True):
     active = np.flatnonzero(result.genome)
     served = set(np.r_[e.a[active], e.b[active]].tolist())
     station_market = np.bincount(np.r_[e.origins, e.destinations],
-        weights=np.tile(2 * e.base, 2), minlength=e.n)
+        weights=np.tile(demand_denominator(e, result), 2), minlength=e.n)
     station_trips = np.bincount(np.r_[e.origins, e.destinations],
         weights=np.tile(result.trips, 2), minlength=e.n)
     ratios, markets = corridor_satisfaction(e, result)
@@ -46,9 +54,17 @@ def network_analysis(graph, config, result, evaluator=None, *, reevaluate=True):
             revenue_eur=revenue, annual_cost_eur=cost, annual_net_eur=net,
             revenue_cost_ratio=revenue / cost if cost > 0 else None,
             frequency=float(result.frequency[i])))
-    return dict(model_version=MODEL_VERSION, services=result.services, track_counts=result.track_counts.tolist(), genome=result.genome.tolist(), metrics=result.metrics, stations=stations, corridors=corridors,
-        definitions=dict(station_satisfaction='Carried two-way annual OD endpoint trips / fixed capturable endpoint market, including unserved destinations; transfers excluded.',
-            corridor_satisfaction='Carried two-way annual leg trips / fixed capturable OD markets assigned to that corridor; transfers included; same as satisfaction map.',
+    od_demand = [dict(origin=graph.cities[a].id, destination=graph.cities[b].id,
+        reference_hours=float(e.reference_hours[j]), reference_rail_trips=float(result.reference_trips[j]),
+        journey_hours=float(result.journey_time[j]) if np.isfinite(result.journey_time[j]) else None,
+        potential_trips=float(result.potential_trips[j]), carried_trips=float(result.trips[j]),
+        modal_shift_change=float(result.shift_change[j]), induced_demand_change=float(result.induced_change[j]))
+        for j, (a, b) in enumerate(zip(e.origins, e.destinations))
+        if config['demand']['model'] == 'reference_elasticity']
+    return dict(model_version=MODEL_VERSION, od_demand=od_demand, services=result.services, track_counts=result.track_counts.tolist(), genome=result.genome.tolist(), metrics=result.metrics, stations=stations, corridors=corridors,
+        definitions=dict(station_satisfaction='Carried two-way annual endpoint trips / eligible demand, including unserved destinations; transfers excluded. Elasticity mode uses candidate potential for connected pairs and reference rail trips otherwise; legacy mode uses fixed gravity markets.',
+            corridor_satisfaction='Carried two-way annual leg trips / potential OD demand assigned to that corridor (fixed gravity markets in legacy mode); transfers included; same as map.',
+            demand_changes='Signed changes before capacity spill; reference + modal shift + induced change = potential trips. All pairs use identical elasticities; reference is synthetic and fixed for the run. Breakdown is only available in reference_elasticity mode.',
             annual_cost='Operations plus annualized capital, maintenance, station and fleet allocations; shared infrastructure counted once.',
             profit='Annual allocated revenue minus annual allocated cost; not upfront investment payback.',
             lines='Infrastructure corridors; separate services list contains actual through-running train routes.'))
@@ -68,11 +84,11 @@ def draw_analysis(path, analysis, title='Current network', limit=10):
     stations = [row for row in analysis['stations'] if row['served']]
     corridors = analysis['corridors']
     panels = [
-        ('Stations · highest satisfaction', stations, 'satisfaction', 100, 'Capturable endpoint market served (%)', '#217c55',
+        ('Stations · highest satisfaction', stations, 'satisfaction', 100, 'Eligible endpoint demand carried (%)', '#217c55',
          lambda r: f"{r['satisfaction']:.1%} · {_count(r['carried_trips'])} / {_count(r['eligible_trips'])}"),
         ('Stations · most endpoint trips', stations, 'carried_trips', 1e-6, 'Million endpoint trips / year', '#286a92',
          lambda r: _count(r['carried_trips'])),
-        ('Corridors · highest satisfaction', corridors, 'satisfaction', 100, 'Assigned capturable market served (%)', '#217c55',
+        ('Corridors · highest satisfaction', corridors, 'satisfaction', 100, 'Assigned potential demand carried (%)', '#217c55',
          lambda r: f"{r['satisfaction']:.1%} · {_count(r['carried_trips'])} / {_count(r['eligible_trips'])}"),
         ('Corridors · best revenue / cost', corridors, 'revenue_cost_ratio', 1, 'Annual revenue / annual allocated cost · 1 = break-even', '#79632b',
          lambda r: f"{r['revenue_cost_ratio']:.2f}×"),
@@ -120,7 +136,7 @@ def draw_analysis(path, analysis, title='Current network', limit=10):
         ratio_label = f'{ratio:.2f}×' if ratio is not None else 'n/a'
         figure.suptitle(f'Network station & corridor analysis · {title}\n'
             f"{m['active_stations']} active stations · {m['active_edges']} corridors · {_count(m['passengers'])} trips/year · "
-            f"Satisfaction {m['need_satisfaction_ratio']:.1%}\n"
+            f"Demand fulfillment {m['need_satisfaction_ratio']:.1%}\n"
             f"Annual revenue €{m['revenue_eur']/1e6:,.1f}M · Cost €{m['annual_cost_eur']/1e6:,.1f}M · "
             f"Net €{m['net_eur']/1e6:+,.1f}M · Revenue/cost {ratio_label}", fontsize=16)
         figure.supxlabel('Top 10 per panel · Numbers on satisfaction bars: carried / eligible two-way annual trips. '

@@ -35,6 +35,44 @@ The existing `python -m rail_gen run ...` command uses the same incremental
 default. Select `--algorithm nsga2` / `--algorithm nsga3`, or
 `optimize.py --solver nsga2` / `--solver nsga3`, for population evolution.
 Parameters for the fast pipeline are in `rail_gen/config.json`.
+
+Demand defaults to `demand.model = "reference_elasticity"` for **all** eligible city
+pairs, including international journeys, with no country distinction. Routing
+recomputes complete service journeys, including connecting services, after each
+candidate edit and frequency update. Demand uses fare-free journey hours (access,
+waiting, transfers and onboard time); fares still affect routing and revenue.
+There is no additional network or induced-demand multiplier.
+
+Each evaluator fixes a synthetic conventional-rail reference:
+`G0 = access_a + access_b + distance_km * reference_detour_ratio / reference_speed_kmh + reference_wait_hours + reference_transfer_hours`.
+Defaults assume 100 km/h, a 1.2 detour ratio, 0.5 hours waiting and zero additional
+transfer hours. Reference two-way rail trips are `Q0 = 2 * gravity_market`, without
+logistic uptake or a reference-fare penalty. The baseline scale is absorbed into
+`demand.k`. `t0_hours`, `sigma_hours`, and `reference_yield_eur_pkm` do not affect
+reference-elasticity demand; the first two remain available for legacy `rail_share`
+mode. These are configurable prototype assumptions,
+not observed existing-network trips. They never depend on the current candidate
+or the sequence of accepted changes.
+
+For `r = G / G0`, total potential trips are `Q0 * r ** total_elasticity` (default
+−1.4); modal shift change is `Q0 * (r ** shift_elasticity - 1)` (default −0.9);
+induced change is the remainder. Slower journeys produce signed reductions;
+unreachable pairs have zero potential trips, a modal shift loss of `Q0`, and zero
+induced change. Frequency optimization uses this potential demand, then capacity
+limits determine carried trips and spill. To test total elasticities −1.0 and
+−2.0, override `total_elasticity`, keeping `shift_elasticity` at −0.9.
+
+`analysis.json` includes per-pair reference hours/trips, candidate journey hours,
+potential/carried trips and signed demand changes. Metrics include raw and
+capacity-scaled demand components. Their reference + modal shift + induced sums
+reconcile to potential and carried trips respectively. Demand fulfillment replaces
+fixed-market satisfaction: its denominator uses candidate potential on connected
+pairs and reference rail trips on unreachable pairs. Legacy metric keys
+`eligible_need_trips` and `need_satisfaction_ratio` remain aliases for this
+measurement; corridor maps measure carried / assigned potential demand.
+Set `demand.model = "rail_share"` to reproduce the previous demand calculation.
+Old calibrated parameters should be recalibrated for the new model.
+
 Use a new or empty output directory, or add `--overwrite` to delete its previous
 contents and start a fresh run. Both fast-generator entry points accept this flag.
 The supplied city and relief data support uncalibrated development runs;

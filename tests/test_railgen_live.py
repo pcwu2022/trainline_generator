@@ -100,15 +100,17 @@ class IncrementalSearchTests(unittest.TestCase):
         candidate.metrics['passengers'] = 98
         self.assertIs(consolidation_choice(current, [candidate], baseline, c), candidate)
 
-    def test_need_satisfaction_uses_fixed_demand_including_unserved_pairs(self):
+    def test_demand_fulfillment_includes_reference_for_unserved_pairs(self):
         e = Evaluator(graph_fixture(), incremental_config())
         empty = e.evaluate([0, 0, 0])
         partial = e.evaluate([1, 0, 0])
         connected = e.evaluate([1, 1, 0])
-        denominator = float(2 * e.base.sum())
+        denominator = float(e.reference_trips.sum())
         self.assertGreater(denominator, 0)
         self.assertEqual(empty.metrics['need_satisfaction_ratio'], 0)
         for result in [empty, partial, connected]:
+            eligible = np.where(np.isfinite(result.journey_time), result.potential_trips, e.reference_trips)
+            denominator = float(eligible.sum())
             self.assertEqual(result.metrics['eligible_need_trips'], denominator)
             self.assertAlmostEqual(result.metrics['need_satisfaction_ratio'],
                                    result.metrics['passengers'] / denominator)

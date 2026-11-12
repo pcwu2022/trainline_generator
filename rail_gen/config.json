@@ -22,8 +22,8 @@
     "prep": {
       "max_cities": 100,
       "minimum_population": 50000,
-      "center_coefficient": 0.16136,
-      "uptake": 0.9,
+      "center_coefficient": 0.3,
+      "uptake": 0.7,
       "access_speed_kmh": 25,
       "neighbors": 6,
       "max_edge_km": 600,
@@ -42,6 +42,14 @@
       "smooth_cells": 1
     },
     "demand": {
+      "model": "reference_elasticity",
+      "total_elasticity": -1.4,
+      "shift_elasticity": -0.9,
+      "reference_speed_kmh": 100,
+      "reference_detour_ratio": 1.2,
+      "reference_wait_hours": 0.5,
+      "reference_transfer_hours": 0,
+      "reference_yield_eur_pkm": 0.085,
       "k": 1,
       "a": 0.9,
       "beta": 1.6,
@@ -93,7 +101,7 @@
     "finance": {
       "discount_rate": 0.04,
       "track_life_years": 50,
-      "station_life_years": 50,
+      "station_life_years": 100,
       "fleet_life_years": 30,
       "station_base_meur": 40,
       "station_per_million_meur": 20,
@@ -132,8 +140,8 @@
       "journey_time_allowance": 0.05
     },
     "reporting": {
-      "snapshot_every": 5,
-      "gif_frame_ms": 500
+      "snapshot_every": 10,
+      "gif_frame_ms": 200
     },
     "track_layouts": {
       "single": {

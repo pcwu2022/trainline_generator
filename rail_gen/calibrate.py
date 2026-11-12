@@ -8,7 +8,7 @@ import numpy as np
 from scipy.optimize import least_squares
 from scipy.stats import spearmanr
 
-from .demand import fare, rail_share
+from .demand import fare, rail_share, reference_demand, elastic_demand
 from .evaluator import capital_recovery_factor
 
 REQUIRED = ('corridor', 'population_a', 'population_b', 'kappa_a', 'kappa_b',
@@ -49,14 +49,22 @@ def predict_corridors(rows, parameters, dwell_hours=.05):
         distance = max(parameters['minimum_distance_km'], r['distance_km'])
         base = parameters['k'] * (r['population_a'] * r['kappa_a']) ** parameters['a'] * (r['population_b'] * r['kappa_b']) ** parameters['a'] / distance ** parameters['beta']
         price = float(fare(r['distance_km'], r['yield_eur_pkm'], parameters))
-        gt = r['access_a_hours'] + r['access_b_hours'] + min(1, .5 / r['frequency']) + r['line_length_km'] / r['speed_kmh'] + dwell_hours + price / parameters['value_of_time_eur']
-        predicted = 2 * base * float(rail_share(gt, parameters))
+        journey_hours = r['access_a_hours'] + r['access_b_hours'] + .5 / r['frequency'] + r['line_length_km'] / r['speed_kmh'] + dwell_hours
+        gt = journey_hours + price / parameters['value_of_time_eur']
+        if parameters['model'] == 'reference_elasticity':
+            reference_hours, reference_trips = reference_demand(base, r['distance_km'],
+                r['access_a_hours'] + r['access_b_hours'], parameters)
+            predicted = float(elastic_demand(reference_trips, reference_hours, journey_hours, parameters)[0])
+        else:
+            predicted = 2 * base * float(rail_share(gt, parameters))
         result.append(predicted if r['distance_km'] <= parameters['maximum_distance_km'] else 0.0)
     return np.array(result)
 
 
 def fit(rows, config, fit_parameters=('k',)):
     parameters = config['demand'].copy()
+    if parameters['model'] == 'reference_elasticity' and 't0_hours' in fit_parameters:
+        raise ValueError('t0_hours only affects rail_share demand and cannot be fitted in reference_elasticity mode')
     training = [r for r in rows if r['split'] == 'train']
     if len(training) < max(2, len(fit_parameters) + 1):
         raise ValueError('Not enough training corridors for demand fitting')

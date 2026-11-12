@@ -12,7 +12,7 @@ import numpy as np
 from rail_gen.alignment import Alignment, CACHE_VERSION, CandidateGraph, Edge, cached_graph, cost_surfaces, fingerprint, load_graph, save_graph
 from rail_gen.calibrate import backtest, fit, predict_corridors, read_corridors
 from rail_gen.config import load_config, merge, validate
-from rail_gen.demand import fare, rail_share
+from rail_gen.demand import fare, rail_share, reference_demand, elastic_demand
 from rail_gen.evaluator import Evaluator, capital_recovery_factor
 from rail_gen.prep import City, candidate_pairs, distances, read_cities, station_capture, neighborhood_densities
 from rail_gen.search import bridge_components, nondominated, representative_indices, search
@@ -159,7 +159,9 @@ class EvaluatorTests(unittest.TestCase):
         p = self.c['demand']
         price = self.c['rolling_stock']['CR']['yield_eur_pkm'] * distance
         gt = a.access_hours + b.access_hours + .5 / r.frequency[0] + self.g.edges[0].alignments['CR'].length_km / self.c['tracks']['CR']['speed_kmh'] + self.c['operations']['dwell_hours'] + price / p['value_of_time_eur']
-        expected = 2 * p['k'] * (a.population * a.kappa) ** p['a'] * (b.population * b.kappa) ** p['a'] / distance ** p['beta'] * rail_share(gt, p)
+        market = p['k'] * (a.population * a.kappa) ** p['a'] * (b.population * b.kappa) ** p['a'] / distance ** p['beta']
+        ref_hours, ref_trips = reference_demand(market, distance, a.access_hours + b.access_hours, p)
+        expected = float(elastic_demand(ref_trips, ref_hours, gt - price / p['value_of_time_eur'], p)[0])
         self.assertEqual(r.metrics['spill_fraction'], 0)
         self.assertAlmostEqual(r.metrics['passengers'], expected)
         self.assertAlmostEqual(r.directional_load[0], expected / 2)

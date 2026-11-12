@@ -49,13 +49,14 @@ class PopulationMapTests(unittest.TestCase):
             background.draw(empty, Path(temporary) / 'map.png', 'Empty network')
             self.assertTrue((Path(temporary) / 'map.png').exists())
 
-    def test_transfer_colors_use_fixed_two_way_od_markets_on_both_legs(self):
+    def test_transfer_colors_use_potential_od_demand_on_both_legs(self):
         with tempfile.TemporaryDirectory() as temporary:
             c, graph, _ = self.prepare(temporary)
             background = MapBackground(graph, c)
             e = Evaluator(graph, c)
             result = e.evaluate([1, 1, 0])
-            demand = 2 * gravity_matrix(graph.cities, c)
+            demand = np.zeros((e.n, e.n))
+            demand[e.origins, e.destinations] = result.potential_trips
             trips = dict(zip(zip(e.origins, e.destinations), result.trips))
             expected = [(trips[0, 1] + trips[0, 2]) / (demand[0, 1] + demand[0, 2]),
                         (trips[1, 2] + trips[0, 2]) / (demand[1, 2] + demand[0, 2]), 0]
