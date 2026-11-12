@@ -5,28 +5,25 @@ from pathlib import Path
 import numpy as np
 
 from .alignment import TRACKS
+from .track_layout import track_type, MODEL_VERSION
 from .evaluator import Evaluator
 
 
 def corridor_satisfaction(evaluator, result):
     """Same fixed capturable path markets as the satisfaction map, transfers included."""
     e = evaluator
-    active = np.flatnonzero(result.genome)
-    length = e.lengths[np.arange(e.m), result.genome]
-    speeds = np.choose(result.genome, [1, e.config['tracks']['CR']['speed_kmh'],
-                                      e.config['tracks']['HSR']['speed_kmh']])
-    time = length / speeds + (result.genome > 0) * e.config['operations']['dwell_hours']
-    incidence, _, _, _ = e._paths(active, time)
+    incidence = result.edge_incidence
     eligible = np.asarray(incidence @ np.where(result.trips > 0, 2 * e.base, 0)).ravel()
     carried = 2 * result.directional_load
     ratios = np.divide(carried, eligible, out=np.zeros(e.m), where=eligible > 0)
     return np.clip(ratios, 0, 1), eligible
 
 
-def network_analysis(graph, config, result, evaluator=None):
-    """Recompute detailed allocations; station markets count OD endpoints, not transfers."""
+def network_analysis(graph, config, result, evaluator=None, *, reevaluate=True):
+    """Analyze allocations; reuse current evaluations within the reporting pipeline."""
     e = evaluator or Evaluator(graph, config)
-    result = e.evaluate(result.genome, details=True)
+    if reevaluate:
+        result = e.evaluate(result.genome, details=True, services=result.service_plan, track_counts=result.track_counts)
     active = np.flatnonzero(result.genome)
     served = set(np.r_[e.a[active], e.b[active]].tolist())
     station_market = np.bincount(np.r_[e.origins, e.destinations],
@@ -44,17 +41,17 @@ def network_analysis(graph, config, result, evaluator=None):
         revenue, net = float(result.edge_revenue[i]), float(result.edge_net[i])
         cost = revenue - net
         corridors.append(dict(edge_id=int(i), name=f'{graph.cities[edge.a].name} – {graph.cities[edge.b].name}',
-            track=TRACKS[result.genome[i] - 1], satisfaction=float(ratios[i]) if markets[i] > 0 else None,
+            track=track_type(result.genome[i]), track_count=int(result.track_counts[i]), service_types=sorted({s["train_type"] for s in result.services if int(i) in s["edge_ids"]}), satisfaction=float(ratios[i]) if markets[i] > 0 else None,
             carried_trips=float(2 * result.directional_load[i]), eligible_trips=float(markets[i]),
             revenue_eur=revenue, annual_cost_eur=cost, annual_net_eur=net,
             revenue_cost_ratio=revenue / cost if cost > 0 else None,
             frequency=float(result.frequency[i])))
-    return dict(genome=result.genome.tolist(), metrics=result.metrics, stations=stations, corridors=corridors,
+    return dict(model_version=MODEL_VERSION, services=result.services, track_counts=result.track_counts.tolist(), genome=result.genome.tolist(), metrics=result.metrics, stations=stations, corridors=corridors,
         definitions=dict(station_satisfaction='Carried two-way annual OD endpoint trips / fixed capturable endpoint market, including unserved destinations; transfers excluded.',
             corridor_satisfaction='Carried two-way annual leg trips / fixed capturable OD markets assigned to that corridor; transfers included; same as satisfaction map.',
             annual_cost='Operations plus annualized capital, maintenance, station and fleet allocations; shared infrastructure counted once.',
             profit='Annual allocated revenue minus annual allocated cost; not upfront investment payback.',
-            lines='City-pair corridors, not reconstructed through-running service lines.'))
+            lines='Infrastructure corridors; separate services list contains actual through-running train routes.'))
 
 
 def _count(value):
@@ -136,8 +133,8 @@ def draw_analysis(path, analysis, title='Current network', limit=10):
         plt.close(figure)
 
 
-def write_analysis(graph, config, result, image_path, json_path=None, title='Current network', evaluator=None):
-    data = network_analysis(graph, config, result, evaluator)
+def write_analysis(graph, config, result, image_path, json_path=None, title='Current network', evaluator=None, *, reevaluate=True):
+    data = network_analysis(graph, config, result, evaluator, reevaluate=reevaluate)
     data['title'] = title
     draw_analysis(image_path, data, title)
     if json_path is not None:
@@ -153,8 +150,8 @@ def write_visual_analysis(graph, config, result, output, background, title, eval
     dashboard = output / '.analysis.tmp.png'
     metrics = output / '.analysis.tmp.json'
     try:
-        background.draw(result, financial, title, color_by='revenue_cost')
-        data = write_analysis(graph, config, result, dashboard, metrics, title, evaluator)
+        background.draw(result, financial, title, color_by='revenue_cost', reevaluate=False)
+        data = write_analysis(graph, config, result, dashboard, metrics, title, evaluator, reevaluate=False)
         financial.replace(output / 'latest_revenue_cost.png')
         dashboard.replace(output / 'analysis.png')
         metrics.replace(output / 'analysis.json')
@@ -173,13 +170,21 @@ def main():
     parser = argparse.ArgumentParser(description=main.__doc__)
     parser.add_argument('--run-dir', type=Path, required=True)
     parser.add_argument('--cache-dir', type=Path, default=Path('runs/railgen-cache'))
+    parser.add_argument('--reevaluate-legacy', action='store_true', help='Explicitly re-evaluate historical genomes under the new service model; old metrics are not preserved')
     args = parser.parse_args()
     snapshot = json.loads((args.run_dir / 'latest.json').read_text())
     config = load_config(args.run_dir / 'run_config.json', profile=None)
     manifest = json.loads((args.run_dir / 'alignment_manifest.json').read_text())
     graph = load_graph(args.cache_dir / manifest['fingerprint'])
     evaluator = Evaluator(graph, config)
-    result = evaluator.evaluate(snapshot['genome'], details=True)
+    legacy = snapshot.get('model_version') != MODEL_VERSION
+    if legacy and not args.reevaluate_legacy:
+        parser.error('Historical results need explicit --reevaluate-legacy; service-model metrics are not compatible with old metrics')
+    genome, counts = snapshot['genome'], snapshot.get('track_counts')
+    if legacy and any(state > 2 for state in genome):
+        from .track_layout import migrate_legacy_genome
+        genome, counts = migrate_legacy_genome(genome)
+    result = evaluator.evaluate(genome, details=True, services=None if legacy else snapshot.get('services'), track_counts=counts)
     title = f"Snapshot {snapshot['snapshot']} · iteration {snapshot['iteration']} · {snapshot['phase'].replace('_', ' ')}"
     data = write_visual_analysis(graph, config, result, args.run_dir,
                                 MapBackground(graph, config), title, evaluator)

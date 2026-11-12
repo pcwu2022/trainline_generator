@@ -33,6 +33,8 @@ class PopulationMapTests(unittest.TestCase):
         path = Path(directory) / 'population.geojson'
         path.write_text(json.dumps(dict(type='FeatureCollection', features=features)))
         c['population_file'] = str(path)
+        for city, radius in zip(graph.cities, [4, 8, 12]):
+            city.radius_km = radius
         return c, graph, cells
 
     def test_background_uses_population_per_cell_area_and_is_prepared_once(self):
@@ -76,7 +78,7 @@ class PopulationMapTests(unittest.TestCase):
             problem = SimpleNamespace(cells=cells,
                 cities=[dict(center=(city.lon, city.lat), name=city.name, population=city.population) for city in graph.cities],
                 locations=[dict(coordinate=(city.lon, city.lat)) for city in graph.cities],
-                stations=[dict(location=i, radius_km=c['prep']['catchment_km']) for i in range(3)],
+                stations=[dict(location=i, radius_km=graph.cities[i].radius_km) for i in range(3)],
                 edges=[dict(geometry=edge.alignments['CR'].geometry) for edge in graph.edges], demand=[])
             legacy_config = SimpleNamespace(bbox=c['bbox'], terrain_file='', land_file='', accounting_years=10)
             legacy_result = dict(phase='solving', iterations=1, elapsed_seconds=1, snapshot=1, feasible=True,
@@ -84,7 +86,7 @@ class PopulationMapTests(unittest.TestCase):
                        for i, (track, frequency) in enumerate([('CR', 1), ('HSR', 4)])],
                 od_pairs=[dict(id=i, rail_eligible_needs=100) for i in range(2)],
                 passenger_flows=[dict(od=i, line=i, board_stop=0, alight_stop=1, trips_per_hour=100 * ratios[i]) for i in range(2)],
-                stations=[dict(coordinate=(city.lon, city.lat), radius_km=c['prep']['catchment_km']) for city in graph.cities],
+                stations=[dict(coordinate=(city.lon, city.lat), radius_km=city.radius_km) for city in graph.cities],
                 metrics=dict(served_trips_per_hour=1, total_track_km=1, horizon_profit=0))
             captured = []
             original_save = Figure.savefig
@@ -93,6 +95,7 @@ class PopulationMapTests(unittest.TestCase):
                 axis = figure.axes[0]
                 captured.append(dict(position=axis.get_position().bounds, xlim=axis.get_xlim(), ylim=axis.get_ylim(),
                     tracks=[(line.get_color(), line.get_linewidth(), line.get_linestyle()) for line in axis.lines if line.get_zorder() == 4],
+                    radii=[patch.radius for patch in axis.patches if hasattr(patch, 'radius')],
                     palette=axis.collections[0].cmap.name, values=axis.collections[0].get_array().copy(),
                     norm=(axis.collections[0].norm.vmin, axis.collections[0].norm.vmax)))
             with matplotlib.rc_context({'savefig.bbox': 'tight', 'figure.autolayout': True}):
@@ -103,17 +106,19 @@ class PopulationMapTests(unittest.TestCase):
                     background.draw(e.evaluate([0, 0, 0]), Path(temporary) / 'empty.png', 'Empty')
                     background.draw(result, Path(temporary) / 'financial.png', 'Financial', color_by='revenue_cost')
             original, populated, empty, financial = captured
+            self.assertEqual(populated['radii'], [4, 8, 12])
+            self.assertEqual(financial['radii'], [4, 8, 12])
             self.assertEqual(populated['palette'], original['palette'])
             self.assertEqual(populated['norm'], original['norm'])
             np.testing.assert_allclose(populated['values'], original['values'])
             for actual, expected in zip(populated['tracks'], original['tracks']):
-                np.testing.assert_allclose(actual[0], expected[0])
+                np.testing.assert_allclose(matplotlib.colors.to_rgba(actual[0]), matplotlib.colors.to_rgba(expected[0]))
                 self.assertEqual(actual[1:], expected[1:])
             self.assertEqual(len(populated['tracks']), 2)
             self.assertEqual(len(financial['tracks']), 2)
             for actual, expected in zip(financial['tracks'], populated['tracks']):
                 self.assertEqual(actual[1:], expected[1:])
-                self.assertFalse(np.allclose(actual[0], expected[0]))
+                self.assertFalse(np.allclose(matplotlib.colors.to_rgba(actual[0]), matplotlib.colors.to_rgba(expected[0])))
             for key in ('position', 'xlim', 'ylim'):
                 np.testing.assert_allclose(empty[key], populated[key], atol=1e-12)
                 np.testing.assert_allclose(financial[key], populated[key], atol=1e-12)

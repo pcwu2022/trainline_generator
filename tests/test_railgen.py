@@ -14,7 +14,7 @@ from rail_gen.calibrate import backtest, fit, predict_corridors, read_corridors
 from rail_gen.config import load_config, merge, validate
 from rail_gen.demand import fare, rail_share
 from rail_gen.evaluator import Evaluator, capital_recovery_factor
-from rail_gen.prep import City, candidate_pairs, distances, station_capture
+from rail_gen.prep import City, candidate_pairs, distances, read_cities, station_capture, neighborhood_densities
 from rail_gen.search import bridge_components, nondominated, representative_indices, search
 
 
@@ -53,16 +53,60 @@ class ConfigTests(unittest.TestCase):
 
 
 class PreparationTests(unittest.TestCase):
-    def test_catchment_population_is_exclusive_and_capped(self):
+    def test_catchment_population_is_exclusive_and_can_exceed_city_proper(self):
         c = config()
         cities = graph_fixture().cities
         xy = np.array([city.xy for city in cities])
         people = np.array([3e6, 200000, 0])
-        station_capture(cities, xy, people, c)
-        self.assertAlmostEqual(cities[0].kappa, c['prep']['uptake'])
+        station_capture(cities, xy, people, np.array([10000, 2500, 0]), c)
+        self.assertAlmostEqual(cities[0].kappa, 1.5 * c['prep']['uptake'])
+        self.assertAlmostEqual(cities[0].population * cities[0].kappa, 3e6 * c['prep']['uptake'])
         self.assertAlmostEqual(cities[1].kappa, .2 * c['prep']['uptake'])
         self.assertEqual(cities[2].kappa, 0)
         self.assertEqual(cities[0].access_hours, 0)
+
+    def test_city_selection_excludes_metro_centers_before_limit(self):
+        c = config()
+        c['bbox'] = [1, 45, 7, 47]
+        c['countries'] = []
+        c['prep'].update(max_cities=2, center_coefficient=.1)
+        records = [dict(id='a', name='Metro', lon=2, lat=46, population=1000000),
+                   dict(id='b', name='Suburb', lon=2.01, lat=46, population=500000),
+                   dict(id='c', name='Intercity', lon=4, lat=46, population=100000)]
+        xy = np.array([City(r['id'], r['name'], r['lon'], r['lat'], r['population']).xy for r in records])
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / 'cities.json'
+            path.write_text(json.dumps(records))
+            c['cities_file'] = str(path)
+            selected = read_cities(c, (xy, np.ones(3), np.full(3, 10000)))
+        self.assertEqual([city.id for city in selected], ['a', 'c'])
+        np.testing.assert_allclose([city.radius_km for city in selected], [10, 10])
+
+    def test_density_uses_h3_neighbors_with_fixed_weights(self):
+        import h3
+        center = h3.latlng_to_cell(48.85341, 2.3488, 6)
+        neighbors = sorted(set(h3.grid_disk(center, 1)) - {center})
+        def feature(index, density):
+            return dict(properties=dict(h3Index=index,
+                population=density * h3.cell_area(index, unit='km^2')))
+        features = [feature(center, 100)] + [feature(index, 200) for index in neighbors]
+        self.assertAlmostEqual(neighborhood_densities(features)[0], 160)
+        self.assertAlmostEqual(neighborhood_densities(features[:1])[0], 40)
+        # Smoothing uses raw neighbors, not previously smoothed values.
+        reversed_values = neighborhood_densities(list(reversed(features)))
+        np.testing.assert_allclose(neighborhood_densities(features), reversed_values[::-1])
+
+    def test_density_radius_controls_capture(self):
+        c = config()
+        c['prep']['center_coefficient'] = .1
+        cities = graph_fixture().cities
+        centers = np.array([city.xy for city in cities])
+        xy = np.vstack([centers, centers[0] + [3, 0], centers[1] + [3, 0]])
+        people = np.array([100, 100, 100, 1000, 1000])
+        station_capture(cities, xy, people, np.array([400, 1600, 0, 9999, 9999]), c)
+        np.testing.assert_allclose([city.radius_km for city in cities], [2, 4, 0])
+        self.assertAlmostEqual(cities[0].kappa, 100 / cities[0].population * c['prep']['uptake'])
+        self.assertAlmostEqual(cities[1].kappa, 1100 / cities[1].population * c['prep']['uptake'])
 
     def test_via_pruning_keeps_replacement_links(self):
         c = config()
@@ -104,7 +148,7 @@ class EvaluatorTests(unittest.TestCase):
         self.assertEqual(r.metrics['passengers'], 0)
         self.assertEqual(r.metrics['population_served'], 0)
         self.assertEqual(r.metrics['fleet_CR'], 0)
-        for x in ([1, 2], [1, 3, 0], [1, .5, 0], [1, np.nan, 0]):
+        for x in ([1, 2], [1, 6, 0], [1, .5, 0], [1, np.nan, 0]):
             with self.assertRaises(ValueError):
                 self.e.evaluate(x)
 
@@ -113,7 +157,7 @@ class EvaluatorTests(unittest.TestCase):
         a, b = self.g.cities[:2]
         distance = self.e.distance[0, 1]
         p = self.c['demand']
-        price = self.c['tracks']['CR']['yield_eur_pkm'] * distance
+        price = self.c['rolling_stock']['CR']['yield_eur_pkm'] * distance
         gt = a.access_hours + b.access_hours + .5 / r.frequency[0] + self.g.edges[0].alignments['CR'].length_km / self.c['tracks']['CR']['speed_kmh'] + self.c['operations']['dwell_hours'] + price / p['value_of_time_eur']
         expected = 2 * p['k'] * (a.population * a.kappa) ** p['a'] * (b.population * b.kappa) ** p['a'] / distance ** p['beta'] * rail_share(gt, p)
         self.assertEqual(r.metrics['spill_fraction'], 0)
@@ -154,8 +198,8 @@ class EvaluatorTests(unittest.TestCase):
         self.assertGreater(r.metrics['spill_fraction'], .15)
         self.assertFalse(r.feasible)
         o = c['operations']
-        maximum = c['tracks']['CR']['seats'] * o['maximum_load_factor'] * o['hours_per_day'] * o['days_per_year'] / o['peak_factor']
-        self.assertTrue(np.all(r.directional_load <= maximum + 1e-7))
+        maximum = c['rolling_stock']['CR']['seats'] * o['maximum_load_factor'] * o['hours_per_day'] * o['days_per_year'] / o['peak_factor']
+        self.assertTrue(np.all(r.directional_load <= maximum * r.train_units + 1e-7))
         self.assertTrue(np.all(r.frequency <= 1))
 
     def test_budget_subsidy_and_zero_load_repair(self):
@@ -168,7 +212,7 @@ class EvaluatorTests(unittest.TestCase):
         np.testing.assert_array_equal(result.genome, [0, 0, 0])
         self.assertEqual(result.metrics['annual_cost_eur'], 0)
 
-    def test_transfers_only_on_branched_turns(self):
+    def test_transfers_follow_services_on_branched_network(self):
         cities = [City(str(i), str(i), lon, lat, 500000, .8, .1)
                   for i, (lon, lat) in enumerate([(2, 46), (4, 46), (6, 46), (4, 48)])]
         edges = []
@@ -176,11 +220,25 @@ class EvaluatorTests(unittest.TestCase):
             edges.append(Edge(a, b, {'CR': Alignment(200, 600, [i], [[cities[a].lon, cities[a].lat], [cities[b].lon, cities[b].lat]])}))
         g = graph_fixture(cities, edges)
         e = Evaluator(g, self.c)
-        _, _, turns, _ = e._paths(np.arange(3), np.array([1, 1, 1]))
+        from rail_gen.services import Service
+        result = e.evaluate([1, 1, 1], services=[Service((0, 1, 2), 'CR', 1), Service((1, 3), 'CR', 1)])
+        turns = result.transfers
         values = {(a, b): value for a, b, value in zip(e.origins, e.destinations, turns)}
         self.assertEqual(values[0, 2], 0)
         self.assertEqual(values[0, 3], 1)
         self.assertEqual(values[2, 3], 1)
+        expected = sum(float(trips) * float(turns) for trips, turns in zip(result.trips, result.transfers)) / result.metrics['passengers']
+        self.assertAlmostEqual(result.metrics['mean_transfers'], expected)
+
+    def test_mean_transfers_direct_and_empty_services(self):
+        from rail_gen.services import Service
+        with np.errstate(over='raise', invalid='raise'):
+            direct = self.e.evaluate([1, 0, 0], services=[Service((0, 1), 'CR', 1)])
+            empty = self.e.evaluate([0, 0, 0], services=[])
+        self.assertGreater(direct.metrics['passengers'], 0)
+        self.assertEqual(direct.metrics['mean_transfers'], 0)
+        self.assertEqual(empty.metrics['passengers'], 0)
+        self.assertEqual(empty.metrics['mean_transfers'], 0)
 
     def test_time_objective_empty_network_is_not_fastest(self):
         c = deepcopy(self.c)

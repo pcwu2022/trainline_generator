@@ -95,7 +95,10 @@ def main(argv=None):
         from rail_gen.__main__ import main as generate
         algorithm = 'incremental' if selected.solver == 'pareto' else selected.solver
         return generate(['run', '--algorithm', algorithm, *remaining])
-    parser = argparse.ArgumentParser(description='Optimize stations, corridors, all-stop services and passenger flows.')
+    parser = argparse.ArgumentParser(
+        description='Optimize stations, corridors, all-stop services and passenger flows.',
+        epilog='Fast generator options (including --iterations and --profit): '
+               'use optimize.py --solver pareto --help or python -m rail_gen run --help.')
     parser.add_argument('--config', default=str(DEFAULT_CONFIG_PATH), help='Optional external JSON overrides')
     parser.add_argument('--profile', help='Named profile from config.json (europe, exploratory, france, italy, netherlands, switzerland, uk)')
     parser.add_argument('--output', help='Output directory (default: runs/<profile>, or runs/netherlands without a profile)')

@@ -22,7 +22,7 @@
     "prep": {
       "max_cities": 100,
       "minimum_population": 50000,
-      "catchment_km": 15,
+      "center_coefficient": 0.16136,
       "uptake": 0.9,
       "access_speed_kmh": 25,
       "neighbors": 6,
@@ -58,30 +58,27 @@
         "speed_kmh": 140,
         "base_meur_km": 6,
         "grade_limit": 0.03,
-        "seats": 350,
-        "train_meur": 20,
-        "opex_eur_trainkm": 12,
-        "yield_eur_pkm": 0.085,
         "max_frequency": 6
       },
       "HSR": {
         "speed_kmh": 230,
         "base_meur_km": 20,
         "grade_limit": 0.04,
-        "seats": 450,
-        "train_meur": 35,
-        "opex_eur_trainkm": 20,
-        "yield_eur_pkm": 0.11,
-        "max_frequency": 6
+        "max_frequency": 12
       }
     },
     "operations": {
-      "maximum_train_units": 1,
+      "maximum_train_units": 2,
+      "additional_unit_cost_fraction": 0.6,
       "hours_per_day": 16,
       "days_per_year": 360,
       "initial_frequency": 2,
       "minimum_frequency": 0.3333333333333333,
-      "low_frequencies": [0.3333333333333333, 0.5, 0.6666666666666666],
+      "low_frequencies": [
+        0.3333333333333333,
+        0.5,
+        0.6666666666666666
+      ],
       "target_load_factor": 0.625,
       "maximum_load_factor": 0.85,
       "peak_factor": 1.4,
@@ -112,7 +109,7 @@
       "minimum_component_share": 0
     },
     "search": {
-      "capacity_repair_steps": 0,
+      "capacity_repair_steps": 3,
       "capacity_repair_candidates": 8,
       "algorithm": "incremental",
       "population": 150,
@@ -130,13 +127,59 @@
       "sensitivity": false,
       "time_limit_seconds": 0,
       "growth_fraction": 0.7,
+      "profit": false,
       "retained_ridership": 0.98,
       "journey_time_allowance": 0.05
     },
     "reporting": {
       "snapshot_every": 5,
       "gif_frame_ms": 500
-    }
+    },
+    "track_layouts": {
+      "single": {
+        "cost_multiplier": 0.5,
+        "max_frequency": {
+          "CR": 1
+        }
+      },
+      "double": {
+        "cost_multiplier": 1,
+        "max_frequency": {
+          "CR": 6,
+          "HSR": 12
+        }
+      },
+      "four": {
+        "cost_multiplier": 2,
+        "max_frequency": {
+          "CR": 12,
+          "HSR": 24
+        }
+      }
+    },
+    "rolling_stock": {
+      "CR": {
+        "seats": 350,
+        "train_meur": 10,
+        "opex_eur_trainkm": 12,
+        "yield_eur_pkm": 0.085,
+        "speed_kmh": 140
+      },
+      "HSR": {
+        "seats": 450,
+        "train_meur": 30,
+        "opex_eur_trainkm": 20,
+        "yield_eur_pkm": 0.11,
+        "speed_kmh": 230
+      }
+    },
+    "services": {
+      "max_through_routes": 16,
+      "max_route_edges": 12,
+      "plan_trials": 3,
+      "optimize_frequencies": true
+    },
+    "infrastructure_layout": "double"
   },
   "profiles": {
     "france": {},
@@ -226,7 +269,7 @@
         "BY"
       ],
       "prep": {
-        "max_cities": 100
+        "max_cities": 500
       }
     },
     "smoke": {

@@ -257,7 +257,7 @@ def draw_map(path, config, problem, result, viewport=None, demand_only=False):
               'Scenario estimates; H3 terrain routing is coarse and is not an engineering alignment.')
     footer = ('Width: total two-way demand (trips/hour). Demand is fixed before network selection.' if demand_only else
               'Color: carried passengers / fixed rail-eligible OD needs using each segment (including transfers).\n'
-              'Double: HSR · Single: CR · White dots: stations · Dashed green: catchments')
+              'White-dashed: HSR · Solid: CR · White dots: stations · Dashed green: catchments')
     if not demand_only:
         add_track_reference(figure)
     figure.supxlabel(footer, fontsize=8, y=.005)

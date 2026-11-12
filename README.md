@@ -1,7 +1,10 @@
 # Fast Pareto railway generator
 
-The new `rail_gen` pipeline uses cached geography and a millisecond annual-demand/
-finance evaluator. Its default incremental search starts empty and edits the
+The `rail_gen` pipeline uses cached geography and a service-based annual-demand/
+finance evaluator. HSR services can continue over newly built conventional track;
+infrastructure and rolling stock are independent. See the
+[hybrid service model and migration guide](docs/HYBRID_SERVICES.md).
+Its default incremental search starts empty and edits the
 previous accepted network at every iteration, then reduces net annual cost while
 retaining service. It also saves a Pareto archive of evaluated alternatives.
 
@@ -11,10 +14,20 @@ retaining service. It also saves a Pareto archive of evaluated alternatives.
   --output runs/france-live --iterations 200 --snapshot-every 5 --gif-frame-ms 500
 ```
 
+Add `--profit` to incremental runs to switch after `ceil(iterations / 2)` updates.
+The switch saves `before_profit.png`, `before_profit.json`, and
+`before_profit.geojson`. Profit mode gives normalized annual revenue minus total
+annual cost 100 times the weight of ridership and population rewards; it allows
+service reductions and accepts only profit-improving moves. It continues until
+the iteration limit or `profit_saturated` (the entire local neighborhood has
+been checked without an acceptable improvement). Time limits and interrupts
+still apply. Population algorithms do not support this flag.
+
 Watch `latest.png` for the evolving network, `progress.png` for its metrics, and
 `progress.gif` for the animation. Maps use the original population-density
-background, green demand-satisfaction colors, frequency-scaled widths, dashed
-conventional track and solid high-speed track. `latest.json`, `latest.geojson` and
+background, green demand-satisfaction colors and frequency-scaled widths.
+Infrastructure symbols distinguish CR and HSR track; dotted overlays identify
+train types operating across infrastructure boundaries. `latest.json`, `latest.geojson` and
 `cost_breakdown.log` describe that same accepted state. Comparison designs and
 maps are grouped under `pareto/`; they are not successive iterations.
 

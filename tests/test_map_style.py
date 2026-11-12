@@ -1,4 +1,4 @@
-"""Rendered route symbols retain the map between HSR's two thin rails."""
+"""HSR uses a normal-width colored and white railway symbol."""
 import unittest
 
 import matplotlib
@@ -10,27 +10,20 @@ from train_optimizer.map_style import track_style
 
 
 class TrackSymbolTests(unittest.TestCase):
-    def test_hsr_has_two_visible_rails_with_transparent_center(self):
-        for track, expected_strokes in [('CR', 1), ('HSR', 2)]:
-            with self.subTest(track=track):
-                figure = plt.figure(figsize=(1, 1), dpi=100)
-                try:
-                    ax = figure.add_axes([0, 0, 1, 1], facecolor='#c69c72')
-                    ax.set(xlim=(0, 1), ylim=(0, 1))
-                    ax.set_xticks([])
-                    ax.set_yticks([])
-                    style = track_style(20, track, 1)
-                    expected_width = (1.7 + 20 * .6) * .25 * (3 if track == 'HSR' else 1)
-                    self.assertAlmostEqual(style['linewidth'], expected_width)
-                    ax.plot([.1, .9], [.5, .5], **style)
-                    figure.canvas.draw()
-                    pixels = np.asarray(figure.canvas.buffer_rgba())
-                    # Count separated ink runs across the route at its midpoint.
-                    background = pixels[25, 50, :3].astype(float)
-                    ink = np.max(np.abs(pixels[35:65, 50, :3].astype(float) - background), axis=1) > 30
-                    runs = np.count_nonzero(np.diff(np.r_[False, ink].astype(int)) == 1)
-                    self.assertEqual(runs, expected_strokes)
-                    if track == 'HSR':
-                        np.testing.assert_array_equal(pixels[50, 50, :3], background)
-                finally:
-                    plt.close(figure)
+    def test_hsr_uses_normal_width_colored_and_white_track(self):
+        figure = plt.figure(figsize=(2, 1), dpi=150)
+        try:
+            ax = figure.add_axes([0, 0, 1, 1], facecolor='#c69c72')
+            ax.set(xlim=(0, 1), ylim=(0, 1))
+            style = track_style(20, 'HSR', 1)
+            self.assertEqual(style['linewidth'], track_style(20, 'CR', 1)['linewidth'])
+            self.assertEqual(style['color'], track_style(20, 'CR', 1)['color'])
+            # Financial maps may replace the color; the railway symbol preserves it.
+            style['color'] = 'red'
+            ax.plot([.1, .9], [.5, .5], **style)
+            figure.canvas.draw()
+            pixels = np.asarray(figure.canvas.buffer_rgba())[75, 40:260, :3]
+            self.assertTrue(np.any((pixels[:, 0] > 235) & (pixels[:, 1] < 20) & (pixels[:, 2] < 20)))
+            self.assertTrue(np.any(np.all(pixels > 235, axis=1)))
+        finally:
+            plt.close(figure)

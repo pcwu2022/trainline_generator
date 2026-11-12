@@ -115,7 +115,7 @@ def backtest(rows, config, parameters):
     o, f = config['operations'], config['finance']
     operations = []
     for r, predicted in zip(rows, predictions):
-        track = config['tracks'][r.get('track_type') or 'HSR']
+        track = config['rolling_stock'][r.get('train_type') or r.get('track_type') or 'HSR']
         avg_hourly = predicted / 2 / (o['hours_per_day'] * o['days_per_year'])
         frequency = max(o['minimum_frequency'], math.ceil(o['peak_factor'] * avg_hourly / (track['seats'] * o['target_load_factor'])))
         fleet = math.ceil(math.ceil(2 * frequency * (r['line_length_km'] / r['speed_kmh'] + o['dwell_hours']) * (1 + o['turnaround_overhead'])) * (1 + o['spare_ratio']))

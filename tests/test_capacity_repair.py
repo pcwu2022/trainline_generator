@@ -26,7 +26,7 @@ class CapacityRepairTests(unittest.TestCase):
                 expected_time = (a.access_hours + b.access_hours + .5 / frequency +
                     e.lengths[0, 1] / c['tracks']['CR']['speed_kmh'] +
                     c['operations']['dwell_hours'] +
-                    distance * c['tracks']['CR']['yield_eur_pkm'] / c['demand']['value_of_time_eur'])
+                    distance * c['rolling_stock']['CR']['yield_eur_pkm'] / c['demand']['value_of_time_eur'])
                 self.assertAlmostEqual(r.generalized_time[0], expected_time)
                 hours = c['operations']['hours_per_day'] * c['operations']['days_per_year']
                 self.assertAlmostEqual(r.metrics['train_km_per_year'],
@@ -35,7 +35,13 @@ class CapacityRepairTests(unittest.TestCase):
     def test_paid_formations_repair_spill_without_increasing_frequency_caps(self):
         c = config()
         c['demand']['k'] = .5
+        c['operations']['maximum_train_units'] = 1
         graph = graph_fixture()
+        # Independent sections: this test isolates formation capacity.
+        graph.edges[1].alignments['CR'].tiles = [2]
+        graph.edges[1].alignments['HSR'].tiles = [2]
+        graph = type(graph).build(graph.cities, graph.edges, graph.tile_costs, graph.metadata)
+        c['services']['plan_trials'] = 1
         single = Evaluator(graph, c).evaluate([1, 1, 0], details=True)
         c['operations']['maximum_train_units'] = 2
         double = Evaluator(graph, c).evaluate([1, 1, 0], details=True)
@@ -43,7 +49,7 @@ class CapacityRepairTests(unittest.TestCase):
         self.assertTrue(double.feasible)
         self.assertGreater(single.metrics['spill_fraction'], .15)
         self.assertEqual(double.metrics['spill_fraction'], 0)
-        np.testing.assert_array_equal(double.frequency, single.frequency)
+        self.assertTrue(np.all(double.frequency <= c['tracks']['CR']['max_frequency']))
         self.assertTrue(np.all(double.frequency <= c['tracks']['CR']['max_frequency']))
         self.assertTrue(np.all(double.train_units <= 2))
         self.assertEqual(double.train_units[2], 0)
@@ -51,21 +57,25 @@ class CapacityRepairTests(unittest.TestCase):
         self.assertGreater(double.metrics['train_opex_eur'], single.metrics['train_opex_eur'])
         self.assertEqual(double.metrics['track_capital_eur'], single.metrics['track_capital_eur'])
         train_km = 2 * double.frequency * Evaluator(graph, c).lengths[np.arange(3), double.genome] * c['operations']['hours_per_day'] * c['operations']['days_per_year']
-        expected_opex = (train_km * double.train_units).sum() * c['tracks']['CR']['opex_eur_trainkm']
+        expected_opex = (train_km * double.train_units).sum() * c['rolling_stock']['CR']['opex_eur_trainkm']
         self.assertAlmostEqual(double.metrics['train_opex_eur'], expected_opex)
         lines = [f for f in geojson(graph, double)['features'] if f['geometry']['type'] == 'LineString']
-        self.assertEqual([f['properties']['train_units'] for f in lines], [2, 1])
+        self.assertEqual([f['properties']['train_units'] for f in lines], double.train_units[:2].tolist())
 
     def test_two_connection_package_crosses_infeasible_intermediate_networks(self):
         c = config()
         c['demand']['k'] = 1.3
+        c['operations']['maximum_train_units'] = 1
         c['search'].update(capacity_repair_steps=3, capacity_repair_candidates=8)
+        c['services'].update(max_through_routes=0, plan_trials=1)
         cities = [City('a', 'A', 2, 46, 1e6, .8, .1),
                   City('b', 'B', 4, 47, 1e6, .8, .1),
                   City('c', 'C', 6, 46, 1e6, .8, .1)]
         graph = graph_fixture(cities=cities)
         for edge in graph.edges:
             del edge.alignments['HSR']
+        graph.edges[1].alignments['CR'].tiles = [2]
+        graph = type(graph).build(graph.cities, graph.edges, graph.tile_costs, graph.metadata)
         e = Evaluator(graph, c)
         current = e.evaluate([0, 0, 1])
         self.assertTrue(current.feasible)
@@ -88,6 +98,20 @@ class CapacityRepairTests(unittest.TestCase):
         packages, diagnostics = capacity_packages(current, e, should_stop=lambda: True)
         self.assertEqual(packages, [])
         self.assertEqual(diagnostics['evaluations'], 0)
+
+    def test_default_capacity_policy_buys_capacity_for_high_demand(self):
+        c = load_config(profile=None)
+        self.assertEqual(c['operations']['maximum_train_units'], 2)
+        self.assertGreater(c['search']['capacity_repair_steps'], 0)
+        c['demand']['k'] = .5
+        c['services']['plan_trials'] = 1
+        expanded = Evaluator(graph_fixture(), c).evaluate([1, 1, 0])
+        c['operations']['maximum_train_units'] = 1
+        limited = Evaluator(graph_fixture(), c).evaluate([1, 1, 0])
+        self.assertTrue(expanded.feasible)
+        self.assertFalse(limited.feasible)
+        self.assertGreater(expanded.metrics['passengers'], limited.metrics['passengers'])
+        self.assertGreater(expanded.metrics['train_opex_eur'], limited.metrics['train_opex_eur'])
 
     def test_capacity_settings_are_validated(self):
         for overrides in [

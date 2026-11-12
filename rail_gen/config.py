@@ -29,7 +29,8 @@ def validate(c):
         'operations.assignment_iterations', 'operations.maximum_train_units',
         'search.capacity_repair_steps', 'search.capacity_repair_candidates', 'search.population', 'search.generations',
         'search.seed', 'search.workers', 'search.representatives', 'search.stagnation_generations',
-        'reporting.snapshot_every', 'reporting.gif_frame_ms'}
+        'reporting.snapshot_every', 'reporting.gif_frame_ms',
+        'services.max_through_routes', 'services.max_route_edges', 'services.plan_trials'}
     def check(values, defaults, prefix=''):
         for key, value in values.items():
             name = prefix + key
@@ -47,6 +48,13 @@ def validate(c):
             elif not isinstance(value, type(expected)):
                 raise ValueError(f'Invalid type for {name}')
     check(c, schema)
+    if c['infrastructure_layout'] not in ('single', 'double', 'four'):
+        raise ValueError('infrastructure_layout must be single, double or four')
+    if not 1 <= c['services']['plan_trials'] <= 3 or c['services']['max_route_edges'] < 1:
+        raise ValueError('services requires 1..3 plan_trials and positive max_route_edges')
+    for stock in c['rolling_stock'].values():
+        if any(value <= 0 for value in stock.values()):
+            raise ValueError('Rolling-stock parameters must be positive')
     if len(c['bbox']) != 4 or any(isinstance(v, bool) or not isinstance(v, (int, float)) or not math.isfinite(v) for v in c['bbox']):
         raise ValueError('bbox must contain four finite numbers')
     if any(not isinstance(country, str) or len(country) != 2 for country in c['countries']):
@@ -58,8 +66,10 @@ def validate(c):
         raise ValueError('terrain_kind must be relief, dem, or flat')
     if c['search']['algorithm'] not in ('incremental', 'nsga2', 'nsga3'):
         raise ValueError('search.algorithm must be incremental, nsga2 or nsga3')
+    if c['search']['profit'] and c['search']['algorithm'] != 'incremental':
+        raise ValueError('--profit requires the incremental algorithm')
     for section, keys in {
-        'prep': ['max_cities', 'catchment_km', 'access_speed_kmh', 'neighbors', 'max_edge_km'],
+        'prep': ['max_cities', 'center_coefficient', 'access_speed_kmh', 'neighbors', 'max_edge_km'],
         'alignment': ['cell_km', 'window_factor'],
         'demand': ['a', 'beta', 'minimum_distance_km', 'maximum_distance_km', 'sigma_hours', 'value_of_time_eur', 'fare_reference_km'],
         'operations': ['maximum_train_units', 'hours_per_day', 'days_per_year', 'minimum_frequency', 'target_load_factor', 'maximum_load_factor', 'assignment_iterations', 'peak_factor'],
@@ -69,12 +79,19 @@ def validate(c):
     }.items():
         if any(c[section][key] <= 0 for key in keys):
             raise ValueError(f'{section}: required positive parameter is zero')
+    for name, layout in c['track_layouts'].items():
+        if layout['cost_multiplier'] <= 0:
+            raise ValueError('Track layout cost multiplier must be positive')
+        for frequency in layout['max_frequency'].values():
+            if frequency < c['operations']['minimum_frequency']:
+                raise ValueError('Track layout frequency is below minimum frequency')
     for t in c['tracks'].values():
         if any(value <= 0 for value in t.values()):
             raise ValueError('Track parameters must be positive')
         if t['max_frequency'] < c['operations']['minimum_frequency']:
             raise ValueError('Track frequency limit is below minimum frequency')
     for section, key in [('prep', 'uptake'), ('operations', 'target_load_factor'),
+                         ('operations', 'additional_unit_cost_fraction'),
                          ('operations', 'maximum_load_factor'), ('constraints', 'maximum_spill_fraction'),
                          ('constraints', 'minimum_component_share'), ('search', 'greedy_fraction'),
                          ('search', 'mutation_rate'), ('search', 'structured_probability')]:
@@ -108,6 +125,27 @@ def validate(c):
     return c
 
 
+def migrate_config(custom):
+    """Move legacy rolling-stock keys out of tracks; explicit new keys win."""
+    custom = deepcopy(custom)
+    # Density-derived radii supersede fixed catchments in saved configs.
+    custom.get('prep', {}).pop('catchment_km', None)
+    for name, values in custom.get('tracks', {}).items():
+        if name not in ('CR', 'HSR') or not isinstance(values, dict):
+            continue
+        stock = custom.setdefault('rolling_stock', {}).setdefault(name, {})
+        for key in ('seats', 'train_meur', 'opex_eur_trainkm', 'yield_eur_pkm'):
+            if key in values:
+                stock.setdefault(key, values.pop(key))
+        if 'speed_kmh' in values:
+            stock.setdefault('speed_kmh', values['speed_kmh'])
+        if not stock:
+            del custom['rolling_stock'][name]
+    if 'rolling_stock' in custom and not custom['rolling_stock']:
+        del custom['rolling_stock']
+    return custom
+
+
 def load_config(path=None, profile='france', overrides=None):
     raw = json.loads(DEFAULT_CONFIG.read_text())
     c = raw['defaults']
@@ -116,12 +154,12 @@ def load_config(path=None, profile='france', overrides=None):
         if 'defaults' in custom:
             if set(custom) - {'defaults', 'profiles'}:
                 raise ValueError('Configuration document only accepts defaults and profiles')
-            c = merge(c, custom['defaults'])
+            c = merge(c, migrate_config(custom['defaults']))
             raw['profiles'].update(custom.get('profiles', {}))
         else:
-            c = merge(c, custom)
+            c = merge(c, migrate_config(custom))
     if profile:
         if profile not in raw['profiles']:
             raise ValueError(f'Unknown profile: {profile}')
-        c = merge(c, raw['profiles'][profile])
-    return validate(merge(c, overrides or {}))
+        c = merge(c, migrate_config(raw['profiles'][profile]))
+    return validate(merge(c, migrate_config(overrides or {})))

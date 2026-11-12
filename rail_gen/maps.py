@@ -17,6 +17,7 @@ from train_optimizer.map_style import (CITY_STYLE, STATION_STYLE, CATCHMENT_STYL
 from train_optimizer.outputs import city_label_indices, map_figure_size, map_projector
 from train_optimizer.map_terrain import fast_terrain, add_terrain
 from .alignment import TRACKS
+from .track_layout import track_type
 from .evaluator import Evaluator
 
 
@@ -89,9 +90,9 @@ class MapBackground:
                                  + [(west, y) for y in lat] + [(east, y) for y in lat])
         points = np.vstack([perimeter, *self.polygons, *self.edge_xy.values()])
         lower, upper = points.min(axis=0), points.max(axis=0)
-        radius = config['prep']['catchment_km']
-        lower = np.minimum(lower, self.node_xy.min(axis=0) - radius)
-        upper = np.maximum(upper, self.node_xy.max(axis=0) + radius)
+        radii = np.asarray([city.radius_km for city in graph.cities])[:, None]
+        lower = np.minimum(lower, (self.node_xy - radii).min(axis=0))
+        upper = np.maximum(upper, (self.node_xy + radii).max(axis=0))
         margin = max(5, float((upper - lower).max()) * .03)
         self.viewport = (float(lower[0] - margin), float(upper[0] + margin),
                          float(lower[1] - margin), float(upper[1] + margin))
@@ -110,12 +111,13 @@ class MapBackground:
         from .analysis import corridor_satisfaction
         return corridor_satisfaction(self.evaluator, result)[0]
 
-    def draw(self, result, path, title, color_by='satisfaction'):
+    def draw(self, result, path, title, color_by='satisfaction', *, reevaluate=True):
         if color_by not in {'satisfaction', 'revenue_cost'}:
             raise ValueError('Unknown map coloring: ' + color_by)
         financial = color_by == 'revenue_cost'
         if financial:
-            financial_result = self.evaluator.evaluate(result.genome, details=True)
+            financial_result = (self.evaluator.evaluate(result.genome, details=True,
+                services=result.service_plan, track_counts=result.track_counts) if reevaluate else result)
         import matplotlib
         matplotlib.use('Agg')
         import matplotlib.pyplot as plt
@@ -158,7 +160,7 @@ class MapBackground:
             served = set()
             for i in np.flatnonzero(result.genome):
                 edge = self.graph.edges[i]
-                track = TRACKS[result.genome[i] - 1]
+                track = track_type(result.genome[i])
                 coordinates = self.edge_xy[i, track]
                 style = track_style(result.frequency[i], track, 0 if financial else ratios[i])
                 if financial:
@@ -167,7 +169,7 @@ class MapBackground:
                 served.update((edge.a, edge.b))
             for i in sorted(served):
                 xy = self.node_xy[i]
-                ax.add_patch(Circle(xy, self.config['prep']['catchment_km'], **CATCHMENT_STYLE))
+                ax.add_patch(Circle(xy, self.graph.cities[i].radius_km, **CATCHMENT_STYLE))
                 ax.plot(*xy, **STATION_STYLE)
             xmin, xmax, ymin, ymax = self.viewport
             ax.set(xlim=(xmin, xmax), ylim=(ymin, ymax),
@@ -177,9 +179,20 @@ class MapBackground:
             heading = 'Rail network optimization · revenue / cost' if financial else 'Rail network optimization'
             ax.set_title(heading + '\n' + title, fontsize=11)
             add_track_reference(figure)
+            ax.text(.01, .01, 'Symbols: infrastructure · Dots: HSR on CR (violet), CR on HSR (orange)',
+                    transform=ax.transAxes, fontsize=7, va='bottom', bbox=dict(facecolor='white', alpha=.8, edgecolor='none'))
+            # Overlay train types only where they differ from infrastructure.
+            for service in result.services:
+                for edge_id in service['edge_ids']:
+                    infrastructure = track_type(result.genome[edge_id])
+                    if service['train_type'] != infrastructure:
+                        coordinates = self.edge_xy[edge_id, infrastructure]
+                        color = '#7936ac' if service['train_type'] == 'HSR' else '#e48319'
+                        ax.plot(coordinates[:, 0], coordinates[:, 1], color=color,
+                                linestyle=':', linewidth=1.1, zorder=4.5)
             color_label = ('Color: annual revenue / allocated annual cost · Red: below break-even · Green: surplus · Gray: undefined.'
                            if financial else 'Color: carried passengers / fixed capturable OD market using each segment (including transfers).')
-            figure.supxlabel(color_label + '\nDouble: HSR · Single: CR · White dots: stations · Dashed green: catchments', fontsize=8, y=.005)
+            figure.supxlabel(color_label + '\nWhite-dashed: HSR · Solid: CR · White dots: stations · Dashed green: catchments', fontsize=8, y=.005)
             with matplotlib.rc_context({'savefig.bbox': None}):
                 figure.savefig(path, dpi=130)
         finally:

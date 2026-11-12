@@ -14,6 +14,7 @@ from scipy import sparse
 from scipy.sparse.csgraph import connected_components
 
 from .evaluator import Evaluator
+from .track_layout import track_type
 from .search import SearchResult, SearchUpdate, bridge_components, gravity_scores, nondominated
 
 
@@ -69,6 +70,24 @@ def consolidation_choice(current, candidates, baseline, config):
         and candidate.metrics['population_served'] + 1e-6 >= baseline['population_served'] * p['retained_ridership']
         and candidate.metrics['mean_generalized_hours'] <= baseline['mean_generalized_hours'] * (1 + p['journey_time_allowance']) + 1e-9]
     return min(eligible, key=lambda candidate: (candidate.objectives[0], -candidate.metrics['passengers'])) if eligible else None
+
+
+def profit_choice(current, candidates, baseline):
+    """Give normalized annual profit 100x the weight of service rewards.
+
+    Require an actual net gain to prevent service rewards from eroding profit.
+    Service reductions are allowed, unlike ordinary consolidation.
+    """
+    def score(candidate):
+        m = candidate.metrics
+        return (100 * (m['net_eur'] - baseline['net_eur']) /
+                max(1, baseline['annual_cost_eur'], abs(baseline['net_eur']))
+                + m['passengers'] / max(1, baseline['passengers'])
+                + m['population_served'] / max(1, baseline['population_served']))
+    eligible = [candidate for candidate in candidates
+                if candidate.metrics['net_eur'] > current.metrics['net_eur'] + .01
+                and score(candidate) > score(current) + 1e-12]
+    return max(eligible, key=lambda c: (score(c), c.metrics['net_eur'])) if eligible else None
 
 
 def topology(genome, evaluator):
@@ -161,12 +180,8 @@ def capacity_packages(current, evaluator, should_stop=lambda: False):
         following = []
         for result in sorted(frontier, key=rank)[:width]:
             x = result.genome
-            seats = np.choose(x, [0, evaluator.config['tracks']['CR']['seats'],
-                                  evaluator.config['tracks']['HSR']['seats']])
-            o = evaluator.config['operations']
-            capacity = seats * result.train_units * result.frequency * o['maximum_load_factor'] * o['hours_per_day'] * o['days_per_year'] / o['peak_factor']
-            pressure = np.divide(result.directional_load, capacity,
-                                 out=np.zeros(evaluator.m), where=capacity > 0)
+            pressure = np.divide(result.directional_load, result.edge_capacity,
+                                 out=np.zeros(evaluator.m), where=result.edge_capacity > 0)
             stressed = np.flatnonzero(pressure >= .95)
             nodes = np.zeros(evaluator.n, dtype=bool)
             nodes[evaluator.a[stressed]] = nodes[evaluator.b[stressed]] = True
@@ -181,7 +196,7 @@ def capacity_packages(current, evaluator, should_stop=lambda: False):
                     proposal[i] = state
                     if tuple(proposal) in scored:
                         continue
-                    capital = edge.alignments['CR' if state == 1 else 'HSR'].capex_meur
+                    capital = edge.alignments[track_type(state)].capex_meur * evaluator.config['track_layouts'][evaluator.config['infrastructure_layout']]['cost_multiplier']
                     priority = demand[i] * (1 + int(nodes[edge.a]) + int(nodes[edge.b])) / max(1, capital)
                     options.append((priority, proposal))
             for _, proposal in sorted(options, key=lambda v: -v[0])[:width]:
@@ -214,6 +229,9 @@ def search_incremental(graph, config, progress=print, observer=None, interrupted
     baseline = None
     status = 'completed'
     package_diagnostics = None
+    profit_baseline = None
+    profit_enabled = p.get('profit', False)
+    halfway = math.ceil(p['generations'] / 2)
     workers = ThreadPoolExecutor(p['workers']) if p['workers'] > 1 else None
 
     def publish(iteration, phase, previous=None, accepted=False):
@@ -223,7 +241,7 @@ def search_incremental(graph, config, progress=print, observer=None, interrupted
         record = dict(generation=iteration, iteration=iteration, phase=phase,
             parent_iteration=iteration - 1 if iteration else None,
             parent_genome=previous.tolist() if previous is not None else None,
-            genome=current.genome.tolist(), accepted=accepted,
+            genome=current.genome.tolist(), services=current.services, track_counts=current.track_counts.tolist(), accepted=accepted,
             changes=[list(change) for change in changes], metrics=current.metrics.copy(),
             front_size=len(archive), evaluations=evaluations, seconds=elapsed)
         if baseline is not None:
@@ -251,16 +269,28 @@ def search_incremental(graph, config, progress=print, observer=None, interrupted
             if p['time_limit_seconds'] and time.perf_counter() - started >= p['time_limit_seconds']:
                 status = 'time_limit'
                 break
+            if profit_enabled and profit_baseline is None and iteration > halfway:
+                publish(iteration - 1, 'before_profit', current.genome.copy())
+                profit_baseline = current.metrics.copy()
+                attempted.clear()
             complete = topology(current.genome, evaluator) == (0, 0)
             if baseline is None and complete and iteration > math.ceil(p['generations'] * p['growth_fraction']):
                 baseline = current.metrics.copy()
                 attempted.clear()
-            phase = ('consolidation' if baseline is not None else
+            phase = ('profit' if profit_baseline is not None else 'consolidation' if baseline is not None else
                      'integration' if iteration > math.ceil(p['generations'] * p['growth_fraction']) else 'growth')
             previous = current.genome.copy()
             proposals = neighbours(current, evaluator)
             pending = [(key, proposal, weight) for key, (proposal, weight) in proposals.items() if key not in attempted]
             if not pending:
+                if profit_baseline is not None:
+                    publish(iteration, phase, previous)
+                    status = 'profit_saturated'
+                    break
+                if profit_enabled:
+                    # Preserve the incumbent until the scheduled transition.
+                    publish(iteration, phase, previous)
+                    continue
                 if baseline is None:
                     if not complete:
                         if p['capacity_repair_steps']:
@@ -316,7 +346,9 @@ def search_incremental(graph, config, progress=print, observer=None, interrupted
                 keys = sorted(archive)
                 front = nondominated([archive[key] for key in keys])
                 archive = {keys[i]: archive[keys[i]] for i in front}
-            if baseline is not None:
+            if profit_baseline is not None:
+                selected = profit_choice(current, candidates, profit_baseline)
+            elif baseline is not None:
                 candidates = [candidate for candidate in candidates
                               if topology(candidate.genome, evaluator) == (0, 0)]
                 selected = consolidation_choice(current, candidates, baseline, config)
@@ -338,7 +370,7 @@ def search_incremental(graph, config, progress=print, observer=None, interrupted
         if workers:
             workers.shutdown()
     keys = sorted(archive)
-    if status == 'completed' and topology(current.genome, evaluator) != (0, 0):
+    if status == 'completed' and not profit_enabled and topology(current.genome, evaluator) != (0, 0):
         status = 'coverage_incomplete'
     dimensions = 4 if p['include_time_objective'] else 3
     return SearchResult(np.array(keys, dtype=int).reshape(-1, evaluator.m),

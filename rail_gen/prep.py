@@ -7,6 +7,7 @@ from pathlib import Path
 import numpy as np
 from pyproj import Transformer
 from scipy.spatial import Delaunay, QhullError, cKDTree
+from rail_model import center_radius
 
 TO_METRIC = Transformer.from_crs('EPSG:4326', 'EPSG:3035', always_xy=True)
 TO_WGS84 = Transformer.from_crs('EPSG:3035', 'EPSG:4326', always_xy=True)
@@ -22,6 +23,7 @@ class City:
     kappa: float = 0.0
     access_hours: float = 0.0
     country: str = ''
+    radius_km: float = 0.0
 
     @property
     def xy(self):
@@ -36,7 +38,7 @@ def distances(cities):
     return 12742.0176 * np.arcsin(np.sqrt(np.clip(h, 0, 1)))
 
 
-def read_cities(config):
+def read_cities(config, samples=None):
     path = Path(config['cities_file'])
     if path.suffix.lower() == '.csv':
         with path.open(newline='') as stream:
@@ -59,12 +61,65 @@ def read_cities(config):
         nodes.append(City(str(r.get('id', index)), r['name'], lon, lat, population,
                           country=r.get('country', '')))
     nodes.sort(key=lambda c: (-c.population, c.id))
-    nodes = nodes[:config['prep']['max_cities']]
     if len(nodes) < 2 or len({c.id for c in nodes}) != len(nodes):
         raise ValueError('Need at least two cities with distinct IDs')
     if len({(c.lon, c.lat) for c in nodes}) != len(nodes):
         raise ValueError('City centres must have distinct coordinates; merge duplicate records')
-    return nodes
+    if samples is None:
+        xy, _, density = population_samples(config)
+    else:
+        xy, _, density = samples
+    set_capture_radii(nodes, xy, density, config)
+    selected = []
+    for city in nodes:
+        # Keep the larger city when its metropolitan catchment contains a
+        # smaller center. Only retained cities suppress later candidates.
+        if any(np.linalg.norm(city.xy - other.xy) <= other.radius_km for other in selected):
+            continue
+        selected.append(city)
+        if len(selected) == config['prep']['max_cities']:
+            break
+    if len(selected) < 2:
+        raise ValueError('Need at least two cities outside retained metropolitan catchments')
+    return selected
+
+
+def set_capture_radii(cities, xy, density, config):
+    """Use the same local density for city screening, capture and map circles."""
+    _, nearest = cKDTree(xy).query([city.xy for city in cities])
+    for city, index in zip(cities, nearest):
+        city.radius_km = center_radius(float(density[index]), config['prep']['center_coefficient'])
+
+
+def neighborhood_densities(features):
+    """Smooth H3 density using 40% center and 10% per adjacent hexagon.
+
+    Missing neighbors contribute zero; use the full input before bbox filtering.
+    Non-H3 inputs retain their declared population/area density.
+    """
+    import h3
+    raw = {}
+    values = []
+    for feature in features:
+        p = feature['properties']
+        count = float(p['population'])
+        index = p.get('h3Index')
+        area = h3.cell_area(index, unit='km^2') if index else float(p['area_km2'])
+        if not np.isfinite(count) or count < 0:
+            raise ValueError('Population cells must contain finite nonnegative population')
+        if not np.isfinite(area) or area <= 0:
+            raise ValueError('Population cell area must be positive')
+        value = count / area
+        values.append(value)
+        if index:
+            if index in raw:
+                raise ValueError('Duplicate H3 population cells')
+            raw[index] = value
+    return np.asarray([
+        .4 * value + .1 * sum(raw.get(neighbor, 0.0)
+                             for neighbor in h3.grid_disk(index, 1) if neighbor != index)
+        if (index := feature['properties'].get('h3Index')) else value
+        for feature, value in zip(features, values)])
 
 
 def population_samples(config):
@@ -72,9 +127,10 @@ def population_samples(config):
     import h3
     from shapely.geometry import shape
     features = json.loads(Path(config['population_file']).read_text())['features']
+    smoothed_density = neighborhood_densities(features)
     xy, people, density = [], [], []
     w, s, e, n = config['bbox']
-    for feature in features:
+    for feature, local_density in zip(features, smoothed_density):
         geom, p = feature['geometry'], feature['properties']
         if geom['type'] == 'Point':
             lon, lat = geom['coordinates'][:2]
@@ -91,20 +147,23 @@ def population_samples(config):
             raise ValueError('Population cell area must be positive')
         xy.append(np.array(TO_METRIC.transform(lon, lat)) / 1000)
         people.append(count)
-        density.append(count / area)
+        density.append(local_density)
     if not xy:
         raise ValueError('Population input has no cells within the bounding box')
     return np.asarray(xy), np.asarray(people), np.asarray(density)
 
 
-def station_capture(cities, xy, people, config):
-    """Assign each raster sample exclusively to its nearest city; cap capture at metro P."""
+def station_capture(cities, xy, people, density, config):
+    """Assign samples exclusively; let the raster catchment exceed city-proper P."""
     p = config['prep']
+    set_capture_radii(cities, xy, density, config)
     distance, owner = cKDTree([c.xy for c in cities]).query(xy)
     for i, city in enumerate(cities):
-        included = (owner == i) & (distance <= p['catchment_km'])
+        included = (owner == i) & (distance <= city.radius_km)
         total = float(people[included].sum())
-        city.kappa = min(1, total / city.population) * p['uptake']
+        # kappa is a multiplier relative to the city-file population, not a
+        # probability: metropolitan catchments can exceed city-proper totals.
+        city.kappa = total / city.population * p['uptake']
         city.access_hours = float(np.average(distance[included], weights=people[included])) / p['access_speed_kmh'] if total else 0.0
     return cities
 
@@ -149,7 +208,7 @@ def candidate_pairs(cities, config):
 
 
 def prepare(config):
-    cities = read_cities(config)
     xy, people, density = population_samples(config)
-    station_capture(cities, xy, people, config)
+    cities = read_cities(config, (xy, people, density))
+    station_capture(cities, xy, people, density, config)
     return cities, candidate_pairs(cities, config), (xy, people, density)

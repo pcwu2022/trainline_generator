@@ -13,33 +13,68 @@ from .config import load_config
 
 
 def parser():
-    p = argparse.ArgumentParser(description='Fast multi-objective railway network generator')
+    p = argparse.ArgumentParser(
+        description='Fast multi-objective railway network generator',
+        epilog='Use COMMAND --help for options and examples for each command.')
     commands = p.add_subparsers(dest='command', required=True)
-    for name in ('precompute', 'run', 'calibrate', 'benchmark'):
-        sub = commands.add_parser(name)
-        sub.add_argument('--config', type=Path)
-        sub.add_argument('--profile', default='france')
-        sub.add_argument('--backtest', type=Path)
-        sub.add_argument('--fit', nargs='+', choices=['k', 'a', 'beta', 't0_hours'], default=['k'])
+    descriptions = {
+        'precompute': 'Prepare and cache the candidate graph and terrain alignments.',
+        'run': 'Optimize a railway network and save live maps, metrics and Pareto alternatives.',
+        'calibrate': 'Fit demand parameters to observed backtest data and save the fit report.',
+        'benchmark': 'Measure evaluator latency on random networks using the cached graph.',
+    }
+    for name, description in descriptions.items():
+        sub = commands.add_parser(name, help=description, description=description,
+                                  formatter_class=argparse.RawDescriptionHelpFormatter)
+        if name == 'run':
+            sub.epilog = (                'Unspecified search and reporting options use the selected configuration/profile.\n'
+                'Profit mode (incremental only): after ceil(iterations / 2) updates, save\n'
+                'before_profit.png, before_profit.json and before_profit.geojson, then give\n'
+                'normalized annual revenue minus total annual cost 100x the weight of\n'
+                'ridership and population rewards. Service reductions are allowed; accepted\n'
+                'moves must increase profit. Stop at the iteration limit or profit_saturated\n'
+                '(all local moves checked without an acceptable improvement). Time limits\n'
+                'and interrupts still apply.\n\n'
+                'Outputs: latest.png/json/geojson, progress.gif, progress.png, report.md,\n'
+                'cost_breakdown.log and pareto/ alternatives. Use an empty output directory\n'
+                'or --overwrite.\n\n'
+                'Example: python -m rail_gen run --profile france --iterations 200\n'
+                '           --profit --output runs/france-profit --snapshot-every 5')
+        elif name == 'calibrate':
+            sub.epilog = ('Requires --backtest or backtest_file in the configuration.\n'
+                          'Example: python -m rail_gen calibrate --backtest observations.csv\n'
+                          '           --fit k beta --output runs/calibration.json')
+        sub.add_argument('--config', type=Path, help='JSON overrides for the bundled rail_gen/config.json')
+        sub.add_argument('--profile', default='france', help='Named configuration profile (default: france)')
+        sub.add_argument('--backtest', type=Path, help='Observed demand CSV; overrides backtest_file and fits demand before running')
+        sub.add_argument('--fit', nargs='+', choices=['k', 'a', 'beta', 't0_hours'], default=['k'],
+                         help='Demand parameters to fit against backtest data (default: k)')
         if name != 'calibrate':
-            sub.add_argument('--cache-dir', type=Path, default=Path('runs/railgen-cache'))
+            sub.add_argument('--cache-dir', type=Path, default=Path('runs/railgen-cache'),
+                             help='Reusable geography/alignment cache (default: runs/railgen-cache)')
         if name in ('run', 'calibrate'):
-            sub.add_argument('--output', type=Path, required=name == 'calibrate')
+            sub.add_argument('--output', type=Path, required=name == 'calibrate',
+                             help=('New calibration report JSON path (required)' if name == 'calibrate'
+                                   else 'Run directory (default: runs/<profile>-pareto)'))
         if name == 'run':
             sub.add_argument('--overwrite', action='store_true',
                              help='Delete the output directory contents before starting a fresh run')
-            sub.add_argument('--population', type=int)
+            sub.add_argument('--population', type=int, help='Candidates per incremental update or population size (at least 4)')
             sub.add_argument('--generations', '--iterations', dest='generations', type=int,
-                             help='Network updates (incremental) or population generations')
-            sub.add_argument('--seed', type=int)
-            sub.add_argument('--workers', type=int)
-            sub.add_argument('--sensitivity', action='store_true')
-            sub.add_argument('--algorithm', choices=['incremental', 'nsga2', 'nsga3'])
-            sub.add_argument('--time-limit', type=float, help='Total search seconds, excluding geography preparation')
-            sub.add_argument('--snapshot-every', type=int, help='Network iterations between live map/GIF updates')
-            sub.add_argument('--gif-frame-ms', type=int, help='GIF playback time per frame, in multiples of 10 ms')
+                             help='Maximum network updates (incremental) or population generations; positive integer')
+            sub.add_argument('--seed', type=int, help='Nonnegative random seed for reproducible search')
+            sub.add_argument('--workers', type=int, help='Parallel evaluation threads (positive integer; 1 is serial)')
+            sub.add_argument('--sensitivity', action='store_true', help='Run six additional searches with demand, capital costs and fare yields varied by +/-25%%')
+            sub.add_argument('--profit', action='store_true',
+                             help='Switch to profit maximization halfway through; save the pre-switch network (see below)')
+            sub.add_argument('--algorithm', choices=['incremental', 'nsga2', 'nsga3'],
+                             help='Persistent network edits or NSGA population evolution (bundled default: incremental)')
+            sub.add_argument('--time-limit', type=float, help='Positive search time limit in seconds, excluding geography preparation')
+            sub.add_argument('--snapshot-every', type=int, help='Positive number of updates/generations between live map/GIF snapshots; final state always saved')
+            sub.add_argument('--gif-frame-ms', type=int, help='GIF frame duration: 10..655350 milliseconds, in multiples of 10')
         if name == 'benchmark':
-            sub.add_argument('--evaluations', type=int, default=200)
+            sub.add_argument('--evaluations', type=int, default=200,
+                             help='Timed random designs, excluding 5 warmup evaluations (default: 200)')
     return p
 
 
@@ -50,6 +85,8 @@ def main(argv=None):
         overrides = {}
         if args.command == 'run':
             overrides['search'] = {key: getattr(args, key) for key in ('population', 'generations', 'seed', 'workers') if getattr(args, key) is not None}
+            if args.profit:
+                overrides['search']['profit'] = True
             if args.sensitivity:
                 overrides['search']['sensitivity'] = True
             if args.algorithm:
@@ -107,7 +144,7 @@ def main(argv=None):
             rng = np.random.default_rng(config['search']['seed'])
             timings = []
             for _ in range(args.evaluations + 5):
-                x = rng.integers(0, 3, evaluator.m)
+                x = rng.integers(0, evaluator.allowed.shape[1], evaluator.m)
                 x[~evaluator.allowed[np.arange(evaluator.m), x]] = 0
                 started = time.perf_counter()
                 evaluator.evaluate(x)

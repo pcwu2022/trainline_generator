@@ -213,6 +213,11 @@ class LiveOutputTests(unittest.TestCase):
                 self.assertEqual(current['parent_genome'], previous['genome'])
             with np.load(directory / 'checkpoint.npz', allow_pickle=False) as saved:
                 np.testing.assert_array_equal(saved['genome'], run.current_genome)
+                restored = Evaluator(g, c).evaluate(saved['genome'],
+                    services=json.loads(str(saved['services_json'])), track_counts=saved['track_counts'])
+                self.assertEqual(restored.services, expected.services)
+                np.testing.assert_array_equal(restored.objectives, expected.objectives)
+                self.assertEqual(str(saved['model_version']), latest['model_version'])
             self.assertIn('Annual net:', (directory / 'cost_breakdown.log').read_text())
             self.assertIn('latest.png', (directory / 'report.md').read_text())
             self.assertIn('pareto/report.md', (directory / 'report.md').read_text())

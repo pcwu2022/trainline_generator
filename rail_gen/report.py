@@ -7,6 +7,7 @@ from pathlib import Path
 import numpy as np
 
 from .alignment import TRACKS
+from .track_layout import track_type, MODEL_VERSION
 from .evaluator import Evaluator
 from .search import nondominated, representative_indices, search
 
@@ -27,28 +28,28 @@ def geojson(graph, result):
     served = set()
     for i in np.flatnonzero(result.genome):
         edge = graph.edges[i]
-        track = TRACKS[result.genome[i] - 1]
+        track = track_type(result.genome[i])
         alignment = edge.alignments[track]
         served.update((edge.a, edge.b))
         features.append(dict(type='Feature', geometry=dict(type='LineString', coordinates=alignment.geometry),
             properties=dict(edge_id=int(i), node_a=graph.cities[edge.a].id, node_b=graph.cities[edge.b].id,
-                track_type=track, length_km=alignment.length_km, capex_meur=alignment.capex_meur,
+                track_type=track, track_count=int(result.track_counts[i]), infrastructure_type=track, service_ids=[s["service_id"] for s in result.services if int(i) in s["edge_ids"]], service_types=sorted({s["train_type"] for s in result.services if int(i) in s["edge_ids"]}), length_km=alignment.length_km, capex_meur=float(alignment.capex_meur * result.capital_multiplier[i]),
                 directional_annual_load=float(result.directional_load[i]),
                 frequency_per_hour_direction=float(result.frequency[i]),
-                train_units=int(result.train_units[i]),
+                train_units=int(result.train_units[i]), max_formation=int(result.train_units[i]),
                 allocated_net_eur=float(result.edge_net[i]), pct_water=alignment.pct_water,
                 pct_steep=alignment.pct_steep)))
     for i, city in enumerate(graph.cities):
         features.append(dict(type='Feature', geometry=dict(type='Point', coordinates=[city.lon, city.lat]),
             properties=dict(node_id=city.id, name=city.name, population=city.population,
                 kappa=city.kappa, access_hours=city.access_hours, served=i in served)))
-    return dict(type='FeatureCollection', features=features)
+    return dict(type='FeatureCollection', model_version=MODEL_VERSION, services=result.services, features=features)
 
 
 def plot_map(graph, result, path, title, config, background=None, color_by='satisfaction'):
     from .maps import MapBackground
     background = background if background is not None else MapBackground(graph, config)
-    background.draw(result, path, title, color_by=color_by)
+    background.draw(result, path, title, color_by=color_by, reevaluate=False)
 
 
 def sensitivity(graph, config, baseline, progress=print):
@@ -62,7 +63,7 @@ def sensitivity(graph, config, baseline, progress=print):
             if family == 'demand_k':
                 c['demand']['k'] *= factor
             elif family == 'yield':
-                for track in c['tracks'].values():
+                for track in c['rolling_stock'].values():
                     track['yield_eur_pkm'] *= factor
             else:
                 g = deepcopy(graph)
@@ -72,7 +73,7 @@ def sensitivity(graph, config, baseline, progress=print):
                         alignment.capex_meur *= factor
                 for key in ('station_base_meur', 'station_per_million_meur', 'station_cap_meur'):
                     c['finance'][key] *= factor
-                for track in c['tracks'].values():
+                for track in c['rolling_stock'].values():
                     track['train_meur'] *= factor
             if progress:
                 progress(f'Sensitivity: {family} x {factor}', flush=True)
@@ -102,6 +103,7 @@ def write_report(graph, config, run, directory, calibration=None, sensitivity_re
     write_json(directory / 'run_config.json', config)
     write_json(directory / 'search_history.json', run.history)
     write_json(directory / 'alignment_manifest.json', graph.metadata)
+    write_json(directory / 'model_manifest.json', dict(model_version=MODEL_VERSION, infrastructure_states={'0': 'unbuilt', '1': 'conventional', '2': 'high-speed'}))
     calibration = calibration or dict(status='not_calibrated', reason='No user-supplied observed backtest table')
     write_json(directory / 'backtest.json', calibration)
     if sensitivity_report is not None:
@@ -115,6 +117,7 @@ def write_report(graph, config, run, directory, calibration=None, sensitivity_re
         row.update(result.metrics)
         rows.append(row)
         write_json(directory / 'designs' / f'design_{i:04d}.geojson', geojson(graph, result))
+        write_json(directory / 'designs' / f'design_{i:04d}.services.json', dict(model_version=MODEL_VERSION, genome=result.genome.tolist(), track_counts=result.track_counts.tolist(), services=result.services))
         for edge in np.flatnonzero(result.genome):
             if result.edge_net[edge] < -200e6:
                 loss_flags.append(dict(design_id=row['design_id'], edge_id=int(edge), net_eur=float(result.edge_net[edge])))
@@ -124,7 +127,7 @@ def write_report(graph, config, run, directory, calibration=None, sensitivity_re
         writer.writeheader()
         writer.writerows(rows)
     np.savez_compressed(directory / 'genomes.npz', genomes=np.array([r.genome for r in evaluated], dtype=int).reshape(-1, evaluator.m),
-                        objectives=objectives.reshape(-1, 4 if config['search']['include_time_objective'] else 3))
+                        objectives=objectives.reshape(-1, 4 if config['search']['include_time_objective'] else 3), model_version=MODEL_VERSION)
     fig, ax = plt.subplots(figsize=(9, 6), layout='constrained')
     if rows:
         points = ax.scatter([-r['net_eur'] / 1e6 for r in rows], [r['passengers'] / 1e6 for r in rows],
@@ -142,7 +145,7 @@ def write_report(graph, config, run, directory, calibration=None, sensitivity_re
     if config['terrain_kind'] == 'relief':
         warnings.append('Terrain uses the supplied RGB relief classifier, not DEM grades; slope feasibility is unassessed.')
     warnings.append('Parameters are illustrative starting values. No operator/procurement source verification is implied.')
-    warnings.append('Shared cells are priced once with HSR overriding CR. Overlapping alignments do not create passenger junctions unless they share a city node. Throughput on overlapping cells is not modelled.')
+    warnings.append('All track is newly built and fully charged. Compatible gauge, electrification and signalling are assumed. Shared cells are priced once and enforce aggregate train movements; overlapping alignments create no passenger junction without a common station. Infrastructure type and train type are independent.')
     if loss_flags:
         warnings.append(f'{len(loss_flags)} design/edge allocations lose over EUR 200M/year; inspect loss_sanity.json before interpretation.')
     write_json(directory / 'loss_sanity.json', dict(status='flagged' if loss_flags else 'passed', flagged_edges=loss_flags,
@@ -170,17 +173,21 @@ def write_report(graph, config, run, directory, calibration=None, sensitivity_re
         plot_map(graph, result, directory / financial_name, title, config, background=map_background, color_by='revenue_cost')
         from .analysis import write_analysis
         write_analysis(graph, config, result, directory / analysis_name,
-            directory / f'design_{i:04d}_analysis.json', title=f'Design {i}', evaluator=evaluator)
+            directory / f'design_{i:04d}_analysis.json', title=f'Design {i}', evaluator=evaluator, reevaluate=False)
         lines += ['', f'### Design {i}', '', f'![Map]({map_name})', '', f'![Revenue/cost map]({financial_name})', '',
                   f'![Station and corridor rankings]({analysis_name})', '',
                   '| Corridor | Type | km | Capex EUR M | Directional annual load | Trains/h/dir | Allocated net EUR M/y |',
                   '| --- | --- | ---: | ---: | ---: | ---: | ---: |']
         for edge_id in np.flatnonzero(result.genome):
             edge = graph.edges[edge_id]
-            track = TRACKS[result.genome[edge_id] - 1]
+            track = track_type(result.genome[edge_id])
             alignment = edge.alignments[track]
             names = f'{graph.cities[edge.a].name} – {graph.cities[edge.b].name}'.replace('|', '\\|')
-            lines.append(f'| {names} | {track} | {alignment.length_km:.1f} | {alignment.capex_meur:.1f} | {result.directional_load[edge_id]:,.0f} | {result.frequency[edge_id]:g} | {result.edge_net[edge_id]/1e6:.1f} |')
+            lines.append(f'| {names} | {track} ({int(result.track_counts[edge_id])} tracks) | {alignment.length_km:.1f} | {alignment.capex_meur * result.capital_multiplier[edge_id]:.1f} | {result.directional_load[edge_id]:,.0f} | {result.frequency[edge_id]:g} | {result.edge_net[edge_id]/1e6:.1f} |')
+        lines += ['', 'Service plan (frequency is per hour in each direction):', '']
+        for service in result.services:
+            route = ' → '.join(graph.cities[node].name for node in service['route'])
+            lines.append(f"- {service['train_type']}: {route}; {service['frequency']:g} trains/h; {service['formation']} units; fleet {service['fleet_units']} units.")
     lines += ['', '## Backtest', '', 'See [backtest.json](backtest.json) for data sources, train/test splits, fitted parameters and individual checks.']
     if calibration.get('checks'):
         lines += ['', '| Check | Status |', '| --- | --- |']

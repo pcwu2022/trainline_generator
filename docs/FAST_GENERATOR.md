@@ -1,390 +1,214 @@
-# Fast multi-objective railway generator
+"""Metro nodes, exclusive station catchments and a small static candidate graph."""
+from dataclasses import dataclass
+import csv
+import json
+from pathlib import Path
 
-`rail_gen/` implements the two-layer architecture in the supplied
-[v0.1 specification](FAST_GENERATOR_SPEC.txt). Geography is computed once;
-network search uses fixed abstract edges and never calls routing or HiGHS.
-The default search now follows one persistent network from iteration to iteration.
-NSGA-II/III remain selectable population alternatives. The earlier optimizer
-remains available through `optimize.py --solver annealing`.
+import numpy as np
+from pyproj import Transformer
+from scipy.spatial import Delaunay, QhullError, cKDTree
+from rail_model import center_radius
 
-## Run
+TO_METRIC = Transformer.from_crs('EPSG:4326', 'EPSG:3035', always_xy=True)
+TO_WGS84 = Transformer.from_crs('EPSG:3035', 'EPSG:4326', always_xy=True)
 
-From the repository root, using Python 3.9 or newer:
 
-```sh
-.venv/bin/python -m pip install -r requirements-railgen.txt
-.venv/bin/python -m rail_gen run --profile smoke --output runs/railgen-smoke
-.venv/bin/python -m rail_gen run --profile france --output runs/railgen-france
-.venv/bin/python -m rail_gen run --profile europe --output runs/railgen-europe
-```
+@dataclass
+class City:
+    id: str
+    name: str
+    lon: float
+    lat: float
+    population: float
+    kappa: float = 0.0
+    access_hours: float = 0.0
+    country: str = ''
+    radius_km: float = 0.0
 
-For the original entry point and live-output flags:
+    @property
+    def xy(self):
+        return np.array(TO_METRIC.transform(self.lon, self.lat)) / 1000
 
-```sh
-.venv/bin/python optimize.py --solver pareto --profile france \
-  --output runs/france-live --iterations 200 --snapshot-every 5 --gif-frame-ms 500
-```
 
-Both commands run the same fast incremental algorithm. `--solver incremental`
-is an alias for `--solver pareto`. `--algorithm nsga2` / `nsga3` on the module
-command, or `--solver nsga2` / `nsga3` on `optimize.py`, select population search.
-`optimize.py` without a fast solver flag retains its existing default.
+def distances(cities):
+    """Great-circle distance matrix in km, independent of projected routing grid."""
+    coordinates = np.radians([[c.lon, c.lat] for c in cities])
+    lon, lat = coordinates.T
+    h = np.sin((lat[:, None] - lat) / 2)**2 + np.cos(lat[:, None]) * np.cos(lat) * np.sin((lon[:, None] - lon) / 2)**2
+    return 12742.0176 * np.arcsin(np.sqrt(np.clip(h, 0, 1)))
 
-Choose a new or empty output directory, or pass `--overwrite` to delete the
-previous output and start a fresh run, as with the older optimizer. This flag
-works with both entry points. It rejects symlinks, the working directory and
-its ancestors.
-`--iterations` and `--generations` are aliases for the number of network updates
-(incremental) or population generations (NSGA). `--population` sets the maximum
-neighbours evaluated per incremental update, or the NSGA population size.
-`--seed` and `--workers` override search settings. `--time-limit SECONDS` caps
-search time including live rendering, after geography preparation. Ctrl+C
-finishes the current update and saves its accepted network and evaluated front.
-A second Ctrl+C interrupts immediately.
-Service sizing allows one departure every three hours, two hours or 90 minutes
-(`1/3`, `1/2`, `2/3` trains/hour/direction), followed by integer hourly frequencies
-up to each track's frequency cap. `operations.low_frequencies` controls these
-choices and `minimum_frequency` defaults to `1/3`. Expected waiting time is half
-the headway: 90, 60 or 45 minutes respectively, without a one-hour cap. Train-km,
-operating costs and capacity use the actual fractional frequency.
-Iteration logs and saved metrics include `need_satisfaction_ratio`: completed
-two-way annual trips divided by fixed two-way annual gravity demand across all
-candidate OD pairs, including unserved pairs. The denominator includes fixed
-station capture and distance screening, before journey-time rail share and
-capacity spill. This is distinct from the fraction of cities with stations.
-The terminal summary prints the search status; `coverage_incomplete` can occur
-before the iteration limit if all local coverage/connectivity improvements are
-rejected, for example by the maximum spill constraint.
-`--workers` uses a shared-memory thread pool for independent evaluations; SciPy
-and NumPy kernels can release the GIL. One worker is the default: parallel
-speedups depend on network size and hardware.
 
-```sh
-.venv/bin/python -m rail_gen precompute --profile france
-.venv/bin/python -m rail_gen benchmark --profile france --evaluations 200
-.venv/bin/python -m rail_gen run --profile smoke --sensitivity --output runs/railgen-sensitivity
-.venv/bin/python -m unittest discover -s tests -p 'test_railgen*.py'
-```
+def read_cities(config, samples=None):
+    path = Path(config['cities_file'])
+    if path.suffix.lower() == '.csv':
+        with path.open(newline='') as stream:
+            records = list(csv.DictReader(stream))
+    else:
+        records = json.loads(path.read_text())
+    nodes = []
+    w, s, e, n = config['bbox']
+    for index, r in enumerate(records):
+        lon, lat = float(r['lon']), float(r['lat'])
+        population = float(r.get('population', r.get('pop', 0)))
+        if not all(np.isfinite([lon, lat, population])) or population < 0:
+            raise ValueError(f'Invalid city record {index}')
+        if not (w <= lon <= e and s <= lat <= n):
+            continue
+        if config['countries'] and r.get('country') not in config['countries']:
+            continue
+        if population < config['prep']['minimum_population']:
+            continue
+        nodes.append(City(str(r.get('id', index)), r['name'], lon, lat, population,
+                          country=r.get('country', '')))
+    nodes.sort(key=lambda c: (-c.population, c.id))
+    if len(nodes) < 2 or len({c.id for c in nodes}) != len(nodes):
+        raise ValueError('Need at least two cities with distinct IDs')
+    if len({(c.lon, c.lat) for c in nodes}) != len(nodes):
+        raise ValueError('City centres must have distinct coordinates; merge duplicate records')
+    if samples is None:
+        xy, _, density = population_samples(config)
+    else:
+        xy, _, density = samples
+    set_capture_radii(nodes, xy, density, config)
+    selected = []
+    for city in nodes:
+        # Keep the larger city when its metropolitan catchment contains a
+        # smaller center. Only retained cities suppress later candidates.
+        if any(np.linalg.norm(city.xy - other.xy) <= other.radius_km for other in selected):
+            continue
+        selected.append(city)
+        if len(selected) == config['prep']['max_cities']:
+            break
+    if len(selected) < 2:
+        raise ValueError('Need at least two cities outside retained metropolitan catchments')
+    return selected
 
-`rail_gen/config.json` is the single parameter source for this pipeline, separate
-from the legacy root configuration. Named profiles cover France, Italy,
-Netherlands/Belgium, Europe and a small smoke scenario. External `--config PATH`
-can contain a partial override object, a complete `run_config.json`, or
-`{"defaults": {...}, "profiles": {...}}`. Overrides merge recursively; precedence
-is defaults, external defaults, selected profile, CLI. Unknown parameters,
-non-finite numbers, invalid frequencies and invalid load factors are rejected.
-Paths resolve relative to the working directory, as in the existing optimizer.
 
-## Inputs and calibration status
+def set_capture_radii(cities, xy, density, config):
+    """Use the same local density for city screening, capture and map circles."""
+    _, nearest = cKDTree(xy).query([city.xy for city in cities])
+    for city, index in zip(cities, nearest):
+        city.radius_km = center_radius(float(density[index]), config['prep']['center_coefficient'])
 
-### Experimental connect-and-repair search
 
-On `experiment/connect-and-repair-capacity`, enable the experiment explicitly:
+def neighborhood_densities(features):
+    """Smooth H3 density using 40% center and 10% per adjacent hexagon.
 
-```sh
-.venv/bin/python optimize.py --solver pareto --profile europe \
-  --config configs/capacity-repair.json --output runs/europe-capacity-repair \
-  --iterations 500 --snapshot-every 50
-```
+    Missing neighbors contribute zero; use the full input before bbox filtering.
+    Non-H3 inputs retain their declared population/area density.
+    """
+    import h3
+    raw = {}
+    values = []
+    for feature in features:
+        p = feature['properties']
+        count = float(p['population'])
+        index = p.get('h3Index')
+        area = h3.cell_area(index, unit='km^2') if index else float(p['area_km2'])
+        if not np.isfinite(count) or count < 0:
+            raise ValueError('Population cells must contain finite nonnegative population')
+        if not np.isfinite(area) or area <= 0:
+            raise ValueError('Population cell area must be positive')
+        value = count / area
+        values.append(value)
+        if index:
+            if index in raw:
+                raise ValueError('Duplicate H3 population cells')
+            raw[index] = value
+    return np.asarray([
+        .4 * value + .1 * sum(raw.get(neighbor, 0.0)
+                             for neighbor in h3.grid_disk(index, 1) if neighbor != index)
+        if (index := feature['properties'].get('h3Index')) else value
+        for feature, value in zip(features, values)])
 
-Use a fresh output path or add `--overwrite` to replace a previous experiment.
-The default model still uses one train unit per departure. The experiment permits
-up to two coupled units, sizing each corridor's formation to its predicted demand
-after frequency assignment. Each additional unit pays full train-unit operating
-cost and fleet capital, including turnaround and spare allowances. Frequency
-limits, station/track capital and the 15% spill limit are unchanged. Formation size
-is derived deterministically from a network, rather than encoded as another gene.
-`train_units` is saved per corridor in GeoJSON and the cost log; aggregate formation
-metrics are included in `latest.json` and iteration history.
 
-If single-edge integration exhausts its neighbourhood, the experiment also tests
-two approaches to an unserved city and a bounded sequence of additions/upgrades
-near saturated corridors. Infeasible intermediate networks remain internal; only
-the complete feasible package can be accepted. `capacity_repair_steps` (3) and
-`capacity_repair_candidates` (8) bound the repair depth and beam/expansion width;
-zero steps disables package repair. Accepted packages are labelled `capacity_repair`
-in history, with evaluation counts and feasibility diagnostics. Time limits and
-Ctrl+C are checked between package evaluations.
+def population_samples(config):
+    """Existing point/H3 GeoJSON, or polygon cells represented by their centroids."""
+    import h3
+    from shapely.geometry import shape
+    features = json.loads(Path(config['population_file']).read_text())['features']
+    smoothed_density = neighborhood_densities(features)
+    xy, people, density = [], [], []
+    w, s, e, n = config['bbox']
+    for feature, local_density in zip(features, smoothed_density):
+        geom, p = feature['geometry'], feature['properties']
+        if geom['type'] == 'Point':
+            lon, lat = geom['coordinates'][:2]
+        else:
+            point = shape(geom).centroid
+            lon, lat = point.x, point.y
+        if not (w <= lon <= e and s <= lat <= n):
+            continue
+        count = float(p['population'])
+        if not np.isfinite(count) or count < 0:
+            raise ValueError('Population cells must contain finite nonnegative population')
+        area = h3.cell_area(p['h3Index'], unit='km^2') if 'h3Index' in p else float(p['area_km2'])
+        if not np.isfinite(area) or area <= 0:
+            raise ValueError('Population cell area must be positive')
+        xy.append(np.array(TO_METRIC.transform(lon, lat)) / 1000)
+        people.append(count)
+        density.append(local_density)
+    if not xy:
+        raise ValueError('Population input has no cells within the bounding box')
+    return np.asarray(xy), np.asarray(people), np.asarray(density)
 
-This is a strategic capacity experiment: two-unit formations assume compatible
-platform lengths, traction and coupling. Platform extension costs and separate
-parallel-track capacity are not modeled. Alternative routes use only existing
-candidate alignments, so the experiment can still stop with incomplete coverage.
 
-The supplied `data/cities50000.json` contains city populations and includes
-suburbs/administrative districts. **It is not a verified metropolitan table.**
-It is usable to exercise the pipeline, but the resulting networks and finances
-are uncalibrated scenarios. Replace `cities_file` with a curated CSV or JSON
-array with columns `id` (optional), `name`, `lon`, `lat`, `population` (or `pop`),
-and `country` (ISO alpha-2, required when country filtering is enabled). Keep one
-non-overlapping metropolitan record per intended node, then set
-`metro_populations_verified=true` after verifying the input yourself.
+def station_capture(cities, xy, people, density, config):
+    """Assign samples exclusively; let the raster catchment exceed city-proper P."""
+    p = config['prep']
+    set_capture_radii(cities, xy, density, config)
+    distance, owner = cKDTree([c.xy for c in cities]).query(xy)
+    for i, city in enumerate(cities):
+        included = (owner == i) & (distance <= city.radius_km)
+        total = float(people[included].sum())
+        # kappa is a multiplier relative to the city-file population, not a
+        # probability: metropolitan catchments can exceed city-proper totals.
+        city.kappa = total / city.population * p['uptake']
+        city.access_hours = float(np.average(distance[included], weights=people[included])) / p['access_speed_kmh'] if total else 0.0
+    return cities
 
-Population input is the existing GeoJSON of points/H3 cells. `population` and
-`h3Index` provide population and area; other point/polygon cells must supply
-`area_km2`. Polygons use centroids. Each sample belongs exclusively to its nearest
-city, preventing overlapping catchments from counting the same residents twice.
-Captured population within 15 km is capped at metro population and multiplied
-by uptake. Access time is the population-weighted catchment distance divided
-by access speed. These fixed quantities are the only density-dependent inputs
-to demand. There is no city coverage floor.
 
-The bundled RGB relief map supports approximate terrain multipliers and inland
-water premiums, **not engineering grades**. Set `terrain_kind="dem"` and point
-`terrain_file` to a single-band elevation GeoTIFF in metres for grade limits and
-slope premiums. The existing `fetch_terrain.py` and `generate_terrain.py` produce
-suitable metric DEMs. Coarse-grid gradients underestimate engineering grades;
-this remains strategic routing. `terrain_kind="flat"` is an explicit synthetic
-scenario. Real terrain needs `boundaries_file` or `land_class_file` to block sea.
+def candidate_pairs(cities, config):
+    p = config['prep']
+    d = distances(cities)
+    n = len(cities)
+    pairs = set()
+    for a in range(n):
+        for b in np.argsort(d[a])[1:p['neighbors'] + 1]:
+            if d[a, b] <= p['max_edge_km']:
+                pairs.add(tuple(sorted((a, int(b)))))
+    xy = np.array([c.xy for c in cities])
+    if n >= 3:
+        try:
+            for triangle in Delaunay(xy).simplices:
+                for a, b in zip(triangle, np.roll(triangle, 1)):
+                    if d[a, b] <= p['max_edge_km']:
+                        pairs.add(tuple(sorted((int(a), int(b)))))
+        except QhullError:
+            pass  # Collinear cities still have nearest-neighbour and forced edges.
+    from .demand import gravity_matrix
+    gravity = gravity_matrix(cities, config)
+    ranked = sorted(((a, b) for a in range(n) for b in range(a + 1, n)),
+                    key=lambda ab: (-gravity[ab], ab))
+    pairs.update(ranked[:p['force_pairs']])
+    retained = set(pairs)
+    for a, b in sorted(pairs):
+        direction = xy[b] - xy[a]
+        position = (xy - xy[a]) @ direction / np.dot(direction, direction)
+        near = np.linalg.norm(xy - (xy[a] + position[:, None] * direction), axis=1)
+        via = np.flatnonzero((position > 0) & (position < 1) & (near <= p['via_tolerance_km']) &
+                            (d[a] + d[b] <= p['via_detour_ratio'] * d[a, b]))
+        if len(via):
+            middle = int(via[np.argmin(near[via])])
+            retained.discard((a, b))
+            # Always retain the replacement links, including for forced long pairs.
+            retained.add(tuple(sorted((a, middle))))
+            retained.add(tuple(sorted((middle, b))))
+    return sorted(retained)
 
-Optional `land_class_file` is a single-band categorical raster: 0 land, 1 inland
-water, 2 sea, 3 excluded/protected. Missing coverage is blocked. Optional
-`exclusions_file` is a polygon GeoJSON. Country boundaries define land across
-all countries; the `countries` filter selects city nodes independently. Small
-waterways and protected areas absent from these layers are not inferred.
 
-No ridership observations are fabricated or downloaded. Copy the CSV header in
-[backtest_template.csv](../rail_gen/data/backtest_template.csv), then supply
-consistent, sourced observations. `observed_annual_passengers` must count both
-travel directions on the city-pair market, matching model reporting. Distinguish
-corridor totals from city-pair totals when collecting data. Use explicit `train`
-and `test` splits, about one third held out. `anchor` accepts `true`, `yes`, or
-`1`; `class` accepts `strong` or `thin`; `track_type` is CR or HSR.
-
-```sh
-.venv/bin/python -m rail_gen calibrate --profile france \
-  --backtest my-corridors.csv --output runs/france-backtest.json
-.venv/bin/python -m rail_gen run --profile france \
-  --backtest my-corridors.csv --output runs/france-calibrated
-```
-
-Calibration fits k against log ridership using **training observations only**.
-Optional `--fit k a beta t0_hours` fits more parameters when enough training rows
-exist. Fixed actual line length, speed and frequency are used, including access,
-wait, fare and the same dwell convention as the network evaluator. The output
-records fitted parameters, observation sources, input SHA-256 and every check.
-
-At least 10 sourced corridors are required for a complete backtest.
-Checks cover held-out Spearman ranking (at least three held-out corridors),
-anchor magnitude, strong/thin ratio, frequency, fleet, train operating recovery,
-and capital recovery arithmetic. A missing check is `not_assessed`, never a
-pass. The calibration command returns 2 for a failed/incomplete report. A run
-without observations is explicitly `not_calibrated`. Route loss diagnostics are
-separate from demand backtesting. No results should be interpreted as validated
-forecasts until the data and backtests are independently checked.
-
-## Implementation
-
-- `prep.py`: fixed city-centre nodes; exclusive capture and access; k-nearest
-  neighbours + Delaunay + forced gravity pairs; near-collinear via pruning with
-  replacement links retained. Forced pairs can exceed the ordinary distance cap.
-- `alignment.py`: EPSG:3035 cost grid; distinct CR/HSR base prices and grade
-  limits; relief/DEM, density, water and exclusions; one windowed MCP sweep per
-  source/type resolves all its candidate destinations. Forced long pairs enlarge
-  their source window. Station cells are fixed; blocked station cells cannot
-  silently move across water. Douglas–Peucker/Chaikin display smoothing is
-  accepted only inside the priced footprint.
-- `demand.py`: annual **one-way** gravity market with logistic rail share and a
-  fare/VOT term. Only upper-triangle markets are stored; evaluator totals multiply
-  by two for symmetric two-way trips. Unconnected pairs carry zero passengers.
-- `evaluator.py`: SciPy shortest paths, sparse path assignment, branch-turn
-  transfer proxy, at most three load/frequency updates, a final demand calculation
-  at the returned frequency, and one simultaneous bottleneck spill pass. Spill
-  capacity includes peak factor and maximum load factor at the actual operating
-  frequency. Fleet includes round-trip service time, turnaround, integer
-  trainsets and spares. Fare uses great-circle OD distance and the path's
-  length-weighted yield, so detours cannot inflate revenue per trip.
-- `incremental.py`: the default persistent-network search. Start empty; make
-  add/remove/CR–HSR edits or join components by a cheapest candidate path, always
-  from the previous accepted genome. Growth prefers ridership gained per added
-  net annual euro while preserving current ridership and captured population.
-  It can also accept net cost savings that preserve service. When growth stalls,
-  or after `growth_fraction` (default 70% of iterations), integration prioritizes
-  serving missing candidate cities and joining components. Integration can accept
-  higher costs or lower ridership to improve topology, subject to financial and
-  operational constraints. Once every candidate city is served in one component
-  and the growth fraction has elapsed, freeze the baseline and consolidate: lower
-  net annual cost with at least `retained_ridership` (98%) of baseline passengers
-  and captured population, and at most `journey_time_allowance` (5%) more mean
-  generalized time. These are incumbent selection rules; the separate Pareto
-  archive retains all feasible non-dominated evaluated alternatives. There is no
-  additional coverage constraint on the Pareto archive or population algorithms.
-  Consolidation preserves all candidate cities and connectivity. Rejected proposals
-  retain the preceding state. Incomplete coverage at the iteration limit or after
-  exhausting available moves is reported as `coverage_incomplete`, not successful
-  completion; constraints, zero-load repair or disconnected candidate geography
-  may prevent completion. Time limits and interruption retain their own statuses.
-  Coverage refers to the selected city candidates, not every settlement in France.
-  No random restart is performed.
-- `search.py`: optional integer NSGA-II, or NSGA-III for four objectives;
-  uniform crossover, flips, cheapest component joining, low-value removal,
-  busy-edge upgrade and low-load downgrade. Greedy marginal-net/capital growth
-  supplies a fraction of seeds at multiple stopping sizes; the rest are sparse
-  random/demand-biased states. The empty design is included. Zero-load repair
-  writes the genome back into the pymoo population. Feasible non-dominated
-  designs are archived across generations, not just from the final population.
-- `calibrate.py`: fixed-line prediction, log-error fitting and held-out checks.
-- `live.py`: iteration-triggered current map, metrics, GeoJSON, cost log, six
-  progress panels, and a streaming GIF using the original encoder. Images and
-  JSON are atomically replaced; individual frame files are not accumulated.
-- `report.py`: full-precision recomputation/deduplication, k-medoids selection
-  with financial/subsidy/knee anchors, maps, finance reconciliation, loss flags,
-  and optional six-run sensitivity analysis.
-
-The objectives are net annual cost, negative annual carried trips and negative
-captured population. Optional `include_time_objective` adds trip-weighted mean
-generalized time. An empty network has an explicit worst time score. The knee
-representative is the normalized point nearest the ideal objective vector.
-Budgets, annual subsidy, spill and optional largest-component share use pymoo's
-constraint interface rather than objective penalties. Connectivity is measured
-among active nodes, so opening a disconnected singleton is not an escape.
-
-Capital uses separate CR/HSR edge-by-tile sparse matrices. The union is paid
-once; HSR overrides CR on a shared cell. Annual costs use capital recovery
-factors, track maintenance, station operation and train/overhead costs. Fleet
-capital is recovered separately. Diagnostic per-edge net allocations reconcile
-to the network net, splitting shared tiles by active owners, station cost by
-degree, fleet by train-time and fare revenue by ridden distance.
-
-The tile model charges one `cell_km` unit per occupied raster cell. Thus union
-accounting is exact within the chosen cell approximation; it is not a
-sub-cell engineering cost integral. MCP uses geometric movement costs to choose
-paths; recorded/priced capex comes from their fixed cell footprints. Smoothing
-can adjust reported route length without changing tile ownership. Fixed-cell pricing has a direction-dependent discretization bias (a diagonal
-step covers more distance than a cardinal step for the same tile charge).
-Compare grid resolutions before interpreting costs.
-Shared cells affect capital, not service topology: geometric crossings create
-no passenger junction without a shared city node. Frequencies/capacity are
-edge-based; overlapping corridors do not have a combined tile throughput limit.
-
-## Cache and output
-
-`runs/railgen-cache/<sha256>/` stores `edges.parquet`, `tiles_CR.npz`,
-`tiles_HSR.npz`, compact tile cost vectors and a city/metadata manifest.
-Fingerprints cover input **contents**, routing settings, track parameters,
-city preparation, demand-dependent candidate ranking and cache schema. Search,
-finance and constraint changes reuse geography. A temporary directory is
-renamed only after a complete cache is written. Only cells used by some
-candidate alignment are retained for evaluation speed.
-
-The main output directory describes one evolving network:
-
-- `latest.png`: the single map overwritten at snapshot cadence. The first frame
-  contains the real region/city nodes and the empty network. The final accepted
-  network is always rendered, even between scheduled snapshots.
-- `progress.gif`: the map animation, updated atomically at the same cadence.
-  `reporting.snapshot_every` (default 5) and `reporting.gif_frame_ms` (default
-  500) have matching `--snapshot-every` and `--gif-frame-ms` CLI flags. GIF timing
-  must be a multiple of 10 ms. Only compressed past frames are copied when
-  appending; historical image buffers are not retained in memory.
-- `progress.png`: stations/corridors, annual trips, captured population and
-  connectivity, track/fleet, upfront capital, and annual finances versus iteration.
-- `latest.json`, `latest.geojson`, `cost_breakdown.log`: metrics, geometry and
-  reconciled accounting for the same current network shown in `latest.png`.
-  Per-edge costs/revenue use the evaluator's allocation rules.
-- `history.jsonl`: every iteration, including rejected proposals, with parent
-  genome, accepted genome, changed edge IDs/states, metrics and stage. This is
-  the actual incumbent lineage, not a sequence of independently selected front
-  members. `search_history.json` also records search-side history.
-- `checkpoint.npz`: current integer genome, objectives, iteration, graph
-  fingerprint and effective configuration. It is a state export; solver/RNG
-  resumption is not implemented.
-- `report.md`: the current network, animation, progress charts, accounting and
-  a link to Pareto comparisons. `manifest.json`, `run_config.json`,
-  `alignment_manifest.json` and `backtest.json` record assumptions and provenance.
-
-`pareto/` contains comparison outputs written after search: `pareto.csv`,
-`genomes.npz`, `designs/*.geojson`, `pareto.png`, representative `design_*.png`
-maps, per-edge tables in `report.md`, `loss_sanity.json`, and optional
-`sensitivity.json`. The front CSV, genome array and loss diagnostics are also
-available at the output root for compatibility. Every built edge with allocated
-annual loss over EUR 200M is flagged. Sensitivity performs fresh searches for
-demand k, capital and yield at ±25% on fixed alignments, reporting exact genome
-persistence; it does not vary every fitted exponent jointly.
-
-Maps share the original optimizer's visual styling in
-`train_optimizer/map_style.py`: population density uses the `YlOrRd` log scale
-(people/km²), white tile borders and 65% opacity; tracks run from pale green
-(`#b2f2a5`) to bright green (`#00cc33`). Conventional track is dashed, HSR is
-solid, and width is exactly `1.7 + 0.6 × trains/hour/direction`. White station
-markers, dashed green catchment circles and grey city crosses match the original.
-Both live/GIF frames and representative maps use this renderer.
-
-For the fast model, track color measures two-way carried annual trips divided by
-the fixed capturable gravity markets of the OD pairs using that edge, before rail
-share and spill. Transfer ODs contribute to each leg, once per edge. The map
-labels this **rail-market satisfaction**; it is distinct from occupancy and the
-legacy model's separately computed rail-eligible-needs bound. Population is read
-from the actual population cells and divided by cell area, rather than inferred
-from city populations. H3 cells retain their hexagonal footprints; other polygon
-cells retain their shapes, and non-H3 point cells use their declared area as a
-square footprint. Country/bbox filtering follows the original display convention
-when boundary data is available. The prepared population layer and viewport are
-reused across snapshots, with fixed color scales and space reserved for both
-colorbars so animation frames do not shift or resize.
-
-In optional NSGA mode, parents and offspring evolve across generations. The live
-view displays that generation's Pareto compromise, which can change lineage;
-choose the default incremental mode for one continuous network trajectory.
-The final map always follows the live accepted state and is not replaced by a
-financial/coverage extreme from the alternative-design report.
-
-## Performance and scope
-
-On the development machine, a 100-city / 316-edge France graph evaluated 300
-random designs at **5.62 ms median / 8.54 ms p95**, excluding cache loading.
-Use the benchmark command to measure your own inputs and hardware. Earlier NSGA-II
-150-member, 200-generation searches produced 449 France designs in 40.36 seconds
-and 484 Europe designs in 41.78 seconds; these timings include seeding and exclude
-geography loading/precomputation and report rendering. Development reports are
-in `runs/railgen-france-v2/` and `runs/railgen-europe-v2/` (ignored by git).
-
-The generator and live-output tests cover lineage, fixed-baseline consolidation,
-rejected proposals, interruption/time limits, GIF cadence and final-state consistency.
-All 36 generator/map/live-output tests pass. The full suite has 173 passing tests
-and three pre-existing failures, reproduced on the original HEAD: profile time-limit
-precedence in `test_settings` and two legacy HSR default assumptions in
-`test_train_types`. No legacy model/configuration changes are part of this work.
-
-The v0.1 pipeline, with the incremental search extension, supports all mandatory computational stages; empirical
-validation is pending a curated metro table and sourced corridor observations.
-Optional artificial hubs, alternative alignment genes, CO2 objectives, AMOSA,
-full line pools and cross-sea hand-built links are not implemented. NSGA-III is
-the available many-objective alternative; the installed pymoo MOEA/D does not
-support the required constraint mechanism. There is no global optimality claim.
-
-### Financial map and ranked station/corridor dashboard
-
-Each live snapshot now publishes `latest_revenue_cost.png` alongside the usual
-satisfaction map. It uses the same geometry, viewport, route thickness and
-single-CR/double-HSR symbols. Color is annual allocated revenue divided by annual
-allocated cost: red below 1, gold at break-even, green above 1, saturated at 2.
-Gray denotes an undefined ratio with no positive cost. Annual cost includes
-operating expense, maintenance and annualized infrastructure/station/fleet
-capital, following the evaluator's existing shared-cost allocation.
-
-`analysis.png` contains eight top-ten rankings: station satisfaction, station
-endpoint trips, corridor satisfaction, revenue/cost, annual cost, annual revenue,
-best annual net results and largest annual losses. Satisfaction bars show both
-percentages and carried/eligible annual trip counts. `analysis.json` contains
-all station and active-corridor metrics, the genome, and metric definitions.
-The live report links both images and the JSON. Pareto representatives receive
-matching `design_XXXX_revenue_cost.png` and `design_XXXX_analysis.png/.json` files.
-
-Station satisfaction uses a station's fixed capturable OD endpoint demand,
-including destinations that are unserved. Transfers are excluded from station
-endpoint totals, and each trip is counted at both endpoints. Corridor
-satisfaction matches the existing map and counts each ridden transfer leg.
-"Lines" are modeled city-pair corridors, not reconstructed through services.
-Annual allocated profit is revenue minus annual cost; it is not the savings
-from independently closing a corridor.
-
-Regenerate just these images for a saved network, without a new search:
-
-```sh
-.venv/bin/python -m rail_gen.analysis --run-dir runs/europe-live --cache-dir runs/railgen-cache
-```
-
-This uses the run's saved configuration and exact cached candidate graph, and
-re-evaluates its saved genome. Regenerating old runs with changed evaluator
-logic can change their financial/passenger estimates.
+def prepare(config):
+    xy, people, density = population_samples(config)
+    cities = read_cities(config, (xy, people, density))
+    station_capture(cities, xy, people, density, config)
+    return cities, candidate_pairs(cities, config), (xy, people, density)

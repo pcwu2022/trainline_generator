@@ -1,11 +1,13 @@
 """Iteration-triggered live map, charts, accounting and bounded-memory GIF."""
 from datetime import datetime, timezone
 import json
+import shutil
 from pathlib import Path
 
 import numpy as np
 
 from .alignment import TRACKS
+from .track_layout import track_type, MODEL_VERSION
 from .evaluator import Evaluator
 from .report import _plotting, geojson, plot_map
 from .search import SearchUpdate
@@ -71,11 +73,15 @@ def cost_log(graph, result, iteration, phase):
         'Per-corridor net includes allocated shared capital, station and fleet costs.']
     for i in np.flatnonzero(result.genome):
         edge = graph.edges[i]
-        track = TRACKS[result.genome[i] - 1]
-        lines.append(f'{graph.cities[edge.a].name} — {graph.cities[edge.b].name} [{track}]: '
-            f'{result.frequency[i]:g} trains/h/direction; {result.train_units[i]} units/train; '
+        track = track_type(result.genome[i])
+        lines.append(f'{graph.cities[edge.a].name} — {graph.cities[edge.b].name} [{track}, {int(result.track_counts[i])} tracks]: '
+            f'{result.frequency[i]:g} aggregate trains/h/direction; max {result.train_units[i]} units/train; '
             f'{result.directional_load[i]:,.0f} annual trips/direction; '
             f'allocated annual net EUR {result.edge_net[i]:,.2f}')
+    lines += ['', 'Actual train services (infrastructure changes do not imply transfers):']
+    for service in result.services:
+        route = ' — '.join(graph.cities[node].name for node in service['route'])
+        lines.append(f"{service['train_type']}: {route}; {service['frequency']:g} trains/h/direction; {service['formation']} units/train; {service['cycle_hours']:.3f} h round trip incl. turnaround; fleet {service['fleet_units']} units; annual operation EUR {service['operating_cost_eur']:,.2f}")
     return '\n'.join(lines) + '\n'
 
 
@@ -100,7 +106,7 @@ class LiveReporter:
         atomic_json(self.output / 'run_config.json', config)
         atomic_json(self.output / 'backtest.json', self.calibration)
         atomic_json(self.output / 'alignment_manifest.json', graph.metadata)
-        self.manifest = dict(algorithm=config['search']['algorithm'], iteration_unit=self.unit,
+        self.manifest = dict(model_version=MODEL_VERSION, algorithm=config['search']['algorithm'], iteration_unit=self.unit,
             snapshot_every=self.every, gif_frame_ms=config['reporting']['gif_frame_ms'],
             graph=graph.metadata, calibration=self.calibration['status'],
             current_network='latest.geojson', alternatives='pareto/report.md', status='running')
@@ -115,18 +121,23 @@ class LiveReporter:
         row = dict(iteration=update.iteration, phase=update.phase, accepted=update.accepted,
             parent_iteration=update.iteration - 1 if update.iteration else None,
             parent_genome=update.parent_genome.tolist() if update.parent_genome is not None else None,
-            genome=update.result.genome.tolist(), changes=[list(c) for c in update.changes],
+            genome=update.result.genome.tolist(), services=update.result.services, track_counts=update.result.track_counts.tolist(), changes=[list(c) for c in update.changes],
             front_size=update.front_size, evaluations=update.evaluations,
             seconds=update.elapsed_seconds, metrics=metrics)
         self.history.append(row)
         with (self.output / 'history.jsonl').open('a', encoding='utf8') as stream:
             stream.write(json.dumps(row, allow_nan=False) + '\n')
         # Initial frame contains the real region and city nodes, never a blank canvas.
-        if update.iteration == 0 or update.iteration % self.every == 0:
+        if update.phase == 'before_profit' or update.iteration == 0 or update.iteration % self.every == 0:
             self.render(update)
+        if update.phase == 'before_profit':
+            for extension in ('png', 'json', 'geojson'):
+                shutil.copyfile(self.output / f'latest.{extension}',
+                                self.output / f'before_profit.{extension}')
 
     def render(self, update):
-        result = self.evaluator.evaluate(update.result.genome, details=True)
+        # Search updates already contain complete assignments and allocations.
+        result = update.result
         phase = update.phase.replace('_', ' ')
         title = (f'{self.unit} {update.iteration}: {phase} · '
             f'{result.metrics["passengers"]/1e6:.2f}M trips/year · '
@@ -146,7 +157,7 @@ class LiveReporter:
             chart_temp.unlink(missing_ok=True)
         self.animation.append(self.output / 'latest.png')
         self.snapshot += 1
-        data = dict(iteration=update.iteration, iterations=update.iteration, iteration_unit=self.unit,
+        data = dict(model_version=MODEL_VERSION, services=result.services, track_counts=result.track_counts.tolist(), iteration=update.iteration, iterations=update.iteration, iteration_unit=self.unit,
             phase=update.phase, algorithm=self.config['search']['algorithm'], snapshot=self.snapshot,
             animation_frames=self.animation.frames, feasible=result.feasible,
             accepted=update.accepted, changes=[list(c) for c in update.changes],
@@ -164,7 +175,8 @@ class LiveReporter:
         try:
             np.savez_compressed(checkpoint, genome=result.genome, objectives=result.objectives,
                 iteration=update.iteration, graph_fingerprint=self.graph.metadata.get('fingerprint', ''),
-                config_json=json.dumps(self.config, sort_keys=True))
+                config_json=json.dumps(self.config, sort_keys=True), model_version=MODEL_VERSION,
+                track_counts=result.track_counts, services_json=json.dumps(result.services))
             checkpoint.replace(self.output / 'checkpoint.npz')
         finally:
             checkpoint.unlink(missing_ok=True)
@@ -192,13 +204,21 @@ class LiveReporter:
             '[Pareto alternatives and backtests](pareto/report.md) are comparison designs, not animation frames.']
         if data['algorithm'] != 'incremental':
             lines[-3] = 'Population mode displays the current Pareto compromise per generation; it can switch between lineages.'
+        lines += ['', '## Train services', '',
+            'All infrastructure is newly built and fully charged. Compatible gauge, electrification and signalling are assumed. Infrastructure symbols and train types are separate.', '',
+            '| Train type | Route | Trains/h/direction | Units/train | Fleet units |',
+            '| --- | --- | ---: | ---: | ---: |']
+        for service in data['services']:
+            route = ' → '.join(self.graph.cities[node].name.replace('|', '\\|') for node in service['route'])
+            lines.append(f"| {service['train_type']} | {route} | {service['frequency']:g} | {service['formation']} | {service['fleet_units']} |")
         atomic_text(self.output / 'report.md', '\n'.join(lines) + '\n')
 
     def finish(self, run):
         if self.last_update is None:
             return
-        result = self.evaluator.evaluate(run.current_genome if run.current_genome is not None
-                                         else self.last_update.result.genome)
+        result = self.last_update.result
+        if run.current_genome is not None and not np.array_equal(run.current_genome, result.genome):
+            result = self.evaluator.evaluate(run.current_genome)
         terminal = SearchUpdate(self.last_update.iteration, run.status, result,
             len(run.genomes), run.evaluations, run.elapsed_seconds,
             self.last_update.accepted, self.last_update.changes, self.last_update.parent_genome)

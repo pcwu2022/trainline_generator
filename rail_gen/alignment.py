@@ -17,7 +17,7 @@ from scipy.spatial import cKDTree
 
 from .prep import City, TO_METRIC, TO_WGS84
 
-CACHE_VERSION = 3
+CACHE_VERSION = 7
 TRACKS = ('CR', 'HSR')
 
 
@@ -63,11 +63,31 @@ class CandidateGraph:
         costs = np.asarray(tile_costs)[:, used]
         return cls(cities, edges, tuple(matrices), costs, metadata or {})
 
-    def track_capital(self, x):
-        hsr = np.asarray(self.matrices[1].T @ (x == 2)).ravel() > 0
-        cr = (np.asarray(self.matrices[0].T @ (x == 1)).ravel() > 0) & ~hsr
-        # Blocked tiles may have infinite costs; never multiply infinity by zero.
-        return float(self.tile_costs[1, hsr].sum() + self.tile_costs[0, cr].sum())
+    def selected_tiles(self, x):
+        x = np.asarray(x)
+        return (self.matrices[0].multiply((x == 1)[:, None]) +
+                self.matrices[1].multiply((x == 2)[:, None])).tocsr()
+
+    def track_allocation(self, x, layouts=None, track_counts=None, *, selected=None):
+        from .track_layout import LAYOUT_BY_COUNT
+        x = np.asarray(x, dtype=int)
+        counts = np.where(x > 0, 2, 0) if track_counts is None else np.asarray(track_counts)
+        multipliers = {'single': .5, 'double': 1, 'four': 2}
+        if layouts is not None:
+            multipliers = {k: v['cost_multiplier'] for k, v in layouts.items()}
+        matrix = (self.selected_tiles(x) if selected is None else selected).tocoo()
+        factors = np.array([multipliers[LAYOUT_BY_COUNT[int(count)]] if count else 0 for count in counts])
+        rates = self.tile_costs[x[matrix.row] - 1, matrix.col] * factors[matrix.row]
+        highest = np.zeros(self.tile_costs.shape[1])
+        np.maximum.at(highest, matrix.col, rates)
+        winners = rates == highest[matrix.col]
+        sharing = np.bincount(matrix.col[winners], minlength=len(highest))
+        allocation = np.zeros(len(x))
+        np.add.at(allocation, matrix.row[winners], highest[matrix.col[winners]] / sharing[matrix.col[winners]])
+        return allocation
+
+    def track_capital(self, x, layouts=None, track_counts=None):
+        return float(self.track_allocation(x, layouts, track_counts).sum())
 
 
 def fingerprint(config):

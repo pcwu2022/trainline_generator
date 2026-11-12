@@ -49,7 +49,8 @@ def greedy_seeds(evaluator, count):
     standalone = []
     for edge in range(m):
         x = empty.copy()
-        x[edge] = 1 if evaluator.allowed[edge, 1] else 2
+        states = np.flatnonzero(evaluator.allowed[edge, 1:]) + 1
+        x[edge] = int(states[0]) if len(states) else 0
         score = evaluator.evaluate(x, repair=True)
         standalone.append((score.metrics['passengers'], edge, x[edge]))
     ranked = sorted(standalone, reverse=True)
@@ -67,7 +68,7 @@ def greedy_seeds(evaluator, count):
         current = evaluator.evaluate(x)
         candidates = []
         for edge in [e for e in pool if x[e] == 0][:12]:
-            for state in (1, 2):
+            for state in range(1, evaluator.allowed.shape[1]):
                 if evaluator.allowed[edge, state]:
                     proposal = x.copy()
                     proposal[edge] = state
@@ -101,6 +102,8 @@ def bridge_components(x, evaluator, rng):
     np.fill_diagonal(costs, 0)
     lookup = {}
     for i, edge in enumerate(evaluator.graph.edges):
+        if not evaluator.allowed[i, 1:].any():
+            continue
         cost = .000001 if x[i] else min(a.capex_meur for a in edge.alignments.values())
         costs[edge.a, edge.b] = costs[edge.b, edge.a] = cost
         lookup[edge.a, edge.b] = lookup[edge.b, edge.a] = i
@@ -113,7 +116,8 @@ def bridge_components(x, evaluator, rng):
         edge = lookup[parent, b]
         if not x[edge]:
             alignments = evaluator.graph.edges[edge].alignments
-            track = min(alignments, key=lambda t: alignments[t].capex_meur)
+            track = min((t for state, t in enumerate(('CR', 'HSR'), 1) if evaluator.allowed[edge, state]),
+                        key=lambda t: alignments[t].capex_meur)
             x[edge] = 1 if track == 'CR' else 2
         b = parent
     return x
@@ -175,7 +179,7 @@ def _search_population(graph, config, progress, observer, interrupted):
     class NetworkProblem(Problem):
         def __init__(self):
             super().__init__(n_var=evaluator.m, n_obj=4 if p['include_time_objective'] else 3,
-                             n_ieq_constr=4, xl=0, xu=2, vtype=int)
+                             n_ieq_constr=5, xl=0, xu=evaluator.allowed.shape[1] - 1, vtype=int)
             self.evaluations = 0
 
         def _evaluate(self, X, out, *args, **kwargs):
@@ -199,7 +203,7 @@ def _search_population(graph, config, progress, observer, interrupted):
 
     class AvailabilityRepair(Repair):
         def _do(self, problem, X, **kwargs):
-            X = np.clip(np.rint(X), 0, 2).astype(int)
+            X = np.clip(np.rint(X), 0, evaluator.allowed.shape[1] - 1).astype(int)
             for row in X:
                 invalid = ~evaluator.allowed[np.arange(evaluator.m), row]
                 row[invalid] = 0
@@ -262,7 +266,7 @@ def _search_population(graph, config, progress, observer, interrupted):
                 current = evaluator.evaluate(keys[int(np.argmin(np.linalg.norm(normalized, axis=1)))])
             history.append(dict(generation=int(algorithm.n_gen), iteration=int(algorithm.n_gen),
                 phase='evolving_population', front_size=len(archive), evaluations=problem.evaluations,
-                hypervolume=hv, seconds=elapsed, genome=current.genome.tolist(), metrics=current.metrics))
+                hypervolume=hv, seconds=elapsed, genome=current.genome.tolist(), services=current.services, track_counts=current.track_counts.tolist(), metrics=current.metrics))
             if observer:
                 observer(SearchUpdate(int(algorithm.n_gen), 'evolving_population', current,
                                       len(archive), problem.evaluations, elapsed))
@@ -279,7 +283,8 @@ def _search_population(graph, config, progress, observer, interrupted):
         bias = gravity / max(1e-12, gravity.max()) if len(initial) % 2 else np.ones(evaluator.m)
         selected = np.flatnonzero(rng.random(evaluator.m) < probability * bias)
         for gene in selected:
-            x[gene] = rng.choice(np.flatnonzero(evaluator.allowed[gene, 1:]) + 1)
+            states = np.flatnonzero(evaluator.allowed[gene, 1:]) + 1
+            x[gene] = rng.choice(states) if len(states) else 0
         initial.append(x)
     problem = NetworkProblem()
     options = dict(pop_size=p['population'], sampling=np.array(initial[:p['population']]),
@@ -309,9 +314,7 @@ def _search_population(graph, config, progress, observer, interrupted):
 
 
 def gravity_scores(evaluator):
-    from .demand import gravity_matrix
-    base = gravity_matrix(evaluator.graph.cities, evaluator.config)
-    return np.array([base[e.a, e.b] for e in evaluator.graph.edges])
+    return evaluator.gravity_scores.copy()
 
 
 def representative_indices(objectives, limit, subsidy):
