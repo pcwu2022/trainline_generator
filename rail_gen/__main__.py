@@ -59,6 +59,7 @@ def parser():
         if name == 'run':
             sub.add_argument('--overwrite', action='store_true',
                              help='Delete the output directory contents before starting a fresh run')
+            sub.add_argument('--batch-accept-limit', type=int, help='Maximum compatible proposals per incremental update (default: 10; 1 disables batching)')
             sub.add_argument('--population', type=int, help='Candidates per incremental update or population size (at least 4)')
             sub.add_argument('--generations', '--iterations', dest='generations', type=int,
                              help='Maximum network updates (incremental) or population generations; positive integer')
@@ -84,7 +85,7 @@ def main(argv=None):
     try:
         overrides = {}
         if args.command == 'run':
-            overrides['search'] = {key: getattr(args, key) for key in ('population', 'generations', 'seed', 'workers') if getattr(args, key) is not None}
+            overrides['search'] = {key: getattr(args, key) for key in ('population', 'batch_accept_limit', 'generations', 'seed', 'workers') if getattr(args, key) is not None}
             if args.profit:
                 overrides['search']['profit'] = True
             if args.sensitivity:

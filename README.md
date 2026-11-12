@@ -6,7 +6,15 @@ infrastructure and rolling stock are independent. See the
 [hybrid service model and migration guide](docs/HYBRID_SERVICES.md).
 Its default incremental search starts empty and edits the
 previous accepted network at every iteration, then reduces net annual cost while
-retaining service. It also saves a Pareto archive of evaluated alternatives.
+retaining service. Each update ranks useful proposals and combines up to ten
+with disjoint edge edits, then evaluates the combined network under the same
+phase criteria. Failed combinations retry smaller batches and fall back to the
+best individual proposal. Use `--batch-accept-limit 5` to cap batches at five,
+or `--batch-accept-limit 1` for individual updates (JSON: `search.batch_accept_limit`).
+Batch evaluations count toward reported evaluation totals and feasible results
+enter the Pareto archive. Larger updates may reduce the iterations needed;
+wall-clock speed depends on evaluation cost and proposal compatibility.
+It also saves a Pareto archive of evaluated alternatives.
 
 Spill guides capacity expansion in incremental search instead of excluding a
 connection. Evaluation first sizes frequencies and train formations; overloaded

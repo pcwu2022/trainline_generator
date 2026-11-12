@@ -1,0 +1,1236 @@
+diff --git a/README.md b/README.md
+index f380e6c..926e4d7 100644
+--- a/README.md
++++ b/README.md
+@@ -6,14 +6,22 @@ infrastructure and rolling stock are independent. See the
+ [hybrid service model and migration guide](docs/HYBRID_SERVICES.md).
+ Its default incremental search starts empty and edits the
+ previous accepted network at every iteration, then reduces net annual cost while
+-retaining service. It also saves a Pareto archive of evaluated alternatives.
++retaining service. Each update ranks useful proposals and combines up to ten
++with disjoint edge edits, then evaluates the combined network under the same
++phase criteria. Failed combinations retry smaller batches and fall back to the
++best individual proposal. Use `--batch-accept-limit 5` to cap batches at five,
++or `--batch-accept-limit 1` for individual updates (JSON: `search.batch_accept_limit`).
++Batch evaluations count toward reported evaluation totals and feasible results
++enter the Pareto archive. Larger updates may reduce the iterations needed;
++wall-clock speed depends on evaluation cost and proposal compatibility.
++It also saves a Pareto archive of evaluated alternatives.
+ 
+ Spill guides capacity expansion in incremental search instead of excluding a
+ connection. Evaluation first sizes frequencies and train formations; overloaded
+ segments may then widen from two to four tracks, with the additional capital and
+ operating costs included. Explicit track counts remain fixed. During growth,
+-an overloaded incumbent favors edits that carry more passengers without losing
+-coverage or connectivity. Spill-only infeasible networks may be retained as live
++capacity upgrades compete with new connections using the same annual investment
++value; overload does not grant automatic priority. Spill-only infeasible networks may be retained as live
+ diagnostic results; budget, subsidy, component-share and infrastructure-capacity
+ constraints remain hard. `feasible` still reports the full constraint result,
+ and only fully feasible alternatives enter the Pareto archive. Current layouts
+@@ -27,11 +35,25 @@ underserved city-pair markets each iteration. These demand-ranked packages are
+ considered deterministically alongside sampled edge edits, with no city-specific
+ rules. Expansion candidates inherit paid track capacity and retain the accepted
+ service plan as an alternative. Added services reserve incumbent frequencies and
+-formations. Growth compares passenger gains per additional annual cost; profit
+-mode compares annual net benefit. Passenger assignment tries up to eight shortest
++formations. Growth requires a positive increase in annual net revenue plus a
++configurable service reward (default EUR5 per extra annual trip), while preserving
++ridership and captured population. Every fifth growth iteration prefers a
++beneficial component merger if the largest component holds less than half the
++active stations; the cheapest bridge is always evaluated. These policies are
++configured by `search.growth_reward_eur_per_trip`, `connectivity_interval` and
++`connectivity_target_share`. Profit mode compares annual net benefit. Passenger assignment tries up to eight shortest
+ viable paths around saturated service segments, recalculating elastic demand for
+ each alternative journey before recording residual spill.
+ 
++When growth exhausts its ordinary proposals, private bounded lookahead tests
++complementary investments whose individual steps may lose value. Only a completed,
++normally repaired package improving on the accepted network can become live.
++Defaults: three edits, beam width six, eight branches and 128 evaluations;
++configure `search.lookahead_depth` (0 disables), `lookahead_beam_width`,
++`lookahead_branching` and `lookahead_evaluations`. Exhaustion triggers lookahead
++and repair, then early profit optimization with `--profit` or an explicit stop;
++it no longer waits through thousands of unchanged iterations.
++
+ This changes evaluation semantics to `network-capacity-v3`. Historical snapshots
+ must be explicitly re-evaluated for comparison; the currently running process
+ continues using the code it loaded at startup.
+diff --git a/docs/FAST_GENERATOR.md b/docs/FAST_GENERATOR.md
+index 0bff2ea..86e5785 100644
+--- a/docs/FAST_GENERATOR.md
++++ b/docs/FAST_GENERATOR.md
+@@ -123,13 +123,73 @@ complete construction paths for up to twelve markets ranked by unmet reference
+ demand per iteration. All missing sections are evaluated together. Expansions
+ inherit purchased capacity and retain the accepted timetable as an alternative;
+ new services reserve incumbent frequencies and formations. Service-plan selection
+-uses passenger gain per additional annual cost in growth and net annual benefit
+-in profit mode. Results use model version `network-capacity-v3`. Growth favors carried
+-ridership gains relative to added annual cost and can add coverage. When an incumbent
+-has excessive spill, capacity-expansion selection favors more carried passengers
+-without losing coverage or worsening component count. Integration prioritizes
+-joining components and serving missing candidate cities. Connected networks can
+-enter cost consolidation after `growth_fraction` of the iteration budget.
++uses the same annual investment value as infrastructure growth:
++
++```text
++additional annual net revenue + growth_reward_eur_per_trip * additional annual trips
++```
++
++`growth_reward_eur_per_trip` defaults to EUR5 and is an explicit service policy
++reward, not a calibrated welfare estimate. Only positive-value growth is accepted,
++without reducing carried trips or captured population. Revenue offsets the cost
++of useful long connections. Capacity upgrades compete with new connections under
++the same score; excessive spill no longer grants automatic selection priority.
++
++Every `connectivity_interval` growth iterations (default 5), when the largest
++component contains less than `connectivity_target_share` of active stations
++(default 0.5), a positive-value component merger is preferred. If none exists,
++normal growth continues. The cheapest component bridge is evaluated deterministically
++alongside complete demand connections, so sampling cannot hide that option.
++Set the interval to zero to disable this periodic target.
++This preference starts during early growth, independently of the late integration
++phase. Integration and repair acceptance also require positive investment value;
++connectivity alone cannot justify an arbitrarily expensive connection. Coverage
++and ridership must be preserved. Connected networks can enter cost consolidation
++after `growth_fraction` of the iteration budget.
++
++The score does not impose a capital or subsidy budget: configure the existing
++`constraints.upfront_budget_eur` and `constraints.maximum_subsidy_eur` limits when
++required. Zero retains their existing unlimited meaning. Complete connection
++proposals, inherited capacity and incumbent timetable alternatives are retained.
++The policy can stop with incomplete coverage when no useful investment remains.
++Search policy changes take effect in new processes; saved historical results and
++already-running searches are unchanged.
++
++### Complementary-investment lookahead
++
++When the ordinary growth neighbourhood is exhausted, a bounded private beam
++search tries infrastructure packages before repair, early profit or saturation.
++It considers additions, CR-to-HSR upgrades, track widening within the existing
++four-track limit, and complete unmet-market paths. Services, frequencies,
++formations and demand are re-evaluated jointly on each design.
++
++The defaults in `search` are:
++
++| Parameter | Default | Meaning |
++| --- | ---: | --- |
++| `lookahead_depth` | 3 | Maximum changed edge/type and extra track-width decisions; 2–4 or 0 to disable |
++| `lookahead_beam_width` | 6 | Private drafts retained per layer |
++| `lookahead_branching` | 8 | Proposals evaluated per retained draft |
++| `lookahead_evaluations` | 128 | Total draft and terminal evaluations per attempt |
++
++Negative-score or lower-ridership intermediate designs remain private. Unused
++prerequisite links survive draft repair. The beam reserves diversity for coverage
++and connectivity, and part of each branching allowance for complete market paths.
++Construction budgets and physical movement limits remain enforced; temporary
++subsidy or component-share deficits can remain private while testing a package.
++
++Only a normally repaired terminal design passing every non-spill hard constraint,
++preserving baseline ridership/population and improving the revenue-aware score
++can become live. All drafts and the terminal design use the **same accepted
++incumbent**, including its purchased capacity and timetable alternatives. Thus a
++package cannot justify itself merely by improving on a deliberately bad draft.
++Exploratory capacity is fully charged, and final unused links are pruned normally.
++
++Accepted packages publish phase `lookahead`. History records evaluation counts,
++depth and terminal checks under `lookahead`; private drafts never become animation
++frames or Pareto alternatives. Cancellation and the global time limit also bound
++lookahead. This bounded heuristic does not guarantee discovery of a profitable
++package, or overcome the model's four-track/junction-capacity limitations.
+ 
+ Spill-only infeasible candidates may become the live network, allowing diagnostic
+ outputs even under excessive demand. Budget, subsidy, component-share and shared
+@@ -137,8 +197,11 @@ track-capacity constraints remain hard. `feasible` still includes the spill limi
+ only fully feasible alternatives enter the Pareto archive. Reaching the iteration
+ limit with excessive spill gives `capacity_shortfall`.
+ 
+-With `--profit`, the transition happens after `ceil(0.8 * iterations)` updates:
+-for 200 iterations, profit starts at 161. It saves `before_profit` artifacts.
++With `--profit`, the scheduled transition happens after `ceil(0.8 * iterations)` updates:
++for 200 iterations, profit starts at 161. If growth or consolidation exhausts
++its neighbourhood first, it transitions early after the applicable lookahead and
++repair attempts, rather than publishing idle iterations. It saves `before_profit`
++artifacts at the actual transition.
+ Profit selection requires a net annual improvement and permits service reductions.
+ The bounded search can stop at neighborhood exhaustion, incomplete coverage or
+ profit saturation. More iterations do not guarantee a connected or optimal network.
+diff --git a/docs/HYBRID_SERVICES.md b/docs/HYBRID_SERVICES.md
+index 7be9cbe..055bf19 100644
+--- a/docs/HYBRID_SERVICES.md
++++ b/docs/HYBRID_SERVICES.md
+@@ -300,8 +300,12 @@ Incremental growth preserves purchased track counts and evaluates the accepted
+ service plan on expanded infrastructure as a fallback. Additional service plans
+ reserve incumbent frequencies and formations before allocating spare train paths.
+ Freshly generated plans are still alternatives; growth chooses among plans using
+-carried passenger gain per additional annual cost, while profit mode chooses net
+-annual benefit. Hard construction and movement constraints remain in force.
++annual net revenue plus `search.growth_reward_eur_per_trip` times annual
++carried trips (default EUR5/trip), while profit mode chooses net annual benefit.
++Infrastructure growth uses the same value and requires a positive increment.
++Capacity investments compete under this rule rather than receiving spill priority.
++Early growth periodically prefers beneficial component mergers below the configured
++connectivity target; see [incremental search](FAST_GENERATOR.md#incremental-search). Hard construction and movement constraints remain in force.
+ 
+ Each iteration deterministically considers construction paths for up to twelve
+ OD markets ranked by unmet reference demand, alongside sampled edge edits.
+@@ -315,3 +319,14 @@ Evaluation caches are invalidated after accepting a new incumbent because servic
+ fallbacks and inherited capacity depend on that incumbent. The new model version
+ separates these metrics from historical assignments; old snapshots require explicit
+ re-evaluation, and existing running processes must restart to load the new code.
++
++
++### Complementary investments
++
++Exhausted incremental growth now tries a private bounded beam search over new
++connections and track upgrades. Every draft re-evaluates service plans against
++the fixed accepted incumbent. Negative intermediate value and unused prerequisite
++sections are allowed privately; final normal repair, hard limits, service
++preservation and positive net-plus-service value still determine acceptance.
++The search retains the existing revenue-aware objective rather than forcing
++subsidized coverage. See [lookahead controls](FAST_GENERATOR.md#complementary-investment-lookahead).
+diff --git a/rail_gen/__main__.py b/rail_gen/__main__.py
+index ce79194..44a75d0 100644
+--- a/rail_gen/__main__.py
++++ b/rail_gen/__main__.py
+@@ -59,6 +59,7 @@ def parser():
+         if name == 'run':
+             sub.add_argument('--overwrite', action='store_true',
+                              help='Delete the output directory contents before starting a fresh run')
++            sub.add_argument('--batch-accept-limit', type=int, help='Maximum compatible proposals per incremental update (default: 10; 1 disables batching)')
+             sub.add_argument('--population', type=int, help='Candidates per incremental update or population size (at least 4)')
+             sub.add_argument('--generations', '--iterations', dest='generations', type=int,
+                              help='Maximum network updates (incremental) or population generations; positive integer')
+@@ -84,7 +85,7 @@ def main(argv=None):
+     try:
+         overrides = {}
+         if args.command == 'run':
+-            overrides['search'] = {key: getattr(args, key) for key in ('population', 'generations', 'seed', 'workers') if getattr(args, key) is not None}
++            overrides['search'] = {key: getattr(args, key) for key in ('population', 'batch_accept_limit', 'generations', 'seed', 'workers') if getattr(args, key) is not None}
+             if args.profit:
+                 overrides['search']['profit'] = True
+             if args.sensitivity:
+diff --git a/rail_gen/config.json b/rail_gen/config.json
+index 0561acb..5a5d7ed 100644
+--- a/rail_gen/config.json
++++ b/rail_gen/config.json
+@@ -125,6 +125,7 @@
+       "capacity_repair_candidates": 8,
+       "algorithm": "incremental",
+       "population": 150,
++      "batch_accept_limit": 10,
+       "generations": 200,
+       "seed": 42,
+       "workers": 1,
+@@ -139,6 +140,13 @@
+       "sensitivity": false,
+       "time_limit_seconds": 0,
+       "growth_fraction": 0.7,
++      "growth_reward_eur_per_trip": 5,
++      "lookahead_depth": 3,
++      "lookahead_beam_width": 6,
++      "lookahead_branching": 8,
++      "lookahead_evaluations": 128,
++      "connectivity_interval": 5,
++      "connectivity_target_share": 0.5,
+       "profit": false,
+       "retained_ridership": 0.98,
+       "journey_time_allowance": 0.05
+diff --git a/rail_gen/config.py b/rail_gen/config.py
+index c70784d..eb68ef5 100644
+--- a/rail_gen/config.py
++++ b/rail_gen/config.py
+@@ -27,7 +27,8 @@ def validate(c):
+     schema = json.loads(DEFAULT_CONFIG.read_text())['defaults']
+     integer_keys = {'prep.max_cities', 'prep.neighbors', 'prep.force_pairs',
+         'operations.assignment_iterations', 'operations.maximum_train_units',
+-        'search.capacity_repair_steps', 'search.capacity_repair_candidates', 'search.population', 'search.generations',
++        'search.lookahead_depth', 'search.lookahead_beam_width',
++        'search.lookahead_branching', 'search.lookahead_evaluations', 'search.connectivity_interval', 'search.batch_accept_limit', 'search.capacity_repair_steps', 'search.capacity_repair_candidates', 'search.population', 'search.generations',
+         'search.seed', 'search.workers', 'search.representatives', 'search.stagnation_generations',
+         'reporting.snapshot_every', 'reporting.gif_frame_ms',
+         'services.max_through_routes', 'services.max_route_edges', 'services.plan_trials'}
+@@ -95,7 +96,7 @@ def validate(c):
+         'demand': ['a', 'beta', 'minimum_distance_km', 'maximum_distance_km', 'sigma_hours', 'value_of_time_eur', 'fare_reference_km'],
+         'operations': ['maximum_train_units', 'hours_per_day', 'days_per_year', 'minimum_frequency', 'target_load_factor', 'maximum_load_factor', 'assignment_iterations', 'peak_factor'],
+         'finance': ['track_life_years', 'station_life_years', 'fleet_life_years'],
+-        'search': ['capacity_repair_candidates', 'population', 'generations', 'workers', 'representatives', 'stagnation_generations'],
++        'search': ['lookahead_beam_width', 'lookahead_branching', 'lookahead_evaluations', 'batch_accept_limit', 'capacity_repair_candidates', 'population', 'generations', 'workers', 'representatives', 'stagnation_generations'],
+         'reporting': ['snapshot_every'],
+     }.items():
+         if any(c[section][key] <= 0 for key in keys):
+@@ -115,9 +116,11 @@ def validate(c):
+                          ('operations', 'additional_unit_cost_fraction'),
+                          ('operations', 'maximum_load_factor'), ('constraints', 'maximum_spill_fraction'),
+                          ('constraints', 'minimum_component_share'), ('search', 'greedy_fraction'),
+-                         ('search', 'mutation_rate'), ('search', 'structured_probability')]:
++                         ('search', 'mutation_rate'), ('search', 'structured_probability'), ('search', 'connectivity_target_share')]:
+         if not 0 <= c[section][key] <= 1:
+             raise ValueError(f'{section}.{key} must be between 0 and 1')
++    if c['search']['lookahead_depth'] not in (0, 2, 3, 4):
++        raise ValueError('search.lookahead_depth must be 0 (disabled), 2, 3 or 4')
+     if not 0 < c['search']['growth_fraction'] <= 1:
+         raise ValueError('search.growth_fraction must be in (0, 1]')
+     if not 0 < c['search']['retained_ridership'] <= 1:
+diff --git a/rail_gen/evaluator.py b/rail_gen/evaluator.py
+index 258121c..bc73b13 100644
+--- a/rail_gen/evaluator.py
++++ b/rail_gen/evaluator.py
+@@ -9,6 +9,7 @@ from scipy.sparse.csgraph import connected_components
+ from .alignment import TRACKS
+ from .track_layout import LAYOUT_BY_COUNT, MODEL_VERSION
+ from .demand import gravity_matrix, reference_demand
++from .growth import growth_value
+ from .prep import distances
+ from .services import Service, ServiceNetwork, generate_plans
+ 
+@@ -155,7 +156,7 @@ class Evaluator:
+             self.lengths[np.arange(self.m), x], degree, served, components, share, multipliers)
+ 
+     def evaluate(self, genome, repair=False, details=False, services=None, track_counts=None,
+-                 incumbent=None, decision='cost'):
++                 incumbent=None, decision='cost', prune_unused=True):
+         if decision not in {'cost', 'growth', 'profit'}:
+             raise ValueError('Unknown service decision mode: ' + decision)
+         raw = np.asarray(genome)
+@@ -222,8 +223,8 @@ class Evaluator:
+             violation = float(np.maximum(hard - 1e-9, 0).sum())
+             if decision == 'growth' and incumbent is not None:
+                 gain = r.metrics['passengers'] - incumbent.metrics['passengers']
+-                cost = r.metrics['annual_cost_eur'] - incumbent.metrics['annual_cost_eur']
+-                return (violation, gain < -1e-6, -gain / max(1e6, cost), -gain, r.objectives[0])
++                value = growth_value(r.metrics, self.config['search']['growth_reward_eur_per_trip'])
++                return (violation, gain < -1e-6, -value, -gain, r.objectives[0])
+             if decision == 'profit':
+                 return (violation, r.objectives[0], -r.metrics['passengers'])
+             return (violation, float(max(0, r.constraints[2] - 1e-9)), r.objectives[0], -r.metrics['passengers'])
+@@ -239,7 +240,7 @@ class Evaluator:
+                 expanded_counts[stressed] *= 2
+                 if stressed.any():
+                     expanded = self.evaluate(x, details=details, track_counts=expanded_counts,
+-                                             incumbent=incumbent, decision=decision)
++                                             incumbent=incumbent, decision=decision, prune_unused=prune_unused)
+                     hard = np.arange(len(result.constraints)) != 2
+                     if (np.all(expanded.constraints[hard] <= 1e-9)
+                             and expanded.metrics['passengers'] > result.metrics['passengers'] + 1e-6):
+@@ -248,11 +249,11 @@ class Evaluator:
+             unused = (x > 0) & (result.directional_load <= self.config['operations']['zero_load_threshold'])
+             if incumbent is not None:
+                 unused &= incumbent.genome == 0
+-            if unused.any():
++            if prune_unused and unused.any():
+                 x[unused], counts[unused] = 0, 0
+                 # Regenerate the whole service plan when infrastructure changes.
+                 return self.evaluate(x, repair=False, details=details, track_counts=counts,
+-                                     incumbent=incumbent, decision=decision)
++                                     incumbent=incumbent, decision=decision, prune_unused=prune_unused)
+         return result
+ 
+     def _evaluate_plan(self, x, counts, plan, optimize, details, infrastructure=None, network=None,
+diff --git a/rail_gen/incremental.py b/rail_gen/incremental.py
+index 8f1fb86..33babee 100644
+--- a/rail_gen/incremental.py
++++ b/rail_gen/incremental.py
+@@ -14,6 +14,7 @@ from scipy import sparse
+ from scipy.sparse.csgraph import connected_components, shortest_path
+ 
+ from .evaluator import Evaluator
++from .growth import growth_value
+ from .track_layout import track_type
+ from .search import SearchResult, SearchUpdate, bridge_components, gravity_scores, nondominated
+ 
+@@ -85,24 +86,36 @@ def demand_connections(current, evaluator, limit=12):
+     return proposals
+ 
+ 
+-def growth_choice(current, candidates):
+-    """Prefer useful ridership gains per added annual euro; never reset the network."""
++def growth_choice(current, candidates, reward_eur_per_trip=5):
++    """Require positive annual financial-plus-service value without service loss."""
+     useful = []
+     for candidate in candidates:
+         delta_trips = candidate.metrics['passengers'] - current.metrics['passengers']
+         delta_population = candidate.metrics['population_served'] - current.metrics['population_served']
+-        delta_cost = candidate.metrics['annual_cost_eur'] - current.metrics['annual_cost_eur']
+-        if delta_trips < -1e-6 or delta_population < -1e-6:
++        gain = (growth_value(candidate.metrics, reward_eur_per_trip)
++                - growth_value(current.metrics, reward_eur_per_trip))
++        if delta_trips < -1e-6 or delta_population < -1e-6 or gain <= .01:
+             continue
+-        if delta_trips <= 1e-6 and delta_cost >= -.01:
+-            continue
+-        # A cost-saving edit that preserves service is always attractive.
+-        rank = (delta_cost < -.01, delta_trips / max(1e6, delta_cost),
+-                delta_population, -candidate.objectives[0])
+-        useful.append((rank, candidate))
++        useful.append(((gain, delta_trips, delta_population, -candidate.objectives[0]), candidate))
+     return max(useful, key=lambda value: value[0])[1] if useful else None
+ 
+ 
++def connectivity_choice(current, candidates, evaluator):
++    """Prefer a beneficial merger, preserving coverage and existing ridership."""
++    missing, components = topology(current.genome, evaluator)
++    mergers = [c for c in candidates
++               if topology(c.genome, evaluator)[0] <= missing
++               and topology(c.genome, evaluator)[1] < components]
++    return growth_choice(current, mergers, evaluator.config['search']['growth_reward_eur_per_trip'])
++
++
++def connectivity_target_due(current, search, iteration):
++    """Check the early-growth connectivity checkpoint; zero interval disables it."""
++    interval = search['connectivity_interval']
++    return (interval > 0 and iteration % interval == 0
++            and current.metrics['component_share'] < search['connectivity_target_share'])
++
++
+ def buildable(candidate):
+     """Spill is unmet demand to serve; all other feasibility limits stay hard."""
+     hard = np.arange(len(candidate.constraints)) != 2
+@@ -110,18 +123,12 @@ def buildable(candidate):
+ 
+ 
+ def capacity_choice(current, candidates, evaluator):
+-    """Reward additional carried trips without sacrificing coverage or connections."""
+-    old_missing, old_components = topology(current.genome, evaluator)
+-    useful = []
+-    for candidate in candidates:
+-        missing, components = topology(candidate.genome, evaluator)
+-        gain = candidate.metrics['passengers'] - current.metrics['passengers']
+-        if (missing > old_missing or components > old_components or gain <= 1e-6
+-                or candidate.metrics['population_served'] < current.metrics['population_served'] - 1e-6):
+-            continue
+-        cost = candidate.metrics['annual_cost_eur'] - current.metrics['annual_cost_eur']
+-        useful.append(((gain / max(1e6, cost), gain), candidate))
+-    return max(useful, key=lambda item: item[0])[1] if useful else None
++    """Capacity investments use the same value rule as new connections."""
++    missing, components = topology(current.genome, evaluator)
++    eligible = [c for c in candidates
++                if topology(c.genome, evaluator)[0] <= missing
++                and topology(c.genome, evaluator)[1] <= components]
++    return growth_choice(current, eligible, evaluator.config['search']['growth_reward_eur_per_trip'])
+ 
+ 
+ def consolidation_choice(current, candidates, baseline, config):
+@@ -165,7 +172,10 @@ def topology(genome, evaluator):
+     return evaluator.n - len(served), max(0, len(np.unique(labels[served])) - 1)
+ 
+ 
+-def integration_choice(current, candidates, evaluator):
++def integration_choice(current, candidates, evaluator, reward_eur_per_trip=None):
++    if reward_eur_per_trip is not None:
++        candidates = [c for c in candidates
++                      if growth_choice(current, [c], reward_eur_per_trip) is not None]
+     missing, components = topology(current.genome, evaluator)
+     eligible = []
+     for candidate in candidates:
+@@ -178,6 +188,170 @@ def integration_choice(current, candidates, evaluator):
+         -candidate.metrics['passengers'])) if eligible else None
+ 
+ 
++def combined_choice(current, candidates, choose, score, limit, should_stop=lambda: False):
++    """Rank useful alternatives, merge disjoint edits, and validate the result.
++
++    Failed combinations retry smaller ranked prefixes, then fall back to the
++    best individual proposal. Every combination must improve on that fallback
++    under the same phase rules, not merely improve on the original network.
++    """
++    best = choose(current, candidates)
++    if best is None or limit <= 1:
++        return best, []
++    ranked = [best]
++    occupied = best.genome != current.genome
++    remaining = [c for c in candidates if c is not best]
++    while len(ranked) < limit:
++        remaining = [c for c in remaining
++                     if not np.any(occupied & (c.genome != current.genome))]
++        candidate = choose(current, remaining)
++        if candidate is None:
++            break
++        ranked.append(candidate)
++        occupied |= candidate.genome != current.genome
++        remaining = [c for c in remaining if c is not candidate]
++    evaluated = []
++    size = len(ranked)
++    while size > 1 and not should_stop():
++        genome = current.genome.copy()
++        for candidate in ranked[:size]:
++            changed = candidate.genome != current.genome
++            genome[changed] = candidate.genome[changed]
++        result = score(genome)
++        evaluated.append(result)
++        if buildable(result) and choose(best, [result]) is not None:
++            return result, evaluated
++        size //= 2
++    return best, evaluated
++
++
++def investment_packages(current, evaluator, should_stop=lambda: False):
++    """Bounded private beam search; only complete beneficial packages can escape.
++
++    All drafts inherit the same accepted incumbent. Negative value, temporary
++    ridership loss and unused prerequisite links are permitted in the beam.
++    Financial/service acceptance is checked against that fixed incumbent after
++    normal repair, never against an intermediate draft.
++    """
++    p = evaluator.config['search']
++    depth = p['lookahead_depth']
++    width, branching = p['lookahead_beam_width'], p['lookahead_branching']
++    budget = p['lookahead_evaluations']
++    diagnostics = dict(evaluations=0, drafts=0, terminal_checks=0,
++                       deepest_edit=0, beneficial_packages=0, exhausted_budget=False)
++    if depth == 0 or should_stop():
++        return None, diagnostics
++    reward = p['growth_reward_eur_per_trip']
++    base_value = growth_value(current.metrics, reward)
++    default_count = {'single': 1, 'double': 2, 'four': 4}[evaluator.config['infrastructure_layout']]
++    demand = gravity_scores(evaluator)
++    seen = {(tuple(current.genome), tuple(current.track_counts))}
++    frontier = [current]
++    best = None
++
++    def edits(x, counts):
++        expected = np.where(x > 0, np.where(current.genome > 0,
++                            current.track_counts, default_count), 0)
++        return int(np.count_nonzero(x != current.genome) +
++                   np.count_nonzero(counts != expected))
++
++    def options(parent):
++        x, counts = parent.genome, parent.track_counts
++        proposals = {}
++        touched = np.flatnonzero((x != current.genome) | (counts != current.track_counts))
++        nodes = set(np.r_[evaluator.a[touched], evaluator.b[touched]])
++
++        def add(proposal, capacity, priority, package=False):
++            key = (tuple(proposal), tuple(capacity))
++            if key not in seen and edits(proposal, capacity) <= depth:
++                proposals[key] = (proposal, capacity, priority, package)
++
++        for i, edge in enumerate(evaluator.graph.edges):
++            near = int(edge.a in nodes) + int(edge.b in nodes)
++            for state in np.flatnonzero(evaluator.allowed[i, 1:]) + 1:
++                if state <= x[i]:
++                    continue
++                proposal, capacity = x.copy(), counts.copy()
++                proposal[i] = state
++                capacity[i] = max(int(capacity[i]), default_count,
++                                  2 if state == 2 else 1)
++                priority = demand[i] * (1 + 4 * near) / max(1, edge.alignments[track_type(state)].capex_meur)
++                add(proposal, capacity, priority)
++            if x[i] and counts[i] < 4:
++                capacity = counts.copy()
++                capacity[i] *= 2
++                add(x.copy(), capacity, demand[i] * (1 + 4 * near))
++        # Reserve part of the branching budget for complete market connections.
++        # These may consume several of the remaining infrastructure edits.
++        for proposal in demand_connections(parent, evaluator, limit=branching).values():
++            capacity = np.where(proposal > 0, np.maximum(counts, default_count), 0)
++            capacity[(proposal == 2) & (capacity == 1)] = 2
++            add(proposal, capacity, 0, True)
++        ordered = sorted(proposals.values(), key=lambda v: (-v[2], tuple(v[0]), tuple(v[1])))
++        packages = [v for v in ordered if v[3]][:max(1, branching // 2)]
++        keys = {(tuple(v[0]), tuple(v[1])) for v in packages}
++        return (packages + [v for v in ordered if (tuple(v[0]), tuple(v[1])) not in keys])[:branching]
++
++    def available():
++        return diagnostics['evaluations'] < budget and not should_stop()
++
++    for _ in range(depth):
++        drafts = []
++        for parent in frontier:
++            for x, counts, _, _ in options(parent):
++                if not available():
++                    break
++                key = (tuple(x), tuple(counts))
++                if key in seen:
++                    continue
++                seen.add(key)
++                draft = evaluator.evaluate(x, repair=True, track_counts=counts,
++                    incumbent=current, decision='growth', prune_unused=False)
++                diagnostics['evaluations'] += 1
++                diagnostics['drafts'] += 1
++                diagnostics['deepest_edit'] = max(diagnostics['deepest_edit'], edits(x, counts))
++                # Construction budget and physical movement limits stay hard.
++                # Private subsidy/component deficits may recover in a package.
++                if np.any(draft.constraints[[0, 4]] > 1e-9):
++                    continue
++                if (growth_choice(current, [draft], reward) is not None
++                        and buildable(draft) and available()):
++                    terminal = evaluator.evaluate(x, repair=True, track_counts=counts,
++                        incumbent=current, decision='growth')
++                    diagnostics['evaluations'] += 1
++                    diagnostics['terminal_checks'] += 1
++                    if buildable(terminal) and growth_choice(current, [terminal], reward) is not None:
++                        diagnostics['beneficial_packages'] += 1
++                        best = growth_choice(current, [c for c in (best, terminal) if c is not None], reward)
++                if edits(x, counts) < depth:
++                    drafts.append(draft)
++            if not available():
++                break
++        if not drafts or not available():
++            break
++        # Keep both high-value drafts and topology/coverage alternatives. A
++        # loss-leading prerequisite must not disappear solely because of value.
++        by_value = sorted(drafts, key=lambda r: (-growth_value(r.metrics, reward), tuple(r.genome), tuple(r.track_counts)))
++        by_reach = sorted(drafts, key=lambda r: (sum(topology(r.genome, evaluator)),
++                           -r.metrics['population_served'], -growth_value(r.metrics, reward),
++                           tuple(r.genome), tuple(r.track_counts)))
++        frontier, kept = [], set()
++        for pair in zip(by_value, by_reach):
++            for draft in pair:
++                key = (tuple(draft.genome), tuple(draft.track_counts))
++                if key not in kept:
++                    frontier.append(draft)
++                    kept.add(key)
++                if len(frontier) == width:
++                    break
++            if len(frontier) == width:
++                break
++    diagnostics['exhausted_budget'] = diagnostics['evaluations'] >= budget
++    if best is not None:
++        diagnostics['accepted_value_gain_eur'] = growth_value(best.metrics, reward) - base_value
++    return best, diagnostics
++
++
+ def capacity_packages(current, evaluator, should_stop=lambda: False):
+     """Bounded connect-and-repair search; infeasible intermediates stay private.
+ 
+@@ -292,6 +466,7 @@ def search_incremental(graph, config, progress=print, observer=None, interrupted
+     baseline = None
+     status = 'completed'
+     package_diagnostics = None
++    lookahead_diagnostics = None
+     profit_baseline = None
+     profit_enabled = p.get('profit', False)
+     profit_start_after = math.ceil(p['generations'] * .8)
+@@ -309,6 +484,8 @@ def search_incremental(graph, config, progress=print, observer=None, interrupted
+             front_size=len(archive), evaluations=evaluations, seconds=elapsed)
+         if baseline is not None:
+             record['growth_baseline'] = baseline.copy()
++        if lookahead_diagnostics is not None:
++            record['lookahead'] = lookahead_diagnostics.copy()
+         if package_diagnostics is not None:
+             record['capacity_repair'] = package_diagnostics.copy()
+         history.append(record)
+@@ -348,6 +525,12 @@ def search_incremental(graph, config, progress=print, observer=None, interrupted
+             previous = current.genome.copy()
+             proposals = neighbours(current, evaluator)
+             connection_proposals = demand_connections(current, evaluator) if baseline is None and profit_baseline is None else {}
++            if baseline is None and profit_baseline is None:
++                # Always evaluate the cheapest component bridge as well as the
++                # largest unmet markets; sampling must not hide merger options.
++                bridge = bridge_components(current.genome.copy(), evaluator, None)
++                if not np.array_equal(bridge, current.genome):
++                    connection_proposals[tuple(bridge)] = bridge
+             for key, proposal in connection_proposals.items():
+                 proposals[key] = (proposal, 1)
+             pending = [(key, proposal, weight) for key, (proposal, weight) in proposals.items() if key not in attempted]
+@@ -356,20 +539,31 @@ def search_incremental(graph, config, progress=print, observer=None, interrupted
+                     publish(iteration, phase, previous)
+                     status = 'profit_saturated'
+                     break
+-                if profit_enabled:
+-                    # Preserve the incumbent until the scheduled transition.
+-                    publish(iteration, phase, previous)
+-                    continue
+                 if baseline is None:
++                    def should_stop():
++                        return ((interrupted is not None and interrupted.is_set()) or
++                            (p['time_limit_seconds'] > 0 and
++                             time.perf_counter() - started >= p['time_limit_seconds']))
++                    selected, lookahead_diagnostics = investment_packages(current, evaluator, should_stop)
++                    lookahead_diagnostics['baseline_iteration'] = history[-1]['iteration']
++                    lookahead_diagnostics['attempt_iteration'] = iteration
++                    evaluations += lookahead_diagnostics['evaluations']
++                    if selected is not None:
++                        current = selected
++                        if selected.feasible:
++                            archive[tuple(selected.genome)] = selected.objectives.copy()
++                        attempted.clear()
++                        cache.clear()
++                        publish(iteration, 'lookahead', previous, True)
++                        continue
++                    if should_stop():
++                        status = 'interrupted' if interrupted is not None and interrupted.is_set() else 'time_limit'
++                        break
+                     if not complete:
+                         if p['capacity_repair_steps']:
+-                            def should_stop():
+-                                return ((interrupted is not None and interrupted.is_set()) or
+-                                    (p['time_limit_seconds'] > 0 and
+-                                     time.perf_counter() - started >= p['time_limit_seconds']))
+                             packages, package_diagnostics = capacity_packages(current, evaluator, should_stop)
+                             evaluations += package_diagnostics['evaluations']
+-                            selected = integration_choice(current, packages, evaluator)
++                            selected = integration_choice(current, packages, evaluator, p['growth_reward_eur_per_trip'])
+                             for candidate in packages:
+                                 archive[tuple(candidate.genome)] = candidate.objectives.copy()
+                             if archive:
+@@ -385,14 +579,32 @@ def search_incremental(graph, config, progress=print, observer=None, interrupted
+                             if should_stop():
+                                 status = 'interrupted' if interrupted is not None and interrupted.is_set() else 'time_limit'
+                                 break
++                        if profit_enabled:
++                            profit_baseline = current.metrics.copy()
++                            attempted.clear()
++                            cache.clear()
++                            publish(iteration, 'before_profit', previous)
++                            continue
+                         publish(iteration, phase, previous)
+                         status = 'coverage_incomplete'
+                         break
++                    if profit_enabled:
++                        profit_baseline = current.metrics.copy()
++                        attempted.clear()
++                        cache.clear()
++                        publish(iteration, 'before_profit', previous)
++                        continue
+                     baseline = current.metrics.copy()
+                     attempted.clear()
+                     cache.clear()
+                     publish(iteration, 'consolidation', previous)
+                     continue
++                if profit_enabled:
++                    profit_baseline = current.metrics.copy()
++                    attempted.clear()
++                    cache.clear()
++                    publish(iteration, 'before_profit', previous)
++                    continue
+                 publish(iteration, phase, previous)
+                 status = 'neighbourhood_exhausted'
+                 break
+@@ -419,30 +631,40 @@ def search_incremental(graph, config, progress=print, observer=None, interrupted
+             for candidate in candidates:
+                 if candidate.feasible:
+                     archive[tuple(candidate.genome)] = candidate.objectives.copy()
++            # Connectivity is a periodic early-growth target, not a euro bonus:
++            # only positive-value mergers qualify, and ordinary growth remains
++            # available when no beneficial merger exists.
++            connectivity_due = (baseline is None and profit_baseline is None
++                and phase == 'growth' and connectivity_target_due(current, p, iteration))
++            if connectivity_due and connectivity_choice(current, candidates, evaluator) is not None:
++                phase = 'connectivity'
++
++            def choose(parent, options):
++                if profit_baseline is not None:
++                    return profit_choice(parent, options, profit_baseline)
++                if baseline is not None:
++                    connected = [c for c in options if topology(c.genome, evaluator) == (0, 0)]
++                    return consolidation_choice(parent, connected, baseline, config)
++                if phase == 'integration':
++                    return integration_choice(parent, options, evaluator, p['growth_reward_eur_per_trip'])
++                if phase == 'connectivity':
++                    return connectivity_choice(parent, options, evaluator)
++                return growth_choice(parent, options, p['growth_reward_eur_per_trip'])
++
++            def batch_should_stop():
++                return ((interrupted is not None and interrupted.is_set()) or
++                        (p['time_limit_seconds'] > 0 and
++                         time.perf_counter() - started >= p['time_limit_seconds']))
++            selected, combined = combined_choice(current, candidates, choose, score,
++                p.get('batch_accept_limit', 10), batch_should_stop)
++            evaluations += len(combined)
++            for candidate in combined:
++                if candidate.feasible:
++                    archive[tuple(candidate.genome)] = candidate.objectives.copy()
+             if archive:
+                 keys = sorted(archive)
+                 front = nondominated([archive[key] for key in keys])
+                 archive = {keys[i]: archive[keys[i]] for i in front}
+-            if profit_baseline is not None:
+-                selected = profit_choice(current, candidates, profit_baseline)
+-            elif baseline is not None:
+-                candidates = [candidate for candidate in candidates
+-                              if topology(candidate.genome, evaluator) == (0, 0)]
+-                selected = consolidation_choice(current, candidates, baseline, config)
+-            elif phase == 'integration':
+-                selected = integration_choice(current, candidates, evaluator)
+-            else:
+-                selected = (capacity_choice(current, candidates, evaluator)
+-                    if current.metrics['spill_fraction'] > evaluator.config['constraints']['maximum_spill_fraction']
+-                    else None)
+-                if selected is not None:
+-                    phase = 'capacity_expansion'
+-                else:
+-                    selected = growth_choice(current, candidates)
+-                if selected is None:
+-                    selected = integration_choice(current, candidates, evaluator)
+-                    if selected is not None:
+-                        phase = 'integration'
+             if selected is not None:
+                 current = selected
+                 attempted.clear()
+diff --git a/tests/test_connection_decisions.py b/tests/test_connection_decisions.py
+index 1cf39c1..8888042 100644
+--- a/tests/test_connection_decisions.py
++++ b/tests/test_connection_decisions.py
+@@ -81,7 +81,9 @@ class ConnectionDecisionTests(TestCase):
+     def test_growth_accepts_complete_path_when_individual_edges_have_no_market(self):
+         from rail_gen.search import search
+         graph = CandidateGraph.build(self.g.cities, self.g.edges[:2], self.g.tile_costs)
+-        self.c['search'].update(algorithm='incremental', generations=1, population=4)
++        # Isolate path construction from the investment-policy threshold.
++        self.c['search'].update(algorithm='incremental', generations=1, population=4,
++                                 growth_reward_eur_per_trip=1000)
+         run = search(graph, self.c, progress=None)
+         self.assertTrue(np.all(run.history[-1]['genome']))
+         self.assertGreater(run.history[-1]['metrics']['passengers'], 0)
+diff --git a/tests/test_profit_phase.py b/tests/test_profit_phase.py
+index ba7d49b..3c7f551 100644
+--- a/tests/test_profit_phase.py
++++ b/tests/test_profit_phase.py
+@@ -26,10 +26,10 @@ class ProfitTests(unittest.TestCase):
+         updates = []
+         run = search(graph_fixture(), c, progress=None, observer=updates.append)
+         boundary = next(u for u in updates if u.phase == 'before_profit')
+-        self.assertEqual(boundary.iteration, 24)
++        self.assertLessEqual(boundary.iteration, 24)
+         profit = [u for u in updates if u.phase == 'profit']
+         self.assertTrue(profit)
+-        self.assertEqual(profit[0].iteration, 25)
++        self.assertEqual(profit[0].iteration, boundary.iteration + 1)
+         previous = boundary
+         for update in profit:
+             self.assertGreaterEqual(update.result.metrics['net_eur'], previous.result.metrics['net_eur'])
+@@ -41,10 +41,12 @@ class ProfitTests(unittest.TestCase):
+         c = incremental_config()
+         c['search'].update(profit=True, generations=10)
+         with patch('rail_gen.incremental.neighbours', return_value={}), \
+-                patch('rail_gen.incremental.demand_connections', return_value={}):
++                patch('rail_gen.incremental.demand_connections', return_value={}), \
++                patch('rail_gen.incremental.investment_packages', return_value=(None, {'evaluations': 0})), \
++                patch('rail_gen.incremental.capacity_packages', return_value=([], {'evaluations': 0})):
+             run = search(graph_fixture(), c, progress=None)
+         self.assertEqual(run.status, 'profit_saturated')
+-        self.assertEqual(run.history[-1]['iteration'], 9)
++        self.assertEqual(run.history[-1]['iteration'], 2)
+         self.assertEqual(run.history[-2]['phase'], 'before_profit')
+ 
+     def test_profit_can_sacrifice_service(self):
+@@ -74,7 +76,8 @@ class ProfitTests(unittest.TestCase):
+             directory = Path(temporary)
+             saved = json.loads((directory / 'before_profit.json').read_text())
+             boundary = next(u for u in updates if u.phase == 'before_profit')
+-            self.assertEqual(saved['iteration'], 5)
++            self.assertEqual(saved['iteration'], boundary.iteration)
++            self.assertLessEqual(boundary.iteration, 5)
+             np.testing.assert_array_equal(saved['genome'], boundary.result.genome)
+             self.assertEqual(saved['metrics'], boundary.result.metrics)
+             self.assertTrue((directory / 'before_profit.png').is_file())
+diff --git a/tests/test_railgen_live.py b/tests/test_railgen_live.py
+index 75459ea..b120579 100644
+--- a/tests/test_railgen_live.py
++++ b/tests/test_railgen_live.py
+@@ -21,7 +21,9 @@ from rail_gen.search import search
+ 
+ def incremental_config():
+     c = config()
+-    c['search'].update(algorithm='incremental', generations=12)
++    # These tests exercise lineage/reporting, with enough service value to grow
++    # the deliberately costly synthetic infrastructure.
++    c['search'].update(algorithm='incremental', generations=12, growth_reward_eur_per_trip=1000)
+     c['boundaries_file'] = ''
+     c['reporting']['snapshot_every'] = 2
+     c['reporting']['gif_frame_ms'] = 300
+@@ -192,7 +194,10 @@ class LiveOutputTests(unittest.TestCase):
+             self.assertEqual(latest['iteration'], run.history[-1]['iteration'])
+             self.assertEqual(latest['phase'], run.status)
+             np.testing.assert_array_equal(latest['genome'], run.current_genome)
+-            expected = Evaluator(g, c).evaluate(run.current_genome, details=True)
++            # Reproduce the saved accepted timetable and purchased capacity;
++            # regenerating a cost-mode plan can select a different service.
++            expected = Evaluator(g, c).evaluate(run.current_genome, details=True,
++                services=latest['services'], track_counts=latest['track_counts'])
+             self.assertEqual(latest['metrics'], expected.metrics)
+             analysis = json.loads((directory / 'analysis.json').read_text())
+             self.assertEqual(analysis['genome'], latest['genome'])
+diff --git a/rail_gen/growth.py b/rail_gen/growth.py
+new file mode 100644
+index 0000000..80bf997
+--- /dev/null
++++ b/rail_gen/growth.py
+@@ -0,0 +1,9 @@
++"""Annual investment value shared by infrastructure and service selection."""
++
++
++def growth_value(metrics, reward_eur_per_trip):
++    """Financial net plus an explicit service reward, in annual euros.
++
++    The reward is a search policy parameter, not a calibrated welfare estimate.
++    """
++    return metrics['net_eur'] + reward_eur_per_trip * metrics['passengers']
+diff --git a/tests/test_growth_value.py b/tests/test_growth_value.py
+new file mode 100644
+index 0000000..ba75782
+--- /dev/null
++++ b/tests/test_growth_value.py
+@@ -0,0 +1,104 @@
++"""Investment decisions value revenue and service, independent of route length."""
++from dataclasses import replace
++from types import SimpleNamespace
++from unittest import TestCase
++from unittest.mock import patch
++
++import numpy as np
++
++from rail_gen.config import load_config
++from rail_gen.evaluator import Evaluator
++from rail_gen.incremental import growth_choice, connectivity_choice, integration_choice, combined_choice, connectivity_target_due
++from test_railgen import graph_fixture, config
++
++
++def result(trips=0, cost=0, revenue=0, genome=(0, 0, 0), population=0):
++    return SimpleNamespace(genome=np.array(genome), objectives=[cost-revenue],
++        constraints=np.zeros(5), metrics=dict(passengers=trips, annual_cost_eur=cost,
++        net_eur=revenue-cost, population_served=population))
++
++
++class GrowthValueTests(TestCase):
++    def test_productive_long_route_beats_cheap_short_link(self):
++        current = result()
++        short = result(10e6, 20e6, 15e6)
++        long = result(5e6, 60e6, 65e6)
++        # A sufficiently valuable long route wins; this example needs a reward
++        # below EUR4/trip, since the short link carries 5m additional people.
++        self.assertIs(growth_choice(current, [short, long], 1), long)
++        self.assertIs(growth_choice(current, [short, long], 5), short)
++
++    def test_saved_paris_lyon_increment_beats_rotterdam_under_default_reward(self):
++        paris = result(37.766e6, 1102.541e6, 1711.765e6)
++        rotterdam = result(58.752e6, 105.420e6, 105.545e6)
++        self.assertIs(growth_choice(result(), [rotterdam, paris]), paris)
++
++    def test_negative_and_break_even_value_rejected(self):
++        self.assertIsNone(growth_choice(result(), [result(1e6, 6e6)], 5))
++        self.assertIsNone(growth_choice(result(), [result(1e6, 5e6)], 5))
++        self.assertIsNotNone(growth_choice(result(), [result(1e6, 4e6)], 5))
++
++    def test_preserves_ridership_and_population_but_allows_financial_savings(self):
++        current = result(10, 100, population=10)
++        self.assertIsNone(growth_choice(current, [result(9, 0, population=10)]))
++        self.assertIsNone(growth_choice(current, [result(11, 0, population=9)]))
++        saving = result(10, 90, population=10)
++        self.assertIs(growth_choice(current, [saving]), saving)
++
++    def test_combined_investment_must_improve_value_over_best_single(self):
++        current = result()
++        a = result(10, 0, genome=(1, 0, 0))
++        b = result(9, 0, genome=(0, 1, 0))
++        combined = result(11, 20, genome=(1, 1, 0))
++        selected, evaluated = combined_choice(current, [a, b], growth_choice,
++                                             lambda _: combined, 10)
++        self.assertIs(selected, a)  # 35 euros combined versus 50 for a.
++        self.assertEqual(evaluated, [combined])
++
++    def test_merger_requires_positive_value_and_preserves_coverage(self):
++        c = config()
++        base = graph_fixture()
++        cities = base.cities + [replace(base.cities[-1], id='d', name='D', lon=7)]
++        edges = [replace(edge, a=a, b=b) for edge, (a, b) in
++                 zip(base.edges, [(0, 1), (2, 3), (1, 2)])]
++        e = Evaluator(graph_fixture(cities=cities, edges=edges), c)
++        current = result(genome=(1, 1, 0))
++        merger = result(100, 400, genome=(1, 1, 1))
++        self.assertIs(connectivity_choice(current, [merger], e), merger)
++        merger.metrics['net_eur'] = -600
++        self.assertIsNone(connectivity_choice(current, [merger], e))
++        self.assertIsNone(integration_choice(current, [merger], e, 5))
++
++    def test_service_plan_selection_uses_same_value(self):
++        e = Evaluator(graph_fixture(), config())
++        incumbent = e.evaluate([0, 0, 0])
++        short = result(58.752e6, 105.420e6, 105.545e6)
++        long = result(37.766e6, 1102.541e6, 1711.765e6)
++        network = SimpleNamespace(services=())
++        with patch('rail_gen.evaluator.generate_plans', return_value=[network]), \
++             patch.object(e, '_evaluate_plan', side_effect=[short, long, short]):
++            self.assertIs(e.evaluate([0, 0, 0], incumbent=incumbent, decision='growth'), long)
++
++    def test_connectivity_checkpoints_start_early_and_can_be_disabled(self):
++        search = load_config()['search']
++        current = result()
++        current.metrics['component_share'] = .25
++        self.assertFalse(connectivity_target_due(current, search, 4))
++        self.assertTrue(connectivity_target_due(current, search, 5))
++        self.assertTrue(connectivity_target_due(current, search, 10))
++        current.metrics['component_share'] = .5
++        self.assertFalse(connectivity_target_due(current, search, 5))
++        current.metrics['component_share'] = .25
++        search['connectivity_interval'] = 0
++        self.assertFalse(connectivity_target_due(current, search, 5))
++
++    def test_policy_config_validation(self):
++        c = load_config(overrides={'search': {'growth_reward_eur_per_trip': 0,
++                                              'connectivity_interval': 0}})
++        self.assertEqual(c['search']['connectivity_interval'], 0)
++        for overrides in [{'growth_reward_eur_per_trip': -1},
++                          {'growth_reward_eur_per_trip': float('nan')},
++                          {'connectivity_interval': 1.5}, {'connectivity_interval': True},
++                          {'connectivity_target_share': 1.1}]:
++            with self.assertRaises(ValueError):
++                load_config(overrides={'search': overrides})
+diff --git a/tests/test_investment_lookahead.py b/tests/test_investment_lookahead.py
+new file mode 100644
+index 0000000..6121206
+--- /dev/null
++++ b/tests/test_investment_lookahead.py
+@@ -0,0 +1,186 @@
++"""Complementary investments are evaluated against a fixed accepted baseline."""
++from copy import deepcopy
++import threading
++from unittest import TestCase
++from unittest.mock import patch
++
++import numpy as np
++
++from rail_gen.alignment import CandidateGraph
++from rail_gen.config import load_config
++from rail_gen.evaluator import Evaluator
++from rail_gen.incremental import investment_packages, growth_choice
++from rail_gen.search import search
++from test_railgen import graph_fixture, config
++
++
++class InvestmentLookaheadTests(TestCase):
++    def setUp(self):
++        c = config()
++        c['search'].update(lookahead_depth=2, lookahead_beam_width=2,
++                           lookahead_branching=2, lookahead_evaluations=20)
++        g = graph_fixture()
++        self.e = Evaluator(CandidateGraph.build(g.cities, g.edges[:2], g.tile_costs), c)
++        self.e.allowed[:, 2] = False
++        self.current = self.e.evaluate([0, 0])
++        self.calls = []
++
++    def evaluate(self, genome, **kwargs):
++        self.calls.append((np.array(genome).copy(), kwargs))
++        full = np.all(genome)
++        r = deepcopy(self.current)
++        r.genome = np.array(genome).copy()
++        r.track_counts = np.array(kwargs['track_counts']).copy()
++        r.metrics.update(passengers=10 if full else 0, net_eur=20 if full else -10,
++                         population_served=10 if full else 0)
++        r.objectives[0] = -r.metrics['net_eur']
++        r.constraints[:] = 0
++        return r
++
++    def run_beam(self, evaluate=None, stop=lambda: False):
++        with patch.object(self.e, 'evaluate', side_effect=evaluate or self.evaluate), \
++             patch('rail_gen.incremental.demand_connections', return_value={}):
++            return investment_packages(self.current, self.e, stop)
++
++    def test_two_loss_leaders_form_a_beneficial_package(self):
++        result, diagnostics = self.run_beam()
++        np.testing.assert_array_equal(result.genome, [1, 1])
++        self.assertIsNotNone(growth_choice(self.current, [result]))
++        self.assertEqual(diagnostics['deepest_edit'], 2)
++        self.assertEqual(diagnostics['evaluations'], len(self.calls))
++        self.assertGreater(diagnostics['terminal_checks'], 0)
++        # Every evaluation uses the original incumbent, even after losing drafts.
++        self.assertTrue(all(kw['incumbent'] is self.current for _, kw in self.calls))
++        self.assertTrue(any(not kw.get('prune_unused', True) for _, kw in self.calls))
++        self.assertTrue(any(np.all(x) and kw.get('prune_unused', True)
++                            for x, kw in self.calls))
++        np.testing.assert_array_equal(self.current.genome, [0, 0])
++        self.assertEqual(self.current.metrics['passengers'], 0)
++
++    def test_connection_can_be_combined_with_a_track_capacity_upgrade(self):
++        self.current = self.e.evaluate([1, 0])
++        self.current.metrics.update(passengers=0, net_eur=0, population_served=0)
++        def score(x, **kw):
++            result = self.evaluate(x, **kw)
++            if kw['track_counts'][0] != 4:
++                result.metrics.update(passengers=0, net_eur=-10)
++            return result
++        result, diagnostics = self.run_beam(score)
++        self.assertIsNotNone(result)
++        np.testing.assert_array_equal(result.genome, [1, 1])
++        self.assertEqual(result.track_counts[0], 4)
++        self.assertEqual(diagnostics['deepest_edit'], 2)
++
++    def test_terminal_repair_must_not_erase_the_benefit(self):
++        def score(x, **kw):
++            result = self.evaluate(x, **kw)
++            if kw.get('prune_unused', True):
++                result.metrics['net_eur'] = -100
++            return result
++        result, _ = self.run_beam(score)
++        self.assertIsNone(result)
++
++    def test_temporary_subsidy_and_ridership_losses_can_recover_in_package(self):
++        self.current.metrics.update(passengers=10, population_served=20)
++        def score(x, **kw):
++            result = self.evaluate(x, **kw)
++            if np.all(x):
++                result.metrics.update(passengers=12, population_served=20)
++            else:
++                result.constraints[1] = 1  # Only private intermediates violate subsidy.
++            return result
++        result, diagnostics = self.run_beam(score)
++        self.assertIsNotNone(result)
++        self.assertEqual(result.metrics['passengers'], 12)
++        self.assertEqual(result.constraints[1], 0)
++        self.assertGreater(diagnostics['terminal_checks'], 0)
++
++    def test_terminal_subsidy_limit_remains_hard(self):
++        def score(x, **kw):
++            result = self.evaluate(x, **kw)
++            result.constraints[1] = 1
++            return result
++        result, diagnostics = self.run_beam(score)
++        self.assertIsNone(result)
++        self.assertEqual(diagnostics['deepest_edit'], 2)
++
++    def test_physical_capacity_failures_cannot_enter_frontier(self):
++        def score(x, **kw):
++            result = self.evaluate(x, **kw)
++            result.constraints[4] = 1
++            return result
++        result, diagnostics = self.run_beam(score)
++        self.assertIsNone(result)
++        self.assertEqual(diagnostics['deepest_edit'], 1)
++
++    def test_disabled_budget_and_cancellation_are_bounded(self):
++        self.e.config['search']['lookahead_depth'] = 0
++        self.assertIsNone(self.run_beam()[0])
++        self.assertEqual(self.calls, [])
++        self.e.config['search']['lookahead_depth'] = 2
++        self.assertIsNone(self.run_beam(stop=lambda: True)[0])
++        self.assertEqual(self.calls, [])
++        self.e.config['search']['lookahead_evaluations'] = 1
++        result, diagnostics = self.run_beam()
++        self.assertIsNone(result)
++        self.assertEqual(diagnostics['evaluations'], 1)
++        self.assertEqual(len(self.calls), 1)
++        self.assertTrue(diagnostics['exhausted_budget'])
++
++    def test_real_endpoint_market_pays_only_after_both_sections_are_built(self):
++        self.e.graph.cities[1].kappa = 0  # Neither isolated section has a market.
++        self.e.config['search']['growth_reward_eur_per_trip'] = 1000
++        e = Evaluator(self.e.graph, self.e.config)
++        e.allowed[:, 2] = False
++        current = e.evaluate([0, 0])
++        first = e.evaluate([1, 0], repair=True, incumbent=current,
++                           decision='growth', prune_unused=False)
++        self.assertIsNone(growth_choice(current, [first], 1000))
++        with patch('rail_gen.incremental.demand_connections', return_value={}):
++            result, diagnostics = investment_packages(current, e)
++        self.assertIsNotNone(result)
++        np.testing.assert_array_equal(result.genome, [1, 1])
++        self.assertGreater(result.metrics['passengers'], 0)
++        self.assertGreater(diagnostics['accepted_value_gain_eur'], 0)
++
++    def test_real_evaluator_keeps_unused_prerequisite_only_in_private_draft(self):
++        for city in self.e.graph.cities:
++            city.kappa = 0
++        e = Evaluator(self.e.graph, self.e.config)
++        current = e.evaluate([0, 0])
++        draft = e.evaluate([1, 0], repair=True, incumbent=current,
++                           decision='growth', prune_unused=False)
++        terminal = e.evaluate([1, 0], repair=True, incumbent=current, decision='growth')
++        np.testing.assert_array_equal(draft.genome, [1, 0])
++        np.testing.assert_array_equal(terminal.genome, [0, 0])
++        self.assertGreater(draft.metrics['annual_cost_eur'], 0)
++
++    def test_exhaustion_runs_lookahead_before_early_profit_and_publishes_only_terminal(self):
++        self.e.graph.cities[1].kappa = 0
++        c = self.e.config
++        c['search'].update(algorithm='incremental', generations=5000, profit=True,
++                           growth_reward_eur_per_trip=1000)
++        stop = threading.Event()
++        updates = []
++        def observe(update):
++            updates.append(update)
++            if update.phase == 'lookahead':
++                stop.set()
++        with patch('rail_gen.incremental.neighbours', return_value={}), \
++             patch('rail_gen.incremental.demand_connections', return_value={}):
++            run = search(self.e.graph, c, progress=None, observer=observe, interrupted=stop)
++        self.assertEqual(run.status, 'interrupted')
++        self.assertEqual([u.phase for u in updates], ['growth', 'lookahead'])
++        self.assertTrue(updates[-1].accepted)
++        self.assertTrue(np.all(run.current_genome))
++        self.assertEqual(len(run.history), 2)  # No private loss leaders published.
++        self.assertGreater(run.history[-1]['lookahead']['evaluations'], 0)
++
++    def test_policy_config_validation(self):
++        for depth in [0, 2, 3, 4]:
++            load_config(overrides={'search': {'lookahead_depth': depth}})
++        for key, value in [('lookahead_depth', 1), ('lookahead_depth', 5),
++                           ('lookahead_depth', True), ('lookahead_beam_width', 0),
++                           ('lookahead_branching', 1.5), ('lookahead_evaluations', -1)]:
++            with self.assertRaises(ValueError):
++                load_config(overrides={'search': {key: value}})
+diff --git a/tests/test_incremental_batch.py b/tests/test_incremental_batch.py
+new file mode 100644
+index 0000000..83b676b
+--- /dev/null
++++ b/tests/test_incremental_batch.py
+@@ -0,0 +1,68 @@
++"""Combined edits must earn acceptance through a fresh network evaluation."""
++from types import SimpleNamespace
++import unittest
++import numpy as np
++
++from rail_gen.config import load_config
++from rail_gen.incremental import combined_choice
++
++
++def result(genome, value, hard=0):
++    return SimpleNamespace(genome=np.array(genome), value=value,
++                           constraints=np.array([hard, 0, 0]))
++
++
++def choose(parent, candidates):
++    eligible = [c for c in candidates if c.value > parent.value]
++    return max(eligible, key=lambda c: c.value) if eligible else None
++
++
++class CombinedChoiceTests(unittest.TestCase):
++    def setUp(self):
++        self.current = result([0, 0, 0], 0)
++        self.a = result([1, 0, 0], 3)
++        self.b = result([0, 1, 0], 2)
++        self.c = result([0, 0, 1], 1)
++
++    def test_combines_disjoint_edits_and_skips_conflicting_alternative(self):
++        seen = []
++        def score(genome):
++            seen.append(genome.tolist())
++            return result(genome, 6)
++        selected, evaluated = combined_choice(self.current,
++            [self.a, result([2, 0, 0], 2.5), self.b, self.c], choose, score, 10)
++        self.assertEqual(seen, [[1, 1, 1]])
++        self.assertIs(selected, evaluated[0])
++
++    def test_rejects_hard_constraint_failure_and_retries_smaller_batch(self):
++        candidates = [result(np.eye(4, dtype=int)[i], 4-i) for i in range(4)]
++        seen = []
++        def score(genome):
++            seen.append(genome.tolist())
++            return result(genome, 8, hard=int(genome.sum() > 2))
++        selected, evaluated = combined_choice(result([0]*4, 0), candidates,
++                                              choose, score, 4)
++        self.assertEqual(len(evaluated), 2)
++        self.assertEqual(selected.genome.tolist(), [1, 1, 0, 0])
++
++    def test_combination_must_beat_best_single_even_if_it_improves_parent(self):
++        selected, evaluated = combined_choice(self.current, [self.a, self.b],
++            choose, lambda x: result(x, 2), 10)
++        self.assertIs(selected, self.a)
++        self.assertEqual(len(evaluated), 1)
++
++    def test_disabled_limit_no_useful_candidates_and_stop_skip_evaluation(self):
++        def score(_):
++            self.fail('Unexpected combined evaluation')
++        for limit, stop in [(1, False), (10, True)]:
++            selected, evaluated = combined_choice(self.current, [self.a, self.b],
++                choose, score, limit, lambda: stop)
++            self.assertIs(selected, self.a)
++            self.assertEqual(evaluated, [])
++        self.assertEqual(combined_choice(self.current, [], choose, score, 10), (None, []))
++
++    def test_config_requires_positive_integer_limit(self):
++        self.assertEqual(load_config()['search']['batch_accept_limit'], 10)
++        for invalid in [0, 1.5, True]:
++            with self.assertRaises(ValueError):
++                load_config(overrides={'search': {'batch_accept_limit': invalid}})

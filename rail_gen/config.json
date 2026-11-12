@@ -125,6 +125,7 @@
       "capacity_repair_candidates": 8,
       "algorithm": "incremental",
       "population": 150,
+      "batch_accept_limit": 10,
       "generations": 200,
       "seed": 42,
       "workers": 1,

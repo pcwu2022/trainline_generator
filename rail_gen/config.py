@@ -27,7 +27,7 @@ def validate(c):
     schema = json.loads(DEFAULT_CONFIG.read_text())['defaults']
     integer_keys = {'prep.max_cities', 'prep.neighbors', 'prep.force_pairs',
         'operations.assignment_iterations', 'operations.maximum_train_units',
-        'search.capacity_repair_steps', 'search.capacity_repair_candidates', 'search.population', 'search.generations',
+        'search.batch_accept_limit', 'search.capacity_repair_steps', 'search.capacity_repair_candidates', 'search.population', 'search.generations',
         'search.seed', 'search.workers', 'search.representatives', 'search.stagnation_generations',
         'reporting.snapshot_every', 'reporting.gif_frame_ms',
         'services.max_through_routes', 'services.max_route_edges', 'services.plan_trials'}
@@ -95,7 +95,7 @@ def validate(c):
         'demand': ['a', 'beta', 'minimum_distance_km', 'maximum_distance_km', 'sigma_hours', 'value_of_time_eur', 'fare_reference_km'],
         'operations': ['maximum_train_units', 'hours_per_day', 'days_per_year', 'minimum_frequency', 'target_load_factor', 'maximum_load_factor', 'assignment_iterations', 'peak_factor'],
         'finance': ['track_life_years', 'station_life_years', 'fleet_life_years'],
-        'search': ['capacity_repair_candidates', 'population', 'generations', 'workers', 'representatives', 'stagnation_generations'],
+        'search': ['batch_accept_limit', 'capacity_repair_candidates', 'population', 'generations', 'workers', 'representatives', 'stagnation_generations'],
         'reporting': ['snapshot_every'],
     }.items():
         if any(c[section][key] <= 0 for key in keys):

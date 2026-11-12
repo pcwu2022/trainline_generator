@@ -178,6 +178,43 @@ def integration_choice(current, candidates, evaluator):
         -candidate.metrics['passengers'])) if eligible else None
 
 
+def combined_choice(current, candidates, choose, score, limit, should_stop=lambda: False):
+    """Rank useful alternatives, merge disjoint edits, and validate the result.
+
+    Failed combinations retry smaller ranked prefixes, then fall back to the
+    best individual proposal. Every combination must improve on that fallback
+    under the same phase rules, not merely improve on the original network.
+    """
+    best = choose(current, candidates)
+    if best is None or limit <= 1:
+        return best, []
+    ranked = [best]
+    occupied = best.genome != current.genome
+    remaining = [c for c in candidates if c is not best]
+    while len(ranked) < limit:
+        remaining = [c for c in remaining
+                     if not np.any(occupied & (c.genome != current.genome))]
+        candidate = choose(current, remaining)
+        if candidate is None:
+            break
+        ranked.append(candidate)
+        occupied |= candidate.genome != current.genome
+        remaining = [c for c in remaining if c is not candidate]
+    evaluated = []
+    size = len(ranked)
+    while size > 1 and not should_stop():
+        genome = current.genome.copy()
+        for candidate in ranked[:size]:
+            changed = candidate.genome != current.genome
+            genome[changed] = candidate.genome[changed]
+        result = score(genome)
+        evaluated.append(result)
+        if buildable(result) and choose(best, [result]) is not None:
+            return result, evaluated
+        size //= 2
+    return best, evaluated
+
+
 def capacity_packages(current, evaluator, should_stop=lambda: False):
     """Bounded connect-and-repair search; infeasible intermediates stay private.
 
@@ -419,30 +456,41 @@ def search_incremental(graph, config, progress=print, observer=None, interrupted
             for candidate in candidates:
                 if candidate.feasible:
                     archive[tuple(candidate.genome)] = candidate.objectives.copy()
+            def choose(parent, options):
+                if profit_baseline is not None:
+                    return profit_choice(parent, options, profit_baseline)
+                if baseline is not None:
+                    connected = [c for c in options if topology(c.genome, evaluator) == (0, 0)]
+                    return consolidation_choice(parent, connected, baseline, config)
+                if phase == 'integration':
+                    return integration_choice(parent, options, evaluator)
+                if phase == 'capacity_expansion':
+                    return capacity_choice(parent, options, evaluator)
+                return growth_choice(parent, options)
+
+            # Keep the committed capacity/growth/integration priority. Batching
+            # combines only proposals accepted by that same phase's selector.
+            if baseline is None and profit_baseline is None and phase == 'growth':
+                if (current.metrics['spill_fraction'] > config['constraints']['maximum_spill_fraction']
+                        and capacity_choice(current, candidates, evaluator) is not None):
+                    phase = 'capacity_expansion'
+                elif growth_choice(current, candidates) is None:
+                    phase = 'integration'
+
+            def batch_should_stop():
+                return ((interrupted is not None and interrupted.is_set()) or
+                        (p['time_limit_seconds'] > 0 and
+                         time.perf_counter() - started >= p['time_limit_seconds']))
+            selected, combined = combined_choice(current, candidates, choose, score,
+                p['batch_accept_limit'], batch_should_stop)
+            evaluations += len(combined)
+            for candidate in combined:
+                if candidate.feasible:
+                    archive[tuple(candidate.genome)] = candidate.objectives.copy()
             if archive:
                 keys = sorted(archive)
                 front = nondominated([archive[key] for key in keys])
                 archive = {keys[i]: archive[keys[i]] for i in front}
-            if profit_baseline is not None:
-                selected = profit_choice(current, candidates, profit_baseline)
-            elif baseline is not None:
-                candidates = [candidate for candidate in candidates
-                              if topology(candidate.genome, evaluator) == (0, 0)]
-                selected = consolidation_choice(current, candidates, baseline, config)
-            elif phase == 'integration':
-                selected = integration_choice(current, candidates, evaluator)
-            else:
-                selected = (capacity_choice(current, candidates, evaluator)
-                    if current.metrics['spill_fraction'] > evaluator.config['constraints']['maximum_spill_fraction']
-                    else None)
-                if selected is not None:
-                    phase = 'capacity_expansion'
-                else:
-                    selected = growth_choice(current, candidates)
-                if selected is None:
-                    selected = integration_choice(current, candidates, evaluator)
-                    if selected is not None:
-                        phase = 'integration'
             if selected is not None:
                 current = selected
                 attempted.clear()

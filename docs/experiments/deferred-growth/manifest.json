@@ -1,0 +1,23 @@
+{
+  "base_commit": "a773cff51f1470e188b53edac27f18c25bdef558",
+  "patch_sha256": "6e75a3bf93a14f8ba5e6a67bb18605a837aeb54b31d9df432e3a59c28b17fa5a",
+  "tracked_files": [
+    "README.md",
+    "docs/FAST_GENERATOR.md",
+    "docs/HYBRID_SERVICES.md",
+    "rail_gen/__main__.py",
+    "rail_gen/config.json",
+    "rail_gen/config.py",
+    "rail_gen/evaluator.py",
+    "rail_gen/incremental.py",
+    "tests/test_connection_decisions.py",
+    "tests/test_profit_phase.py",
+    "tests/test_railgen_live.py"
+  ],
+  "new_files": [
+    "rail_gen/growth.py",
+    "tests/test_growth_value.py",
+    "tests/test_investment_lookahead.py",
+    "tests/test_incremental_batch.py"
+  ]
+}
