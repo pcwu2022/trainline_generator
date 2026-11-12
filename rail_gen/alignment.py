@@ -17,7 +17,7 @@ from scipy.spatial import cKDTree
 
 from .prep import City, TO_METRIC, TO_WGS84
 
-CACHE_VERSION = 7
+CACHE_VERSION = 8
 TRACKS = ('CR', 'HSR')
 
 
@@ -29,6 +29,8 @@ class Alignment:
     geometry: list
     pct_water: float = 0.0
     pct_steep: float = 0.0
+    crossing_ids: tuple = ()
+    water_km: float = 0.0
 
 
 @dataclass
@@ -133,11 +135,13 @@ def cost_surfaces(config, samples, terrain_only=False):
     distance, index = cKDTree(sample_xy).query(xy)
     raster_density = np.where(distance <= max(4, a['cell_km']), density[index], 0).reshape(shape)
     blocked = np.zeros(shape, dtype=bool)
+    sea = np.zeros(shape, dtype=bool)
+    missing_terrain = np.zeros(shape, dtype=bool)
     if config['boundaries_file']:
         # All countries form land, independently of the city-country filter.
         land = rasterize([(g, 1) for g in _projected_shapes(config['boundaries_file'])],
                          out_shape=shape, transform=transform, fill=0, dtype='uint8')
-        blocked |= land == 0
+        sea |= land == 0
     if config['exclusions_file']:
         excluded = rasterize([(g, 1) for g in _projected_shapes(config['exclusions_file'])],
                              out_shape=shape, transform=transform, fill=0, dtype='uint8')
@@ -163,7 +167,7 @@ def cost_surfaces(config, samples, terrain_only=False):
                 raise ValueError('Relief terrain requires a three-band uint8 RGB raster')
     if config['terrain_kind'] == 'relief':
         r, g, b = warp(config['terrain_file'], [1, 2, 3], Resampling.nearest)
-        blocked |= ~np.isfinite(r + g + b)
+        missing_terrain |= ~np.isfinite(r + g + b)
         water = (b > r * 1.12) & (b > g * 1.04)
         terrain[(r > g * 1.05) & (r > b * 1.15)] = 1.8
     slope_based = config['terrain_kind'] == 'dem' or (config['terrain_kind'] != 'flat' and config.get('terrain_dem_file'))
@@ -173,17 +177,23 @@ def cost_surfaces(config, samples, terrain_only=False):
             if source.count != 1:
                 raise ValueError('Slope terrain requires a single-band elevation DEM in metres')
         elevation = warp(path, [1], Resampling.average)[0]
-        blocked |= ~np.isfinite(elevation)
+        missing_terrain |= ~np.isfinite(elevation)
         grade = elevation_gradient(elevation, step)
-        blocked |= ~np.isfinite(grade)
+        missing_terrain |= ~np.isfinite(grade)
         terrain = slope_multiplier(grade)
     if config['land_class_file']:
         # Class codes: 0 land, 1 inland water, 2 open sea, 3 excluded/protected.
         classes = warp(config['land_class_file'], [1], Resampling.nearest)[0]
-        blocked |= ~np.isfinite(classes) | (classes >= 2)
+        blocked |= ~np.isfinite(classes) | (classes >= 3)
+        sea |= classes == 2
         water |= classes == 1
     if not terrain_only and not config['boundaries_file'] and not config['land_class_file'] and config['terrain_kind'] != 'flat':
         raise ValueError('Sea blocking requires boundaries_file or land_class_file')
+    water |= sea
+    blocked |= missing_terrain & ~sea
+    if not a['sea_crossings_enabled']:
+        blocked |= sea
+    grade = np.where(water, 0.0, grade)
     # Water keeps its dedicated crossing premium rather than bathymetric slope costs.
     terrain = np.where(water, 1.0, terrain)
     # The continuous terrain multiplier already contains the ground-slope premium.
@@ -195,6 +205,8 @@ def cost_surfaces(config, samples, terrain_only=False):
     for track in TRACKS:
         t = config['tracks'][track]
         rate = t['base_meur_km'] * terrain + water * a['water_meur_km']
+        if a['sea_crossings_enabled']:
+            rate = np.where(water, max(t['base_meur_km'], a['water_meur_km']), rate)
         rate += a['urban_meur_per_density_km'] * np.maximum(0, raster_density - a['urban_reference'])
         # A relief+DEM overlay prices ground difficulty only. Preserve the
         # existing explicit DEM mode's grade-limit scenario separately.
@@ -233,6 +245,13 @@ def route(cities, pairs, config, samples, progress=print):
     surfaces, water, grade, transform = cost_surfaces(config, samples)
     step = config['alignment']['cell_km']
     height, width = surfaces.shape[1:]
+    from .water import prepare_crossings, linked_paths
+    assets = prepare_crossings(config, surfaces, water, transform)
+    routing_surfaces = surfaces.copy()
+    if config['alignment']['sea_crossings_enabled']:
+        routing_surfaces[:, water] = np.inf
+    asset_costs = np.array([a['costs'] for a in assets]).T if assets else np.empty((2, 0))
+    resource_costs = np.concatenate((surfaces.reshape(2, -1) * step, asset_costs), axis=1)
     cells = []
     for city in cities:
         r, c = rowcol(transform, *(city.xy * 1000))
@@ -248,12 +267,48 @@ def route(cities, pairs, config, samples, progress=print):
         r0, r1 = max(0, r - radius), min(height, r + radius + 1)
         c0, c1 = max(0, c - radius), min(width, c + radius + 1)
         for track_index, track in enumerate(TRACKS):
-            surface = surfaces[track_index]
+            surface = routing_surfaces[track_index]
             local = surface[r0:r1, c0:c1]
             start = (r - r0, c - c0)
             if not (0 <= r < height and 0 <= c < width) or not np.isfinite(surface[r, c]):
                 continue
             ends = [(cells[b][0] - r0, cells[b][1] - c0) for b in targets]
+            if config['alignment']['sea_crossings_enabled']:
+                paths = linked_paths(surface, step, assets, track_index, (r0, r1, c0, c1), width, start, ends)
+                for target, nodes in zip(targets, paths):
+                    if nodes is None:
+                        continue
+                    tile_ids, points, used_assets = [], [], []
+                    local_size = local.size
+                    for pos, node in enumerate(nodes):
+                        if node < local_size:
+                            rr, cc = divmod(node, local.shape[1])
+                            rr, cc = rr + r0, cc + c0
+                            tile_ids.append(rr * width + cc)
+                            points.append([(transform.c + (cc + .5) * transform.a) / 1000,
+                                           (transform.f + (rr + .5) * transform.e) / 1000])
+                        else:
+                            ai = node - local_size
+                            asset = assets[ai]
+                            used_assets.append(asset)
+                            tile_ids.append(height * width + ai)
+                            previous = nodes[pos - 1]
+                            rr, cc = divmod(previous, local.shape[1])
+                            forward = (rr + r0) * width + cc + c0 == asset['start']
+                            points.extend(asset['points'] if forward else asset['points'][::-1])
+                    tiles = sorted(set(tile_ids))
+                    capex = float(resource_costs[track_index, tiles].sum())
+                    if config['alignment']['max_capex_meur'] and capex > config['alignment']['max_capex_meur']:
+                        continue
+                    points = np.vstack((cities[source].xy, points, cities[target].xy))
+                    length = float(np.linalg.norm(np.diff(points, axis=0), axis=1).sum())
+                    lon, lat = TO_WGS84.transform(points[:, 0] * 1000, points[:, 1] * 1000)
+                    water_km = sum(a['water_km'] for a in used_assets)
+                    records[(source, target)][track] = Alignment(length, capex, tiles,
+                        np.column_stack((lon, lat)).tolist(), water_km / length if length else 0,
+                        float(np.mean(grade.ravel()[[t for t in tiles if t < height * width]] > .02)),
+                        tuple(a['id'] for a in used_assets), water_km)
+                continue
             mcp = MCP_Geometric(local, fully_connected=True, sampling=(step, step))
             costs, _ = mcp.find_costs([start], ends=ends)
             cardinal = cardinal_costs = None
@@ -296,8 +351,11 @@ def route(cities, pairs, config, samples, progress=print):
                     cell_km=step, rejected_pairs=len(pairs) - len(edges),
                     terrain_kind=config['terrain_kind'],
                     metro_populations_verified=config['metro_populations_verified'],
-                    tile_accounting='fixed cell_km per occupied cell; HSR overrides CR')
-    return CandidateGraph.build(cities, edges, surfaces.reshape(2, -1) * step, metadata)
+                    water_crossings=[dict(id=a['id'], resource_id=height * width + i,
+                        length_km=a['length_km'], water_km=a['water_km'],
+                        costs_meur=[v if np.isfinite(v) else None for v in a['costs']]) for i, a in enumerate(assets)],
+                    tile_accounting='fixed cell_km per occupied cell plus shared crossing assets; HSR overrides CR')
+    return CandidateGraph.build(cities, edges, resource_costs, metadata)
 
 
 def save_graph(graph, directory):
@@ -327,6 +385,7 @@ def load_graph(directory):
     by_id = {}
     for r in pq.read_table(directory / 'edges.parquet').to_pylist():
         edge = by_id.setdefault(r['edge_id'], Edge(r['node_a'], r['node_b'], {}))
+        r['crossing_ids'] = tuple(r['crossing_ids'])
         edge.alignments[r['track_type']] = Alignment(**{k: r[k] for k in Alignment.__dataclass_fields__})
     return CandidateGraph([City(**c) for c in manifest['cities']], [by_id[i] for i in sorted(by_id)],
         tuple(sparse.load_npz(directory / f'tiles_{t}.npz') for t in TRACKS),

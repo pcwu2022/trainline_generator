@@ -102,7 +102,8 @@ class ElasticDemandTests(unittest.TestCase):
         m = r.metrics
         self.assertGreater(m['lost_trips'], 0)
         np.testing.assert_allclose(r.reference_trips + r.shift_change + r.induced_change, r.potential_trips)
-        self.assertAlmostEqual(m['reference_rail_trips'] + m['modal_shift_change'] + m['induced_demand_change'], m['potential_rail_trips'])
+        np.testing.assert_allclose(m['reference_rail_trips'] + m['modal_shift_change'] + m['induced_demand_change'],
+                                   m['potential_rail_trips'], rtol=1e-12)
         self.assertAlmostEqual(m['carried_reference_trips'] + m['carried_modal_shift_change'] + m['carried_induced_demand_change'], m['passengers'])
         self.assertAlmostEqual(m['passengers'] + m['lost_trips'], m['potential_rail_trips'])
         self.assertTrue(np.all(r.segment_load <= r.segment_capacity + 1e-7))

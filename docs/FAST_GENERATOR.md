@@ -104,9 +104,11 @@ capacity = seats * formation * frequency * hours_per_day * days_per_year
            * maximum_load_factor / peak_factor
 ```
 
-Capacity is shared across passengers using each service segment. Carried OD trips
-are scaled by the most constrained segment on their assigned journey. There is no
-queue simulation or overflow rerouting. Spill is potential minus carried trips;
+Capacity is shared across passengers using each service segment. Each round
+scales carried OD trips by the most constrained segment, then tries
+residual market fractions on alternative journeys around full segments. Up to
+eight rounds are evaluated, each with its own journey-time elasticity. There is
+no queue simulation or equilibrium guarantee. Spill is potential minus carried trips;
 spill fraction is spill divided by potential trips, or zero for zero potential.
 
 With automatic repair, overloaded segments can widen from the configured layout
@@ -116,8 +118,14 @@ authoritative. Four tracks is the current upper bound, not unlimited capacity.
 
 ## Incremental search
 
-The search starts empty and edits the last accepted network. Growth favors carried
-ridership gains relative to annual net cost and can add coverage. When an incumbent
+The search starts empty and edits the last accepted network. It also proposes
+complete construction paths for up to twelve markets ranked by unmet reference
+demand per iteration. All missing sections are evaluated together. Expansions
+inherit purchased capacity and retain the accepted timetable as an alternative;
+new services reserve incumbent frequencies and formations. Service-plan selection
+uses passenger gain per additional annual cost in growth and net annual benefit
+in profit mode. Results use model version `network-capacity-v3`. Growth favors carried
+ridership gains relative to added annual cost and can add coverage. When an incumbent
 has excessive spill, capacity-expansion selection favors more carried passengers
 without losing coverage or worsening component count. Integration prioritizes
 joining components and serving missing candidate cities. Connected networks can

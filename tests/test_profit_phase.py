@@ -40,7 +40,8 @@ class ProfitTests(unittest.TestCase):
     def test_exhaustion_before_final_twenty_percent_does_not_prevent_profit(self):
         c = incremental_config()
         c['search'].update(profit=True, generations=10)
-        with patch('rail_gen.incremental.neighbours', return_value={}):
+        with patch('rail_gen.incremental.neighbours', return_value={}), \
+                patch('rail_gen.incremental.demand_connections', return_value={}):
             run = search(graph_fixture(), c, progress=None)
         self.assertEqual(run.status, 'profit_saturated')
         self.assertEqual(run.history[-1]['iteration'], 9)

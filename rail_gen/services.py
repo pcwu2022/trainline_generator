@@ -93,13 +93,13 @@ class ServiceNetwork:
             shape=(e.m, len(self.segment_edges)))
         self._adjacency = None
 
-    def fit_frequencies(self, requested):
+    def fit_frequencies(self, requested, floor=None):
         """Keep existing minimum allocations, proportionally ration extra paths."""
         requested = np.asarray(requested, dtype=float)
         if not len(requested):
             return requested
         minimum = self.e.config['operations']['minimum_frequency']
-        floor = np.full(len(requested), minimum)
+        floor = np.full(len(requested), minimum) if floor is None else np.asarray(floor)
         extra = np.maximum(0, requested - floor)
         remaining = np.maximum(0, self.resource_caps - np.asarray(self.resource_services @ floor).ravel())
         usage = np.asarray(self.resource_services @ extra).ravel()
@@ -146,7 +146,7 @@ class ServiceNetwork:
         self._node_services = np.concatenate(node_services) if node_services else np.empty(0, dtype=int)
         self._boarding_services = self._node_services[cols[boardings] - e.n]
 
-    def assign(self, frequencies):
+    def assign(self, frequencies, blocked=None):
         """All-or-nothing shortest generalized journeys on explicit services.
 
         Routing uses distance-based fare as an additive proxy; final fare still
@@ -157,7 +157,11 @@ class ServiceNetwork:
         frequencies = np.asarray(frequencies, dtype=float)
         if self._adjacency is None:
             self._prepare_assignment()
-        adjacency, size = self._adjacency, self._size
+        adjacency, size = self._adjacency.copy(), self._size
+        if blocked is not None:
+            riding = self._arc_segments >= 0
+            indices = np.flatnonzero(riding)
+            adjacency.data[indices[np.asarray(blocked)[self._arc_segments[riding]]]] = np.inf
         # CSR entries are sorted by the same row/column keys as _arc_keys.
         adjacency.data[self._boarding_indices] = (.5 / frequencies[self._boarding_services]
                                                   + e.config['operations']['transfer_hours'])
@@ -192,6 +196,72 @@ class ServiceNetwork:
             positions[pairs] = parents
         incidence = sparse.csr_matrix((np.ones(len(ri)), (ri, ci)), shape=(len(self.segment_edges), q))
         return self._journey_arrays(incidence, np.maximum(0, boardings - 1), wait, connected)
+
+    def assign_capacity(self, frequencies, capacities, first=None):
+        """Fill shortest viable paths, then reroute residual markets around full segments.
+
+        Residual markets are fractions of OD reference populations, not a fixed
+        number of passengers: each alternative gets its own time elasticity.
+        The bound is independent of network size; unreached alternatives spill.
+        """
+        first = self.assign(frequencies) if first is None else first
+        remaining = np.ones(len(self.e.base))
+        residual_capacity = np.asarray(capacities, dtype=float).copy()
+        carried = np.zeros_like(remaining)
+        parts = []
+        market_parts = []
+        candidate = first
+        for _ in range(8):
+            incidence = candidate['incidence']
+            potential = remaining * candidate['trips']
+            load = np.asarray(incidence @ (potential / 2)).ravel()
+            ratio = np.minimum(1, np.divide(residual_capacity, load,
+                               out=np.ones_like(load), where=load > 0))
+            scale = np.ones_like(remaining)
+            rows, pairs = incidence.nonzero()
+            np.minimum.at(scale, pairs, ratio[rows])
+            fraction = remaining * scale * (candidate['trips'] > 0)
+            accepted = candidate['trips'] * fraction
+            if accepted.sum() <= 1e-8:
+                break
+            parts.append((candidate, accepted))
+            market_parts.append((candidate, fraction))
+            carried += accepted
+            remaining = np.maximum(0, remaining - fraction)
+            residual_capacity = np.maximum(0, residual_capacity -
+                np.asarray(incidence @ (accepted / 2)).ravel())
+            if remaining.max(initial=0) < 1e-10:
+                break
+            candidate = self.assign(frequencies, blocked=residual_capacity <= 1e-7)
+        result = dict(first)
+        potential = remaining * first['trips']
+        for assignment, fraction in market_parts:
+            potential += fraction * assignment['trips']
+        result['trips'] = potential
+        for key in ('shift_change', 'induced_change'):
+            result[key] = remaining * first[key]
+            for assignment, fraction in market_parts:
+                result[key] += fraction * assignment[key]
+        # Fractional incidence and journey statistics describe carried passengers.
+        # This preserves segment loads and fare revenue across split OD paths.
+        inverse = np.divide(1, carried, out=np.zeros_like(carried), where=carried > 0)
+        incidence = sparse.csr_matrix(first['incidence'].shape)
+        for assignment, accepted in parts:
+            incidence += assignment['incidence'].multiply(accepted * inverse)
+        result['incidence'] = incidence.tocsr()
+        result['edge_incidence'] = self.segment_to_edge @ incidence
+        result['edge_fare_flow'] = np.zeros(self.e.m)
+        for assignment, accepted in parts:
+            per_km = np.divide(accepted * assignment['fares'], assignment['ridden'],
+                               out=np.zeros_like(accepted), where=assignment['ridden'] > 0)
+            result['edge_fare_flow'] += np.asarray(assignment['edge_incidence'] @ per_km).ravel()
+        for key in ('transfers', 'wait', 'fares', 'ivt', 'generalized_time', 'ridden', 'journey_time'):
+            weighted = np.zeros_like(carried)
+            for assignment, accepted in parts:
+                np.add(weighted, np.multiply(assignment[key], accepted * inverse,
+                       out=np.zeros_like(carried), where=accepted > 0), out=weighted)
+            result[key] = np.where(carried > 0, weighted, first[key])
+        return result, carried
 
     def _journey_arrays(self, incidence, transfers, wait, connected):
         from .demand import fare, rail_share, elastic_demand

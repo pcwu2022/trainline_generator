@@ -179,7 +179,7 @@
         72
       ],
       "countries": [],
-      "max_cities": 1000
+      "max_cities": 200
     },
     "exploratory": {
       "bbox": [

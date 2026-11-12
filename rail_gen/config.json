@@ -39,7 +39,11 @@
       "urban_reference": 5000,
       "urban_meur_per_density_km": 0.001,
       "water_meur_km": 120,
-      "smooth_cells": 1
+      "smooth_cells": 1,
+      "sea_crossings_enabled": false,
+      "water_growth_km": 25,
+      "water_sample_km": 0.25,
+      "water_crossings": []
     },
     "demand": {
       "model": "reference_elasticity",
@@ -277,7 +281,26 @@
         "BY"
       ],
       "prep": {
-        "max_cities": 500
+        "max_cities": 200
+      },
+      "alignment": {
+        "sea_crossings_enabled": true,
+        "water_crossings": [
+          {
+            "id": "channel",
+            "geometry": [
+              [
+                1.12,
+                51.1
+              ],
+              [
+                1.8,
+                50.92
+              ]
+            ]
+          }
+        ],
+        "max_capex_meur": 50000
       }
     },
     "smoke": {

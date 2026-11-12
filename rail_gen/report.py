@@ -38,6 +38,7 @@ def geojson(graph, result):
                 frequency_per_hour_direction=float(result.frequency[i]),
                 train_units=int(result.train_units[i]), max_formation=int(result.train_units[i]),
                 allocated_net_eur=float(result.edge_net[i]), pct_water=alignment.pct_water,
+                crossing_ids=list(alignment.crossing_ids), water_km=alignment.water_km,
                 pct_steep=alignment.pct_steep)))
     for i, city in enumerate(graph.cities):
         features.append(dict(type='Feature', geometry=dict(type='Point', coordinates=[city.lon, city.lat]),

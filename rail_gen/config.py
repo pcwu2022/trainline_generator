@@ -49,6 +49,19 @@ def validate(c):
             elif not isinstance(value, type(expected)):
                 raise ValueError(f'Invalid type for {name}')
     check(c, schema)
+    crossing_ids = set()
+    for item in c['alignment']['water_crossings']:
+        if not isinstance(item, dict) or set(item) != {'id', 'geometry'} or not isinstance(item['id'], str) or not item['id'] or item['id'] in crossing_ids:
+            raise ValueError('water_crossings requires unique nonempty IDs and geometry')
+        crossing_ids.add(item['id'])
+        points = item['geometry']
+        if not isinstance(points, list) or len(points) < 2:
+            raise ValueError('Crossing geometry requires at least two WGS84 points')
+        for point in points:
+            if not isinstance(point, list) or len(point) != 2 or any(isinstance(v, bool) or not isinstance(v, (int, float)) or not math.isfinite(v) for v in point) or not (-180 <= point[0] <= 180 and -90 <= point[1] <= 90):
+                raise ValueError('Invalid crossing WGS84 coordinate')
+        if any(a == b for a, b in zip(points, points[1:])):
+            raise ValueError('Crossing geometry has a zero-length segment')
     d = c['demand']
     if d['model'] not in ('reference_elasticity', 'rail_share'):
         raise ValueError('demand.model must be reference_elasticity or rail_share')
@@ -78,7 +91,7 @@ def validate(c):
         raise ValueError('--profit requires the incremental algorithm')
     for section, keys in {
         'prep': ['max_cities', 'center_coefficient', 'access_speed_kmh', 'neighbors', 'max_edge_km'],
-        'alignment': ['cell_km', 'window_factor'],
+        'alignment': ['cell_km', 'window_factor', 'water_meur_km', 'water_growth_km', 'water_sample_km'],
         'demand': ['a', 'beta', 'minimum_distance_km', 'maximum_distance_km', 'sigma_hours', 'value_of_time_eur', 'fare_reference_km'],
         'operations': ['maximum_train_units', 'hours_per_day', 'days_per_year', 'minimum_frequency', 'target_load_factor', 'maximum_load_factor', 'assignment_iterations', 'peak_factor'],
         'finance': ['track_life_years', 'station_life_years', 'fleet_life_years'],

@@ -22,6 +22,20 @@ Iteration logs and saved metrics show spill, potential trips, carried trips and
 lost trips for calibration. A run reaching its iteration limit with excessive
 spill reports `capacity_shortfall`.
 
+Growth also evaluates complete construction paths for the twelve largest
+underserved city-pair markets each iteration. These demand-ranked packages are
+considered deterministically alongside sampled edge edits, with no city-specific
+rules. Expansion candidates inherit paid track capacity and retain the accepted
+service plan as an alternative. Added services reserve incumbent frequencies and
+formations. Growth compares passenger gains per additional annual cost; profit
+mode compares annual net benefit. Passenger assignment tries up to eight shortest
+viable paths around saturated service segments, recalculating elastic demand for
+each alternative journey before recording residual spill.
+
+This changes evaluation semantics to `network-capacity-v3`. Historical snapshots
+must be explicitly re-evaluated for comparison; the currently running process
+continues using the code it loaded at startup.
+
 ```sh
 .venv/bin/python -m pip install -r requirements-railgen.txt
 .venv/bin/python optimize.py --solver pareto --profile france \
@@ -102,6 +116,7 @@ and remains available with
 ## Documentation
 
 - [Fast generator: configuration, formulas, search and outputs](docs/FAST_GENERATOR.md)
+- [Explicit water crossings and Channel scenario](docs/WATER_CROSSINGS.md)
 - [Hybrid services, capacity and financial accounting](docs/HYBRID_SERVICES.md)
 - [Performance measurements](docs/RAILGEN_PERFORMANCE.md)
 - [Historical capacity-repair experiment](docs/experiments/capacity-repair.md)

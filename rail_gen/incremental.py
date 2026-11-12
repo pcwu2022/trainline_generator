@@ -11,7 +11,7 @@ import time
 
 import numpy as np
 from scipy import sparse
-from scipy.sparse.csgraph import connected_components
+from scipy.sparse.csgraph import connected_components, shortest_path
 
 from .evaluator import Evaluator
 from .track_layout import track_type
@@ -43,13 +43,55 @@ def neighbours(current, evaluator):
     return proposals
 
 
+def demand_connections(current, evaluator, limit=12):
+    """Complete shortest construction paths for the largest underserved OD markets.
+
+    Existing track has zero incremental construction cost. Missing sections are
+    proposed together, avoiding the zero-benefit first half of a connection.
+    """
+    rows, cols, costs = [], [], []
+    for i, edge in enumerate(evaluator.graph.edges):
+        cost = 1e-6 if current.genome[i] else max(1e-6, min(
+            alignment.capex_meur for alignment in edge.alignments.values()))
+        rows.extend((edge.a, edge.b))
+        cols.extend((edge.b, edge.a))
+        costs.extend((cost, cost))
+    adjacency = sparse.csr_matrix((costs, (rows, cols)), shape=(evaluator.n, evaluator.n))
+    # Rank unmet reference markets, including connected but capacity-limited ODs.
+    unmet = np.maximum(0, evaluator.reference_trips - current.trips)
+    ranked = sorted(range(len(unmet)), key=lambda j: (-unmet[j], j))
+    proposals = {}
+    considered = 0
+    distance, previous = shortest_path(adjacency, directed=False, return_predecessors=True)
+    for od in ranked:
+        if unmet[od] <= 0 or considered >= limit:
+            break
+        a, b = int(evaluator.origins[od]), int(evaluator.destinations[od])
+        if not np.isfinite(distance[a, b]):
+            continue
+        path = [b]
+        while path[-1] != a:
+            path.append(int(previous[a, path[-1]]))
+        missing = [evaluator.edge_lookup[tuple(sorted(pair))] for pair in zip(path, path[1:])]
+        missing = [i for i in missing if not current.genome[i]]
+        if not missing:
+            continue
+        considered += 1
+        for track in (1, 2):
+            proposal = current.genome.copy()
+            for i in missing:
+                proposal[i] = track if evaluator.allowed[i, track] else np.flatnonzero(evaluator.allowed[i, 1:])[0] + 1
+            proposals[tuple(proposal)] = proposal
+    return proposals
+
+
 def growth_choice(current, candidates):
     """Prefer useful ridership gains per added annual euro; never reset the network."""
     useful = []
     for candidate in candidates:
         delta_trips = candidate.metrics['passengers'] - current.metrics['passengers']
         delta_population = candidate.metrics['population_served'] - current.metrics['population_served']
-        delta_cost = candidate.objectives[0] - current.objectives[0]
+        delta_cost = candidate.metrics['annual_cost_eur'] - current.metrics['annual_cost_eur']
         if delta_trips < -1e-6 or delta_population < -1e-6:
             continue
         if delta_trips <= 1e-6 and delta_cost >= -.01:
@@ -159,7 +201,7 @@ def capacity_packages(current, evaluator, should_stop=lambda: False):
         if key not in scored:
             if should_stop():
                 return None
-            scored[key] = evaluator.evaluate(x, repair=True)
+            scored[key] = evaluator.evaluate(x, repair=True, incumbent=current, decision='growth')
             evaluations += 1
         return scored[key]
 
@@ -295,14 +337,19 @@ def search_incremental(graph, config, progress=print, observer=None, interrupted
                 publish(iteration - 1, 'before_profit', current.genome.copy())
                 profit_baseline = current.metrics.copy()
                 attempted.clear()
+                cache.clear()
             complete = topology(current.genome, evaluator) == (0, 0)
             if baseline is None and complete and iteration > math.ceil(p['generations'] * p['growth_fraction']):
                 baseline = current.metrics.copy()
                 attempted.clear()
+                cache.clear()
             phase = ('profit' if profit_baseline is not None else 'consolidation' if baseline is not None else
                      'integration' if iteration > math.ceil(p['generations'] * p['growth_fraction']) else 'growth')
             previous = current.genome.copy()
             proposals = neighbours(current, evaluator)
+            connection_proposals = demand_connections(current, evaluator) if baseline is None and profit_baseline is None else {}
+            for key, proposal in connection_proposals.items():
+                proposals[key] = (proposal, 1)
             pending = [(key, proposal, weight) for key, (proposal, weight) in proposals.items() if key not in attempted]
             if not pending:
                 if profit_baseline is not None:
@@ -332,6 +379,7 @@ def search_incremental(graph, config, progress=print, observer=None, interrupted
                             if selected is not None:
                                 current = selected
                                 attempted.clear()
+                                cache.clear()
                                 publish(iteration, 'capacity_repair', previous, True)
                                 continue
                             if should_stop():
@@ -342,21 +390,27 @@ def search_incremental(graph, config, progress=print, observer=None, interrupted
                         break
                     baseline = current.metrics.copy()
                     attempted.clear()
+                    cache.clear()
                     publish(iteration, 'consolidation', previous)
                     continue
                 publish(iteration, phase, previous)
                 status = 'neighbourhood_exhausted'
                 break
-            weights = np.array([value[2] for value in pending])
+            weights = np.array([value[2] for value in pending], dtype=float)
             weights /= weights.max()
             weights = np.maximum(weights, 1e-12)
             chosen = rng.choice(len(pending), min(p['population'], len(pending)),
                                 replace=False, p=weights / weights.sum())
             batch = [pending[i] for i in chosen]
+            # Demand packages are evaluated deterministically, not left to the
+            # random edge sampler. Deduplicate against sampled neighbours.
+            batch_keys = {key for key, _, _ in batch}
+            batch.extend(item for item in pending if item[0] in connection_proposals and item[0] not in batch_keys)
             attempted.update(key for key, _, _ in batch)
             missing = [(key, proposal) for key, proposal, _ in batch if key not in cache]
             def score(proposal):
-                return evaluator.evaluate(proposal, repair=True)
+                return evaluator.evaluate(proposal, repair=True, incumbent=current,
+                                          decision='profit' if profit_baseline is not None else 'growth' if baseline is None else 'cost')
             results = list(workers.map(score, [x for _, x in missing])) if workers else [score(x) for _, x in missing]
             evaluations += len(results)
             cache.update((key, result) for (key, _), result in zip(missing, results))
@@ -392,6 +446,7 @@ def search_incremental(graph, config, progress=print, observer=None, interrupted
             if selected is not None:
                 current = selected
                 attempted.clear()
+                cache.clear()
             publish(iteration, phase, previous, selected is not None)
             while len(cache) > max(128, 2 * p['population']):
                 cache.popitem(last=False)

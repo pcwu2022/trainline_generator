@@ -95,14 +95,18 @@ journey. Access time remains population-weighted. In elasticity mode, capacity
 fulfillment uses assigned potential demand, which changes with journey quality;
 the fixed gravity denominator applies only in legacy rail-share mode.
 
-Assignment is all-or-nothing to a best generalized journey. Parallel services
-are not pooled into a combined boarding frequency; passengers choose one service
-at each boarding. Each service section
-has its own seats × formation × frequency capacity, with the existing annual
-hours, peak factor and maximum load factor. An OD's carried demand is scaled by
-its most constrained ridden service section. Loads are then aggregated onto
-infrastructure; capacity is not independently granted again to each overlapping
-service. There is no iterative overflow rerouting onto spare parallel services.
+Assignment first tries the shortest generalized journey, then reroutes residual
+OD markets around full service segments for up to eight rounds. Parallel services
+retain separate boarding waits and capacities; they are not pooled into a single
+frequency. Each alternative uses its own journey time and elastic demand. Market
+fractions assigned across alternatives sum to at most one, so overflow routing
+cannot duplicate the reference market. Each section has its own seats × formation
+× frequency capacity with annual hours, peak factor and maximum load factor.
+Carried journeys can split across services. Reported OD incidence and journey
+statistics are passenger-weighted averages; revenue is allocated per actual path.
+Residual unserved market fractions retain their initial best-journey potential
+when calculating spill. This is a bounded assignment heuristic, not a queue or
+equilibrium simulation.
 
 All service frequencies using an edge are summed. Shared raster tiles also sum
 frequencies across services. A through service is counted once on a tile even if
@@ -289,3 +293,25 @@ runs, with 244 services in the selected plan. These are illustrative local
 measurements, not runtime guarantees or a claim that the dense design is feasible.
 The four-city/four-iteration incremental CLI example completed with all cities
 connected and produced the live and Pareto artifacts.
+
+## Demand-led expansion (network-capacity-v3)
+
+Incremental growth preserves purchased track counts and evaluates the accepted
+service plan on expanded infrastructure as a fallback. Additional service plans
+reserve incumbent frequencies and formations before allocating spare train paths.
+Freshly generated plans are still alternatives; growth chooses among plans using
+carried passenger gain per additional annual cost, while profit mode chooses net
+annual benefit. Hard construction and movement constraints remain in force.
+
+Each iteration deterministically considers construction paths for up to twelve
+OD markets ranked by unmet reference demand, alongside sampled edge edits.
+Paths minimize incremental alignment capital, treating existing track as already
+paid, and propose all missing sections together in CR and HSR variants where
+available. No city names participate. Capacity repair can widen stressed sections
+before acceptance. The bounded path and service searches do not guarantee the
+best connection or global assignment.
+
+Evaluation caches are invalidated after accepting a new incumbent because service
+fallbacks and inherited capacity depend on that incumbent. The new model version
+separates these metrics from historical assignments; old snapshots require explicit
+re-evaluation, and existing running processes must restart to load the new code.

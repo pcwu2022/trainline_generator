@@ -154,7 +154,10 @@ class Evaluator:
         return Infrastructure(selected, edge_caps, tile_caps, edge_track, active,
             self.lengths[np.arange(self.m), x], degree, served, components, share, multipliers)
 
-    def evaluate(self, genome, repair=False, details=False, services=None, track_counts=None):
+    def evaluate(self, genome, repair=False, details=False, services=None, track_counts=None,
+                 incumbent=None, decision='cost'):
+        if decision not in {'cost', 'growth', 'profit'}:
+            raise ValueError('Unknown service decision mode: ' + decision)
         raw = np.asarray(genome)
         if raw.shape != (self.m,) or not np.isfinite(raw).all() or not np.equal(raw, np.rint(raw)).all():
             raise ValueError('Genome must contain one integer infrastructure state per candidate edge')
@@ -170,6 +173,11 @@ class Evaluator:
         if counts.shape != x.shape or not np.isfinite(counts).all() or np.any((x > 0) & ~np.isin(counts, [1, 2, 4])) or np.any((x == 0) & (counts != 0)):
             raise ValueError('Track counts must be 1/2/4 on built edges and zero on unbuilt edges')
         counts = counts.astype(int, copy=True)
+        if incumbent is not None:
+            # Proposals inherit bought capacity; changing an edge never silently
+            # resets the rest of the network to the global default layout.
+            counts = np.where((x > 0) & (incumbent.genome > 0),
+                              np.maximum(counts, incumbent.track_counts), counts)
         if np.any((counts == 1) & (x == 2)):
             raise ValueError('HSR infrastructure is prohibited on single track')
         infrastructure = self.infrastructure(x, counts)
@@ -177,9 +185,49 @@ class Evaluator:
             plan = tuple(Service.from_dict(s) if isinstance(s, dict) else s for s in services)
             return self._evaluate_plan(x, counts, plan, optimize=False, details=details, infrastructure=infrastructure)
         networks = generate_plans(self, x, counts, infrastructure=infrastructure, return_networks=True)
-        results = (self._evaluate_plan(x, counts, network.services, optimize=True, details=details,
-                   infrastructure=infrastructure, network=network) for network in networks)
-        result = min(results, key=lambda r: (float(np.maximum(r.constraints - 1e-9, 0).sum()), r.objectives[0], -r.metrics['passengers']))
+        results = [self._evaluate_plan(x, counts, network.services, optimize=True, details=details,
+                   infrastructure=infrastructure, network=network) for network in networks]
+        additive = (incumbent is not None and
+                    np.all((incumbent.genome == 0) | (x >= incumbent.genome)))
+        if additive:
+            # Retaining the accepted plan is always an option on an expansion.
+            old = incumbent.service_plan
+            results.append(self._evaluate_plan(x, counts, old, optimize=False,
+                           details=details, infrastructure=infrastructure))
+            for network in networks:
+                combined = list(old)
+                seen = {(s.route, s.train_type) for s in old}
+                for service in network.services:
+                    key = (service.route, service.train_type)
+                    if key not in seen:
+                        combined.append(service)
+                        seen.add(key)
+                warm = ServiceNetwork(self, x, combined, counts, infrastructure)
+                # Admit additions against the actual incumbent frequencies.
+                usage = np.zeros(len(warm.resource_caps))
+                admitted = []
+                resources = warm.resource_services.tocsc()
+                for sid, service in enumerate(combined):
+                    indices = resources.indices[resources.indptr[sid]:resources.indptr[sid + 1]]
+                    if np.all(usage[indices] + service.frequency <= warm.resource_caps[indices] + 1e-9):
+                        admitted.append(service)
+                        usage[indices] += service.frequency
+                if tuple(admitted[:len(old)]) != old:
+                    continue
+                floor = np.array([s.frequency for s in admitted])
+                results.append(self._evaluate_plan(x, counts, tuple(admitted), optimize=True,
+                               details=details, infrastructure=infrastructure, frequency_floor=floor))
+        def rank(r):
+            hard = np.delete(r.constraints, 2)
+            violation = float(np.maximum(hard - 1e-9, 0).sum())
+            if decision == 'growth' and incumbent is not None:
+                gain = r.metrics['passengers'] - incumbent.metrics['passengers']
+                cost = r.metrics['annual_cost_eur'] - incumbent.metrics['annual_cost_eur']
+                return (violation, gain < -1e-6, -gain / max(1e6, cost), -gain, r.objectives[0])
+            if decision == 'profit':
+                return (violation, r.objectives[0], -r.metrics['passengers'])
+            return (violation, float(max(0, r.constraints[2] - 1e-9)), r.objectives[0], -r.metrics['passengers'])
+        result = min(results, key=rank)
         if repair:
             # Buy track capacity before discarding an overloaded connection.
             # Explicit track counts are authoritative (including saved plans).
@@ -190,20 +238,25 @@ class Evaluator:
                 stressed = (x > 0) & (counts < 4) & (pressure >= .95)
                 expanded_counts[stressed] *= 2
                 if stressed.any():
-                    expanded = self.evaluate(x, details=details, track_counts=expanded_counts)
+                    expanded = self.evaluate(x, details=details, track_counts=expanded_counts,
+                                             incumbent=incumbent, decision=decision)
                     hard = np.arange(len(result.constraints)) != 2
                     if (np.all(expanded.constraints[hard] <= 1e-9)
                             and expanded.metrics['passengers'] > result.metrics['passengers'] + 1e-6):
                         result = expanded
                         counts = expanded_counts
             unused = (x > 0) & (result.directional_load <= self.config['operations']['zero_load_threshold'])
+            if incumbent is not None:
+                unused &= incumbent.genome == 0
             if unused.any():
                 x[unused], counts[unused] = 0, 0
                 # Regenerate the whole service plan when infrastructure changes.
-                return self.evaluate(x, repair=False, details=details, track_counts=counts)
+                return self.evaluate(x, repair=False, details=details, track_counts=counts,
+                                     incumbent=incumbent, decision=decision)
         return result
 
-    def _evaluate_plan(self, x, counts, plan, optimize, details, infrastructure=None, network=None):
+    def _evaluate_plan(self, x, counts, plan, optimize, details, infrastructure=None, network=None,
+                       frequency_floor=None):
         c, o, f = self.config, self.config['operations'], self.config['finance']
         infrastructure = infrastructure if infrastructure is not None else self.infrastructure(x, counts)
         network = network if network is not None else ServiceNetwork(self, x, plan, counts, infrastructure)
@@ -215,7 +268,7 @@ class Evaluator:
         stock = [c['rolling_stock'][s.train_type] for s in plan]
         seats = np.array([s['seats'] for s in stock])
         if optimize and ns:
-            frequency = network.fit_frequencies(np.full(ns, o['initial_frequency']))
+            frequency = network.fit_frequencies(np.full(ns, o['initial_frequency']), floor=frequency_floor)
             max_cap = max(c['tracks'][t]['max_frequency'] * 2 for t in TRACKS)
             levels = np.array(sorted(set(o['low_frequencies'] + [o['minimum_frequency']] + list(range(1, math.ceil(max_cap) + 1)))))
             if c['services']['optimize_frequencies']:
@@ -226,7 +279,7 @@ class Evaluator:
                     np.maximum.at(maximum, network.segment_service, load)
                     required = o['peak_factor'] * maximum / hours / (seats * o['target_load_factor'])
                     requested = levels[np.minimum(np.searchsorted(levels, required), len(levels) - 1)]
-                    updated = network.fit_frequencies(requested)
+                    updated = network.fit_frequencies(requested, floor=frequency_floor)
                     if np.array_equal(updated, frequency):
                         break
                     frequency = updated
@@ -242,13 +295,14 @@ class Evaluator:
             maximum = np.zeros(ns)
             np.maximum.at(maximum, network.segment_service, raw_load)
             units = np.clip(np.ceil(maximum / unit_capacity), 1, o['maximum_train_units']).astype(int)
+            if frequency_floor is not None:
+                units = np.maximum(units, [s.formation for s in plan])
         service_capacity = unit_capacity * units
         segment_capacity = service_capacity[network.segment_service]
-        ratios = np.minimum(1, np.divide(segment_capacity, raw_load, out=np.ones_like(raw_load), where=raw_load > 0))
-        scale = np.ones(len(trips))
-        rows, pairs = incidence.nonzero()
-        np.minimum.at(scale, pairs, ratios[rows])
-        trips *= scale
+        assignment, trips = network.assign_capacity(frequency, segment_capacity, first=assignment)
+        incidence = assignment['incidence']
+        unspilled = float(assignment['trips'].sum())
+        scale = np.divide(trips, assignment['trips'], out=np.zeros_like(trips), where=assignment['trips'] > 0)
         segment_load = np.asarray(incidence @ (trips / 2)).ravel()
         edge_incidence = assignment['edge_incidence']
         edge_load = np.asarray(edge_incidence @ (trips / 2)).ravel()
@@ -357,8 +411,7 @@ class Evaluator:
                 carried_modal_shift_change=float(np.sum(assignment['shift_change'] * scale)),
                 carried_induced_demand_change=float(np.sum(assignment['induced_change'] * scale)),
                 demand_fulfillment_ratio=passengers / eligible_needs if eligible_needs else 0.0)
-        per_km = np.divide(trips * assignment['fares'], assignment['ridden'], out=np.zeros_like(trips), where=assignment['ridden'] > 0)
-        edge_revenue = np.asarray(edge_incidence @ per_km).ravel() * length
+        edge_revenue = assignment['edge_fare_flow'] * length
         station_split = np.divide(self.station_capital, degree, out=np.zeros(self.n), where=degree > 0)
         edge_station = (station_split[self.a] + station_split[self.b]) * (x > 0)
         edge_net = edge_revenue - edge_opex * (1 + f['overhead_rate']) - edge_track * (self.crf['track'] + f['track_maintenance_rate']) - edge_station * (self.crf['station'] + f['station_opex_rate']) - edge_fleet * self.crf['fleet']
