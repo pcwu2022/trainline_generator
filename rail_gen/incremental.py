@@ -61,6 +61,27 @@ def growth_choice(current, candidates):
     return max(useful, key=lambda value: value[0])[1] if useful else None
 
 
+def buildable(candidate):
+    """Spill is unmet demand to serve; all other feasibility limits stay hard."""
+    hard = np.arange(len(candidate.constraints)) != 2
+    return bool(np.all(candidate.constraints[hard] <= 1e-9))
+
+
+def capacity_choice(current, candidates, evaluator):
+    """Reward additional carried trips without sacrificing coverage or connections."""
+    old_missing, old_components = topology(current.genome, evaluator)
+    useful = []
+    for candidate in candidates:
+        missing, components = topology(candidate.genome, evaluator)
+        gain = candidate.metrics['passengers'] - current.metrics['passengers']
+        if (missing > old_missing or components > old_components or gain <= 1e-6
+                or candidate.metrics['population_served'] < current.metrics['population_served'] - 1e-6):
+            continue
+        cost = candidate.metrics['annual_cost_eur'] - current.metrics['annual_cost_eur']
+        useful.append(((gain / max(1e6, cost), gain), candidate))
+    return max(useful, key=lambda item: item[0])[1] if useful else None
+
+
 def consolidation_choice(current, candidates, baseline, config):
     """Retain a fixed growth baseline, preventing repeated percentage erosion."""
     p = config['search']
@@ -231,7 +252,7 @@ def search_incremental(graph, config, progress=print, observer=None, interrupted
     package_diagnostics = None
     profit_baseline = None
     profit_enabled = p.get('profit', False)
-    halfway = math.ceil(p['generations'] / 2)
+    profit_start_after = math.ceil(p['generations'] * .8)
     workers = ThreadPoolExecutor(p['workers']) if p['workers'] > 1 else None
 
     def publish(iteration, phase, previous=None, accepted=False):
@@ -256,6 +277,7 @@ def search_incremental(graph, config, progress=print, observer=None, interrupted
             progress(f'Iteration {iteration}/{p["generations"]}: {phase}; '
                 f'{current.metrics["active_edges"]} edges, {current.metrics["passengers"]/1e6:.2f}M trips/year, '
                 f'need satisfaction {current.metrics["need_satisfaction_ratio"]:.2%}, '
+                f'spill {current.metrics["spill_fraction"]:.2%}, '
                 f'{current.metrics["unserved_stations"]} unserved cities, {current.metrics["active_components"]} components, '
                 f'net EUR {current.metrics["net_eur"]/1e6:.1f}M/year; '
                 f'{"accepted change" if accepted else "retained network"}', flush=True)
@@ -269,7 +291,7 @@ def search_incremental(graph, config, progress=print, observer=None, interrupted
             if p['time_limit_seconds'] and time.perf_counter() - started >= p['time_limit_seconds']:
                 status = 'time_limit'
                 break
-            if profit_enabled and profit_baseline is None and iteration > halfway:
+            if profit_enabled and profit_baseline is None and iteration > profit_start_after:
                 publish(iteration - 1, 'before_profit', current.genome.copy())
                 profit_baseline = current.metrics.copy()
                 attempted.clear()
@@ -338,10 +360,11 @@ def search_incremental(graph, config, progress=print, observer=None, interrupted
             results = list(workers.map(score, [x for _, x in missing])) if workers else [score(x) for _, x in missing]
             evaluations += len(results)
             cache.update((key, result) for (key, _), result in zip(missing, results))
-            candidates = [cache[key] for key, _, _ in batch if cache[key].feasible
+            candidates = [cache[key] for key, _, _ in batch if buildable(cache[key])
                           and not np.array_equal(cache[key].genome, current.genome)]
             for candidate in candidates:
-                archive[tuple(candidate.genome)] = candidate.objectives.copy()
+                if candidate.feasible:
+                    archive[tuple(candidate.genome)] = candidate.objectives.copy()
             if archive:
                 keys = sorted(archive)
                 front = nondominated([archive[key] for key in keys])
@@ -355,7 +378,13 @@ def search_incremental(graph, config, progress=print, observer=None, interrupted
             elif phase == 'integration':
                 selected = integration_choice(current, candidates, evaluator)
             else:
-                selected = growth_choice(current, candidates)
+                selected = (capacity_choice(current, candidates, evaluator)
+                    if current.metrics['spill_fraction'] > evaluator.config['constraints']['maximum_spill_fraction']
+                    else None)
+                if selected is not None:
+                    phase = 'capacity_expansion'
+                else:
+                    selected = growth_choice(current, candidates)
                 if selected is None:
                     selected = integration_choice(current, candidates, evaluator)
                     if selected is not None:
@@ -370,6 +399,8 @@ def search_incremental(graph, config, progress=print, observer=None, interrupted
         if workers:
             workers.shutdown()
     keys = sorted(archive)
+    if current.metrics['spill_fraction'] > evaluator.config['constraints']['maximum_spill_fraction'] and status == 'completed':
+        status = 'capacity_shortfall'
     if status == 'completed' and not profit_enabled and topology(current.genome, evaluator) != (0, 0):
         status = 'coverage_incomplete'
     dimensions = 4 if p['include_time_objective'] else 3

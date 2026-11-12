@@ -26,9 +26,10 @@ class ProfitTests(unittest.TestCase):
         updates = []
         run = search(graph_fixture(), c, progress=None, observer=updates.append)
         boundary = next(u for u in updates if u.phase == 'before_profit')
-        self.assertEqual(boundary.iteration, 15)
+        self.assertEqual(boundary.iteration, 24)
         profit = [u for u in updates if u.phase == 'profit']
         self.assertTrue(profit)
+        self.assertEqual(profit[0].iteration, 25)
         previous = boundary
         for update in profit:
             self.assertGreaterEqual(update.result.metrics['net_eur'], previous.result.metrics['net_eur'])
@@ -36,13 +37,13 @@ class ProfitTests(unittest.TestCase):
         self.assertIn(run.status, ('completed', 'profit_saturated'))
         self.assertLessEqual(updates[-1].iteration, 30)
 
-    def test_exhaustion_before_half_does_not_prevent_profit(self):
+    def test_exhaustion_before_final_twenty_percent_does_not_prevent_profit(self):
         c = incremental_config()
         c['search'].update(profit=True, generations=10)
         with patch('rail_gen.incremental.neighbours', return_value={}):
             run = search(graph_fixture(), c, progress=None)
         self.assertEqual(run.status, 'profit_saturated')
-        self.assertEqual(run.history[-1]['iteration'], 6)
+        self.assertEqual(run.history[-1]['iteration'], 9)
         self.assertEqual(run.history[-2]['phase'], 'before_profit')
 
     def test_profit_can_sacrifice_service(self):
@@ -72,7 +73,7 @@ class ProfitTests(unittest.TestCase):
             directory = Path(temporary)
             saved = json.loads((directory / 'before_profit.json').read_text())
             boundary = next(u for u in updates if u.phase == 'before_profit')
-            self.assertEqual(saved['iteration'], 3)
+            self.assertEqual(saved['iteration'], 5)
             np.testing.assert_array_equal(saved['genome'], boundary.result.genome)
             self.assertEqual(saved['metrics'], boundary.result.metrics)
             self.assertTrue((directory / 'before_profit.png').is_file())

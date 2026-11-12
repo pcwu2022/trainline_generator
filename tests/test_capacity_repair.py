@@ -7,7 +7,8 @@ import numpy as np
 from test_railgen import config, graph_fixture
 from rail_gen.config import load_config
 from rail_gen.evaluator import Evaluator
-from rail_gen.incremental import capacity_packages, integration_choice, neighbours, topology
+from rail_gen.incremental import buildable, capacity_packages, integration_choice, neighbours, topology
+from rail_gen.search import search
 from rail_gen.prep import City
 from rail_gen.report import geojson
 
@@ -68,6 +69,8 @@ class CapacityRepairTests(unittest.TestCase):
         c = config()
         c['demand']['k'] = .4
         c['operations']['maximum_train_units'] = 1
+        # Isolate alternative-route repair when widening cannot add capacity.
+        c['track_layouts']['four']['max_frequency'] = c['track_layouts']['double']['max_frequency'].copy()
         c['search'].update(capacity_repair_steps=3, capacity_repair_candidates=8)
         c['services'].update(max_through_routes=0, plan_trials=1)
         cities = [City('a', 'A', 2, 46, 1e6, .8, .1),
@@ -106,6 +109,7 @@ class CapacityRepairTests(unittest.TestCase):
 
     def test_default_capacity_policy_buys_capacity_for_high_demand(self):
         c = load_config(profile=None)
+        c['demand'].update(a=.9, beta=1.6)
         self.assertEqual(c['operations']['maximum_train_units'], 2)
         self.assertGreater(c['search']['capacity_repair_steps'], 0)
         c['demand']['k'] = .2
@@ -127,6 +131,38 @@ class CapacityRepairTests(unittest.TestCase):
         ]:
             with self.subTest(overrides=overrides), self.assertRaises(ValueError):
                 load_config(overrides=overrides)
+
+    def test_spill_buys_tracks_and_keeps_unmet_demand_visible(self):
+        c = config()
+        c['demand']['k'] = 1e4
+        c['services']['plan_trials'] = 1
+        e = Evaluator(graph_fixture(), c)
+        fixed = e.evaluate([2, 0, 0], track_counts=[2, 0, 0])
+        expanded = e.evaluate([2, 0, 0], repair=True)
+        self.assertEqual(expanded.track_counts[0], 4)
+        self.assertGreater(expanded.metrics['track_capital_eur'], fixed.metrics['track_capital_eur'])
+        self.assertGreater(expanded.metrics['passengers'], fixed.metrics['passengers'])
+        self.assertGreater(expanded.metrics['potential_rail_trips'], expanded.metrics['passengers'])
+        self.assertFalse(expanded.feasible)
+        self.assertTrue(buildable(expanded))
+        constrained = deepcopy(expanded)
+        constrained.constraints[0] = 1
+        self.assertFalse(buildable(constrained))
+        replay = e.evaluate(expanded.genome, services=expanded.services,
+                            track_counts=expanded.track_counts)
+        self.assertAlmostEqual(replay.metrics['passengers'], expanded.metrics['passengers'])
+
+    def test_extreme_demand_search_grows_instead_of_retaining_empty_network(self):
+        c = config()
+        c['demand'].update(k=10, a=1.2)
+        c['search'].update(algorithm='incremental', generations=5, population=12, profit=True)
+        updates = []
+        search(graph_fixture(), c, progress=None, observer=updates.append)
+        built = [u.result for u in updates if u.result.metrics['active_edges'] > 0]
+        self.assertTrue(built)
+        self.assertTrue(any(np.any(r.track_counts == 4) for r in built))
+        self.assertTrue(all(buildable(r) for r in built))
+        self.assertTrue(any(r.metrics['lost_trips'] > 0 for r in built))
 
 
 if __name__ == '__main__':

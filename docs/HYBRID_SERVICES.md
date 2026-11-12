@@ -33,8 +33,10 @@ Track count is independent of the three-state genome. `infrastructure_layout`
 sets the run-wide search layout (`single`, `double`, or `four`; default `double`).
 Programmatic evaluation also accepts `track_counts=[...]` with 1/2/4 on built
 edges and zero elsewhere. The short-lived 3/4/5 genome encoding is retired.
-Searches currently optimize infrastructure type and services, **not per-edge
-track counts**; evaluate explicit counts or compare runs with different layouts.
+Searches optimize infrastructure type and services. Automatic repair can widen
+overloaded segments toward four tracks when doing so carries more passengers;
+explicit track counts remain fixed. This is bounded capacity repair, not an
+exhaustive optimization over every track-count combination.
 
 | Layout | Track construction cost | CR infrastructure trains/h/direction | HSR infrastructure trains/h/direction |
 | --- | ---: | ---: | ---: |
@@ -84,11 +86,14 @@ market represents two one-way markets. There are no one-way or express services.
 Routing minimizes travel, waits, transfers and an additive fare-time proxy based
 on ridden section distance and stock yield. The final fare retains the existing
 OD-distance and taper convention, with distance-weighted stock yield for mixed
-journeys; a detour does not itself earn extra fare. Final generalized time, rail
-share, demand, revenue and spill use that final fare. Because OD fares are not
+journeys; a detour does not itself earn extra fare. Final generalized time,
+legacy rail-share demand and revenue use that final fare. Reference-elasticity
+demand uses fare-free journey hours and a fixed gravity baseline without logistic
+uptake; fares affect routing but not its elasticity ratio. Because OD fares are not
 additive, the proxy-selected journey need not be the exact minimum final-fare
-journey. Access time and the fixed capturable gravity-demand denominator remain
-unchanged.
+journey. Access time remains population-weighted. In elasticity mode, capacity
+fulfillment uses assigned potential demand, which changes with journey quality;
+the fixed gravity denominator applies only in legacy rail-share mode.
 
 Assignment is all-or-nothing to a best generalized journey. Parallel services
 are not pooled into a combined boarding frequency; passengers choose one service
@@ -195,7 +200,10 @@ Explicit supplied service plans bypass automatic sizing.
 Plans are ranked first by total positive normalized constraint violation, then by
 net annual cost, then by carried trips. This bounded inner economic heuristic is
 not an exhaustive service Pareto optimization; the outer search still retains its
-existing infrastructure Pareto archive and growth/consolidation rules. In
+infrastructure Pareto archive and growth/consolidation rules. Incremental search
+can retain spill-only infeasible live networks for capacity expansion and
+calibration, while the archive remains restricted to fully feasible alternatives.
+Budget and other non-spill constraints remain hard. In
 particular, it may choose CR stock even on HSR infrastructure if HSR operating
 costs are not justified. HSR-only stock on an entirely conventional route can be
 evaluated explicitly, but is not generated automatically. There is no randomness

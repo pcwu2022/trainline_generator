@@ -181,6 +181,21 @@ class Evaluator:
                    infrastructure=infrastructure, network=network) for network in networks)
         result = min(results, key=lambda r: (float(np.maximum(r.constraints - 1e-9, 0).sum()), r.objectives[0], -r.metrics['passengers']))
         if repair:
+            # Buy track capacity before discarding an overloaded connection.
+            # Explicit track counts are authoritative (including saved plans).
+            if track_counts is None and result.metrics['spill_fraction'] > self.config['constraints']['maximum_spill_fraction']:
+                pressure = np.divide(result.directional_load, result.edge_capacity,
+                    out=np.zeros(self.m), where=result.edge_capacity > 0)
+                expanded_counts = counts.copy()
+                stressed = (x > 0) & (counts < 4) & (pressure >= .95)
+                expanded_counts[stressed] *= 2
+                if stressed.any():
+                    expanded = self.evaluate(x, details=details, track_counts=expanded_counts)
+                    hard = np.arange(len(result.constraints)) != 2
+                    if (np.all(expanded.constraints[hard] <= 1e-9)
+                            and expanded.metrics['passengers'] > result.metrics['passengers'] + 1e-6):
+                        result = expanded
+                        counts = expanded_counts
             unused = (x > 0) & (result.directional_load <= self.config['operations']['zero_load_threshold'])
             if unused.any():
                 x[unused], counts[unused] = 0, 0

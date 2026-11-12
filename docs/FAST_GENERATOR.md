@@ -1,214 +1,165 @@
-"""Metro nodes, exclusive station catchments and a small static candidate graph."""
-from dataclasses import dataclass
-import csv
-import json
-from pathlib import Path
+# Fast railway generator
 
-import numpy as np
-from pyproj import Transformer
-from scipy.spatial import Delaunay, QhullError, cKDTree
-from rail_model import center_radius
+The current pipeline lives in `rail_gen/`. It uses cached geography, candidate
+railway alignments, explicit train services, annual passenger demand and lifecycle
+costs. It is a strategic scenario model, not a calibrated traffic forecast.
 
-TO_METRIC = Transformer.from_crs('EPSG:4326', 'EPSG:3035', always_xy=True)
-TO_WGS84 = Transformer.from_crs('EPSG:3035', 'EPSG:4326', always_xy=True)
+## Run
 
+Run commands from the repository root:
 
-@dataclass
-class City:
-    id: str
-    name: str
-    lon: float
-    lat: float
-    population: float
-    kappa: float = 0.0
-    access_hours: float = 0.0
-    country: str = ''
-    radius_km: float = 0.0
+```sh
+.venv/bin/python -m pip install -r requirements-railgen.txt
+.venv/bin/python -m rail_gen run --profile italy --iterations 200 \
+  --output runs/italy-live --snapshot-every 10
+```
 
-    @property
-    def xy(self):
-        return np.array(TO_METRIC.transform(self.lon, self.lat)) / 1000
+Add `--profit` to optimize profit during the final 20% of iterations. The equivalent
+entry point is `optimize.py --solver pareto`. Optional population algorithms are
+`--algorithm nsga2` and `--algorithm nsga3`; they do not support `--profit`.
+Use an empty output directory. `--overwrite` deletes existing contents.
 
+## Configuration
 
-def distances(cities):
-    """Great-circle distance matrix in km, independent of projected routing grid."""
-    coordinates = np.radians([[c.lon, c.lat] for c in cities])
-    lon, lat = coordinates.T
-    h = np.sin((lat[:, None] - lat) / 2)**2 + np.cos(lat[:, None]) * np.cos(lat) * np.sin((lon[:, None] - lon) / 2)**2
-    return 12742.0176 * np.arcsin(np.sqrt(np.clip(h, 0, 1)))
+[rail_gen/config.json](../rail_gen/config.json) contains defaults and named profiles.
+External `--config` overrides defaults, the selected profile applies next, and CLI
+arguments apply last. `run_config.json` records effective settings for each run.
+The root [config.json](../config.json) belongs to the separate legacy optimizer.
 
+Input paths select city records, population cells, boundaries and terrain. `bbox`,
+`countries`, `minimum_population` and `max_cities` control city selection.
+Candidate edges combine nearest neighbors, Delaunay links and forced gravity-ranked
+pairs; nearby intermediate cities can split candidate links. Geography and
+alignment caches live under `runs/railgen-cache/` by default.
 
-def read_cities(config, samples=None):
-    path = Path(config['cities_file'])
-    if path.suffix.lower() == '.csv':
-        with path.open(newline='') as stream:
-            records = list(csv.DictReader(stream))
-    else:
-        records = json.loads(path.read_text())
-    nodes = []
-    w, s, e, n = config['bbox']
-    for index, r in enumerate(records):
-        lon, lat = float(r['lon']), float(r['lat'])
-        population = float(r.get('population', r.get('pop', 0)))
-        if not all(np.isfinite([lon, lat, population])) or population < 0:
-            raise ValueError(f'Invalid city record {index}')
-        if not (w <= lon <= e and s <= lat <= n):
-            continue
-        if config['countries'] and r.get('country') not in config['countries']:
-            continue
-        if population < config['prep']['minimum_population']:
-            continue
-        nodes.append(City(str(r.get('id', index)), r['name'], lon, lat, population,
-                          country=r.get('country', '')))
-    nodes.sort(key=lambda c: (-c.population, c.id))
-    if len(nodes) < 2 or len({c.id for c in nodes}) != len(nodes):
-        raise ValueError('Need at least two cities with distinct IDs')
-    if len({(c.lon, c.lat) for c in nodes}) != len(nodes):
-        raise ValueError('City centres must have distinct coordinates; merge duplicate records')
-    if samples is None:
-        xy, _, density = population_samples(config)
-    else:
-        xy, _, density = samples
-    set_capture_radii(nodes, xy, density, config)
-    selected = []
-    for city in nodes:
-        # Keep the larger city when its metropolitan catchment contains a
-        # smaller center. Only retained cities suppress later candidates.
-        if any(np.linalg.norm(city.xy - other.xy) <= other.radius_km for other in selected):
-            continue
-        selected.append(city)
-        if len(selected) == config['prep']['max_cities']:
-            break
-    if len(selected) < 2:
-        raise ValueError('Need at least two cities outside retained metropolitan catchments')
-    return selected
+## Population and demand
 
+H3 density is smoothed with weight 0.4 on the center and 0.1 on each adjacent cell;
+missing neighbors contribute zero. Station radius in km is
+`center_coefficient * sqrt(local_density)`. Larger retained cities suppress smaller
+city centers inside their radius. Population cells are assigned exclusively to
+the nearest retained city, provided they fall inside its radius.
 
-def set_capture_radii(cities, xy, density, config):
-    """Use the same local density for city screening, capture and map circles."""
-    _, nearest = cKDTree(xy).query([city.xy for city in cities])
-    for city, index in zip(cities, nearest):
-        city.radius_km = center_radius(float(density[index]), config['prep']['center_coefficient'])
+Effective population is captured population times `prep.uptake`:
 
+```text
+E_i = P_i * kappa_i = captured_population_i * uptake
+A_i = population_weighted_mean_access_distance_i / access_speed_kmh
+M_ij = k * E_i^a * E_j^a / max(distance_ij, minimum_distance_km)^beta
+```
 
-def neighborhood_densities(features):
-    """Smooth H3 density using 40% center and 10% per adjacent hexagon.
+OD distance is great-circle distance. Self-trips and pairs beyond
+`maximum_distance_km` have zero demand. Catchment and routing distances use the
+projected grid. `kappa` can exceed one because metropolitan catchments can contain
+more people than the city-proper population.
 
-    Missing neighbors contribute zero; use the full input before bbox filtering.
-    Non-H3 inputs retain their declared population/area density.
-    """
-    import h3
-    raw = {}
-    values = []
-    for feature in features:
-        p = feature['properties']
-        count = float(p['population'])
-        index = p.get('h3Index')
-        area = h3.cell_area(index, unit='km^2') if index else float(p['area_km2'])
-        if not np.isfinite(count) or count < 0:
-            raise ValueError('Population cells must contain finite nonnegative population')
-        if not np.isfinite(area) or area <= 0:
-            raise ValueError('Population cell area must be positive')
-        value = count / area
-        values.append(value)
-        if index:
-            if index in raw:
-                raise ValueError('Duplicate H3 population cells')
-            raw[index] = value
-    return np.asarray([
-        .4 * value + .1 * sum(raw.get(neighbor, 0.0)
-                             for neighbor in h3.grid_disk(index, 1) if neighbor != index)
-        if (index := feature['properties'].get('h3Index')) else value
-        for feature, value in zip(features, values)])
+The default `reference_elasticity` mode uses:
 
+```text
+T0 = A_i + A_j + distance * reference_detour_ratio / reference_speed_kmh
+     + reference_wait_hours + reference_transfer_hours
+Q0 = 2 * M_ij
+T = A_i + A_j + onboard_time + waiting_time + transfer_count * transfer_hours
+r = T / T0
+potential_trips = Q0 * r^total_elasticity
+modal_shift_change = Q0 * (r^shift_elasticity - 1)
+induced_change = potential_trips - Q0 - modal_shift_change
+```
 
-def population_samples(config):
-    """Existing point/H3 GeoJSON, or polygon cells represented by their centroids."""
-    import h3
-    from shapely.geometry import shape
-    features = json.loads(Path(config['population_file']).read_text())['features']
-    smoothed_density = neighborhood_densities(features)
-    xy, people, density = [], [], []
-    w, s, e, n = config['bbox']
-    for feature, local_density in zip(features, smoothed_density):
-        geom, p = feature['geometry'], feature['properties']
-        if geom['type'] == 'Point':
-            lon, lat = geom['coordinates'][:2]
-        else:
-            point = shape(geom).centroid
-            lon, lat = point.x, point.y
-        if not (w <= lon <= e and s <= lat <= n):
-            continue
-        count = float(p['population'])
-        if not np.isfinite(count) or count < 0:
-            raise ValueError('Population cells must contain finite nonnegative population')
-        area = h3.cell_area(p['h3Index'], unit='km^2') if 'h3Index' in p else float(p['area_km2'])
-        if not np.isfinite(area) or area <= 0:
-            raise ValueError('Population cell area must be positive')
-        xy.append(np.array(TO_METRIC.transform(lon, lat)) / 1000)
-        people.append(count)
-        density.append(local_density)
-    if not xy:
-        raise ValueError('Population input has no cells within the bounding box')
-    return np.asarray(xy), np.asarray(people), np.asarray(density)
+Trips are annual and include both directions. The reference is synthetic and fixed
+within an evaluator. It has no logistic uptake or reference-fare penalty.
+Disconnected pairs have zero potential trips. Slower journeys give signed demand
+reductions. The shift/induced breakdown is an assumed elasticity decomposition,
+not explicit simulation of other modes or trip purposes.
 
+`t0_hours`, `sigma_hours` and `reference_yield_eur_pkm` do not affect reference
+elasticity demand. Legacy `rail_share` mode retains the logistic function
+`1 / (1 + exp((generalized_hours - t0_hours) / sigma_hours))`.
+Actual fares affect route choice and revenue; reference-elasticity demand responds
+to fare-free journey time. Fare is:
 
-def station_capture(cities, xy, people, density, config):
-    """Assign samples exclusively; let the raster catchment exceed city-proper P."""
-    p = config['prep']
-    set_capture_radii(cities, xy, density, config)
-    distance, owner = cKDTree([c.xy for c in cities]).query(xy)
-    for i, city in enumerate(cities):
-        included = (owner == i) & (distance <= city.radius_km)
-        total = float(people[included].sum())
-        # kappa is a multiplier relative to the city-file population, not a
-        # probability: metropolitan catchments can exceed city-proper totals.
-        city.kappa = total / city.population * p['uptake']
-        city.access_hours = float(np.average(distance[included], weights=people[included])) / p['access_speed_kmh'] if total else 0.0
-    return cities
+```text
+fare = distance * yield * (max(distance, minimum_distance_km) / fare_reference_km)^(-fare_taper)
+```
 
+Yield is weighted by ridden distance for mixed-stock journeys. Changing `a` changes
+absolute demand dramatically because populations are measured in people; refit
+`k` whenever population exponent, catchments, distance exponent or demand model
+changes. Fit annual city-pair observations with `calibrate --backtest ... --fit k a`.
+The backtest CSV schema is defined in `rail_gen/calibrate.py`; reserve independent
+corridors for validation. Parameters without observations remain assumptions.
 
-def candidate_pairs(cities, config):
-    p = config['prep']
-    d = distances(cities)
-    n = len(cities)
-    pairs = set()
-    for a in range(n):
-        for b in np.argsort(d[a])[1:p['neighbors'] + 1]:
-            if d[a, b] <= p['max_edge_km']:
-                pairs.add(tuple(sorted((a, int(b)))))
-    xy = np.array([c.xy for c in cities])
-    if n >= 3:
-        try:
-            for triangle in Delaunay(xy).simplices:
-                for a, b in zip(triangle, np.roll(triangle, 1)):
-                    if d[a, b] <= p['max_edge_km']:
-                        pairs.add(tuple(sorted((int(a), int(b)))))
-        except QhullError:
-            pass  # Collinear cities still have nearest-neighbour and forced edges.
-    from .demand import gravity_matrix
-    gravity = gravity_matrix(cities, config)
-    ranked = sorted(((a, b) for a in range(n) for b in range(a + 1, n)),
-                    key=lambda ab: (-gravity[ab], ab))
-    pairs.update(ranked[:p['force_pairs']])
-    retained = set(pairs)
-    for a, b in sorted(pairs):
-        direction = xy[b] - xy[a]
-        position = (xy - xy[a]) @ direction / np.dot(direction, direction)
-        near = np.linalg.norm(xy - (xy[a] + position[:, None] * direction), axis=1)
-        via = np.flatnonzero((position > 0) & (position < 1) & (near <= p['via_tolerance_km']) &
-                            (d[a] + d[b] <= p['via_detour_ratio'] * d[a, b]))
-        if len(via):
-            middle = int(via[np.argmin(near[via])])
-            retained.discard((a, b))
-            # Always retain the replacement links, including for forced long pairs.
-            retained.add(tuple(sorted((a, middle))))
-            retained.add(tuple(sorted((middle, b))))
-    return sorted(retained)
+## Services and capacity
 
+See [the hybrid services guide](HYBRID_SERVICES.md) for full routing, formation,
+track layout and cost details. Each boarding adds half the service headway to
+journey time. Segment time includes length divided by the minimum track/train
+speed plus dwell time. Through services avoid intermediate boarding waits.
 
-def prepare(config):
-    xy, people, density = population_samples(config)
-    cities = read_cities(config, (xy, people, density))
-    station_capture(cities, xy, people, density, config)
-    return cities, candidate_pairs(cities, config), (xy, people, density)
+Frequency sizing targets `target_load_factor` over a bounded number of assignment
+iterations. Annual directional service capacity is:
+
+```text
+capacity = seats * formation * frequency * hours_per_day * days_per_year
+           * maximum_load_factor / peak_factor
+```
+
+Capacity is shared across passengers using each service segment. Carried OD trips
+are scaled by the most constrained segment on their assigned journey. There is no
+queue simulation or overflow rerouting. Spill is potential minus carried trips;
+spill fraction is spill divided by potential trips, or zero for zero potential.
+
+With automatic repair, overloaded segments can widen from the configured layout
+toward four tracks when added capacity carries more passengers. Additional tracks,
+trains and operations are charged. Explicit track counts and service plans remain
+authoritative. Four tracks is the current upper bound, not unlimited capacity.
+
+## Incremental search
+
+The search starts empty and edits the last accepted network. Growth favors carried
+ridership gains relative to annual net cost and can add coverage. When an incumbent
+has excessive spill, capacity-expansion selection favors more carried passengers
+without losing coverage or worsening component count. Integration prioritizes
+joining components and serving missing candidate cities. Connected networks can
+enter cost consolidation after `growth_fraction` of the iteration budget.
+
+Spill-only infeasible candidates may become the live network, allowing diagnostic
+outputs even under excessive demand. Budget, subsidy, component-share and shared
+track-capacity constraints remain hard. `feasible` still includes the spill limit;
+only fully feasible alternatives enter the Pareto archive. Reaching the iteration
+limit with excessive spill gives `capacity_shortfall`.
+
+With `--profit`, the transition happens after `ceil(0.8 * iterations)` updates:
+for 200 iterations, profit starts at 161. It saves `before_profit` artifacts.
+Profit selection requires a net annual improvement and permits service reductions.
+The bounded search can stop at neighborhood exhaustion, incomplete coverage or
+profit saturation. More iterations do not guarantee a connected or optimal network.
+
+## Outputs and interpretation
+
+- `latest.json`, `latest.geojson`, `latest.png`: the current accepted network.
+- `history.jsonl`, `progress.png`, `progress.gif`: evolution over iterations.
+- `analysis.json`, `analysis.png`: station/corridor counts and OD demand components.
+- `latest_revenue_cost.png`, `cost_breakdown.log`, `report.md`: financial analysis.
+- `run_config.json`, manifests and `checkpoint.npz`: settings and saved state.
+- `pareto/`: evaluated alternatives, rather than successive live networks.
+
+Corridor satisfaction is carried divided by assigned potential demand. It measures
+capacity fulfillment, not frequency quality: poor service can suppress potential
+demand while retaining 100% fulfillment. Network/station denominators use candidate
+potential for connected pairs and reference trips for unreachable pairs. Station
+endpoint counts count each trip at both ends. Corridor counts include transfer legs.
+Map captions referring to a fixed market are legacy wording in elasticity mode.
+
+The inner service-plan choice prioritizes constraint violation, then net annual
+cost, then passengers. It can favor sparse edge shuttles over through services.
+These limitations should be considered when interpreting green maps, tuning demand
+or comparing designs. Profit allocations are not independent route-closure savings.
+
+## Other documentation
+
+- [README and quick start](../README.md)
+- [Hybrid services and migration](HYBRID_SERVICES.md)
+- [Performance measurements](RAILGEN_PERFORMANCE.md)
+- [Historical capacity experiment](experiments/capacity-repair.md)
+- [Legacy optimizer and terrain tools](LEGACY_OPTIMIZER.md)

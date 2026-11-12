@@ -1,6 +1,9 @@
 # Connect-and-repair capacity experiment
 
-Branch: `experiment/connect-and-repair-capacity`.
+Historical experiment from `experiment/connect-and-repair-capacity`.
+These results predate reference elasticity, automatic track widening, and retention
+of spill-only infeasible live networks. They are not current defaults or a
+calibrated forecast. Refer to [the current guide](../FAST_GENERATOR.md).
 
 The experiment sizes formations up to two coupled train units, charging full
 per-unit fleet and operating costs. When ordinary integration moves exhaust,

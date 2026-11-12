@@ -1,6 +1,7 @@
 # Railway planning algorithm and mathematical formulation
 
-This document describes the algorithm implemented in `train_optimizer/`.
+This is the legacy formulation implemented in `train_optimizer/`. For the current
+`rail_gen` pipeline, see [the fast generator guide](FAST_GENERATOR.md).
 [README.md](../README.md) covers installation, commands and output files.
 [config.json](../config.json) holds the current assumptions. The optimizer is a
 strategic scenario model with a finite set of station and line candidates.

@@ -28,7 +28,7 @@ def parser():
                                   formatter_class=argparse.RawDescriptionHelpFormatter)
         if name == 'run':
             sub.epilog = (                'Unspecified search and reporting options use the selected configuration/profile.\n'
-                'Profit mode (incremental only): after ceil(iterations / 2) updates, save\n'
+                'Profit mode (incremental only): after ceil(iterations * 0.8) updates, save\n'
                 'before_profit.png, before_profit.json and before_profit.geojson, then give\n'
                 'normalized annual revenue minus total annual cost 100x the weight of\n'
                 'ridership and population rewards. Service reductions are allowed; accepted\n'
@@ -66,7 +66,7 @@ def parser():
             sub.add_argument('--workers', type=int, help='Parallel evaluation threads (positive integer; 1 is serial)')
             sub.add_argument('--sensitivity', action='store_true', help='Run six additional searches with demand, capital costs and fare yields varied by +/-25%%')
             sub.add_argument('--profit', action='store_true',
-                             help='Switch to profit maximization halfway through; save the pre-switch network (see below)')
+                             help='Switch to profit maximization for the final 20%% of iterations; save the pre-switch network (see below)')
             sub.add_argument('--algorithm', choices=['incremental', 'nsga2', 'nsga3'],
                              help='Persistent network edits or NSGA population evolution (bundled default: incremental)')
             sub.add_argument('--time-limit', type=float, help='Positive search time limit in seconds, excluding geography preparation')

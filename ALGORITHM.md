@@ -1,11 +1,6 @@
-> The new cached multi-objective pipeline is documented in
-> [docs/FAST_GENERATOR.md](docs/FAST_GENERATOR.md). This document describes the
-> earlier `train_optimizer` annealing/HiGHS implementation. The fast pipeline's
-> default incremental mode now also carries one accepted network across updates,
-> with `latest.png`, `progress.png`, `progress.gif`, and `cost_breakdown.log`.
-> Run it with `optimize.py --solver pareto`; NSGA-II/III remain optional.
-> Both renderers share the population-density palette, green demand-satisfaction
-> tracks, frequency-based widths, and dashed-CR / solid-HSR styling.
+> Historical algorithm for `train_optimizer/`, not the current `rail_gen` default.
+> See [the fast generator guide](docs/FAST_GENERATOR.md) for current demand,
+> service, capacity-expansion and search behavior.
 
 # Railway network optimization
 
