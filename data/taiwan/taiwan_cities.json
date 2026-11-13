@@ -1,0 +1,275 @@
+[
+  {
+    "name": "Taipei",
+    "country": "TW",
+    "lat": "25.0530600",
+    "lon": "121.5263900",
+    "pop": 7871900
+  },
+  {
+    "name": "New Taipei City",
+    "country": "TW",
+    "lat": "25.0619900",
+    "lon": "121.4570300",
+    "pop": 4004367
+  },
+  {
+    "name": "Taichung",
+    "country": "TW",
+    "lat": "24.1469000",
+    "lon": "120.6839000",
+    "pop": 2850285
+  },
+  {
+    "name": "Kaohsiung",
+    "country": "TW",
+    "lat": "22.6162600",
+    "lon": "120.3133300",
+    "pop": 2737660
+  },
+  {
+    "name": "Tainan",
+    "country": "TW",
+    "lat": "22.9908300",
+    "lon": "120.2133300",
+    "pop": 1856642
+  },
+  {
+    "name": "Banqiao",
+    "country": "TW",
+    "lat": "25.0142700",
+    "lon": "121.4671900",
+    "pop": 551221
+  },
+  {
+    "name": "Taoyuan",
+    "country": "TW",
+    "lat": "24.9896000",
+    "lon": "121.3187000",
+    "pop": 475798
+  },
+  {
+    "name": "Hsinchu",
+    "country": "TW",
+    "lat": "24.8036100",
+    "lon": "120.9686100",
+    "pop": 453536
+  },
+  {
+    "name": "Taoyuan City",
+    "country": "TW",
+    "lat": "24.9936800",
+    "lon": "121.2969600",
+    "pop": 402014
+  },
+  {
+    "name": "Keelung",
+    "country": "TW",
+    "lat": "25.1308900",
+    "lon": "121.7409400",
+    "pop": 362487
+  },
+  {
+    "name": "Fengshan",
+    "country": "TW",
+    "lat": "22.6265900",
+    "lon": "120.3612600",
+    "pop": 356463
+  },
+  {
+    "name": "Neihu",
+    "country": "TW",
+    "lat": "25.0815000",
+    "lon": "121.5880900",
+    "pop": 274538
+  },
+  {
+    "name": "Chiayi City",
+    "country": "TW",
+    "lat": "23.4791700",
+    "lon": "120.4488900",
+    "pop": 263188
+  },
+  {
+    "name": "Yongkang",
+    "country": "TW",
+    "lat": "23.0244400",
+    "lon": "120.2555600",
+    "pop": 233730
+  },
+  {
+    "name": "Changhua",
+    "country": "TW",
+    "lat": "24.0692000",
+    "lon": "120.5512000",
+    "pop": 226564
+  },
+  {
+    "name": "Chang-hua",
+    "country": "TW",
+    "lat": "24.0732700",
+    "lon": "120.5627600",
+    "pop": 226564
+  },
+  {
+    "name": "Zhubei",
+    "country": "TW",
+    "lat": "24.8383300",
+    "lon": "121.0077800",
+    "pop": 212695
+  },
+  {
+    "name": "Bade",
+    "country": "TW",
+    "lat": "24.9298100",
+    "lon": "121.2837200",
+    "pop": 209148
+  },
+  {
+    "name": "Xizhi",
+    "country": "TW",
+    "lat": "25.0661500",
+    "lon": "121.6598500",
+    "pop": 204619
+  },
+  {
+    "name": "Danshui",
+    "country": "TW",
+    "lat": "25.1719600",
+    "lon": "121.4429000",
+    "pop": 189271
+  },
+  {
+    "name": "Shulin",
+    "country": "TW",
+    "lat": "24.9908500",
+    "lon": "121.4219900",
+    "pop": 180044
+  },
+  {
+    "name": "Yuanlin",
+    "country": "TW",
+    "lat": "23.9567100",
+    "lon": "120.5760800",
+    "pop": 124725
+  },
+  {
+    "name": "Sanxia",
+    "country": "TW",
+    "lat": "24.9344800",
+    "lon": "121.3713900",
+    "pop": 115185
+  },
+  {
+    "name": "Neili",
+    "country": "TW",
+    "lat": "24.9725000",
+    "lon": "121.2613900",
+    "pop": 112845
+  },
+  {
+    "name": "Douliu",
+    "country": "TW",
+    "lat": "23.7094400",
+    "lon": "120.5433300",
+    "pop": 107924
+  },
+  {
+    "name": "Toufen",
+    "country": "TW",
+    "lat": "24.6875300",
+    "lon": "120.9094200",
+    "pop": 106310
+  },
+  {
+    "name": "Nantou",
+    "country": "TW",
+    "lat": "23.9156600",
+    "lon": "120.6638700",
+    "pop": 105682
+  },
+  {
+    "name": "Taitung",
+    "country": "TW",
+    "lat": "22.7599100",
+    "lon": "121.1445700",
+    "pop": 103260
+  },
+  {
+    "name": "Hualien City",
+    "country": "TW",
+    "lat": "23.9769400",
+    "lon": "121.6044400",
+    "pop": 99458
+  },
+  {
+    "name": "Caotun",
+    "country": "TW",
+    "lat": "23.9769900",
+    "lon": "120.6876600",
+    "pop": 96838
+  },
+  {
+    "name": "Zhudong",
+    "country": "TW",
+    "lat": "24.7316700",
+    "lon": "121.0908300",
+    "pop": 96518
+  },
+  {
+    "name": "Daxi",
+    "country": "TW",
+    "lat": "24.8837300",
+    "lon": "121.2904300",
+    "pop": 94222
+  },
+  {
+    "name": "Yilan",
+    "country": "TW",
+    "lat": "24.7570000",
+    "lon": "121.7530000",
+    "pop": 94188
+  },
+  {
+    "name": "Yingge",
+    "country": "TW",
+    "lat": "24.9560800",
+    "lon": "121.3507000",
+    "pop": 87920
+  },
+  {
+    "name": "Puli",
+    "country": "TW",
+    "lat": "23.9663900",
+    "lon": "120.9695200",
+    "pop": 86406
+  },
+  {
+    "name": "Miaoli",
+    "country": "TW",
+    "lat": "24.5642700",
+    "lon": "120.8236700",
+    "pop": 86327
+  },
+  {
+    "name": "Xinying",
+    "country": "TW",
+    "lat": "23.3069400",
+    "lon": "120.3105600",
+    "pop": 74972
+  },
+  {
+    "name": "Wufeng",
+    "country": "TW",
+    "lat": "24.0637000",
+    "lon": "120.6980000",
+    "pop": 65567
+  },
+  {
+    "name": "Chaozhou",
+    "country": "TW",
+    "lat": "22.5498700",
+    "lon": "120.5406700",
+    "pop": 55109
+  }
+]
