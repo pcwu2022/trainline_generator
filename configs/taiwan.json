@@ -15,6 +15,9 @@
       "terrain_kind": "relief",
       "terrain_file": "data/taiwan/taiwan_land_relief.tif",
       "terrain_dem_file": "data/taiwan/taiwan_terrain_3km.tif",
+      "prep": {
+        "center_coefficient": 0.15
+      },
       "alignment": {
         "cell_km": 3
       }

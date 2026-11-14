@@ -25,7 +25,7 @@ Use an empty output directory. `--overwrite` deletes existing contents.
 [rail_gen/config.json](../rail_gen/config.json) contains defaults and named profiles.
 External `--config` overrides defaults, the selected profile applies next, and CLI
 arguments apply last. `run_config.json` records effective settings for each run.
-The root [config.json](../config.json) belongs to the separate legacy optimizer.
+The legacy [config.json](../train_optimizer/config.json) belongs to the separate legacy optimizer.
 
 Input paths select city records, population cells, boundaries and terrain. `bbox`,
 `countries`, `minimum_population` and `max_cities` control city selection.
@@ -196,7 +196,7 @@ or comparing designs. Profit allocations are not independent route-closure savin
 - [Hybrid services and migration](HYBRID_SERVICES.md)
 - [Performance measurements](RAILGEN_PERFORMANCE.md)
 - [Historical capacity experiment](experiments/capacity-repair.md)
-- [Legacy optimizer and terrain tools](LEGACY_OPTIMIZER.md)
+- [Legacy optimizer and terrain tools](../train_optimizer/README.md)
 
 ### Optional simulated annealing
 

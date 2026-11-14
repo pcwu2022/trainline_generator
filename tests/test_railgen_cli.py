@@ -7,7 +7,7 @@ import unittest
 from unittest.mock import patch
 
 from rail_gen.__main__ import main
-from train_optimizer.runner import main as optimizer_main
+from optimize import main as optimizer_main
 
 
 class RailgenCliTests(unittest.TestCase):

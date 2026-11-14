@@ -1,5 +1,10 @@
+> Legacy algorithm files live in this directory. Run commands below from the repository root.
+> Install with `.venv/bin/python -m pip install -r train_optimizer/requirements.txt`.
+> Run tests with `.venv/bin/python -m unittest discover -s train_optimizer/tests`.
+> Configuration is in `train_optimizer/config.json`; shared input datasets remain in `data/`.
+
 > Historical guide for `train_optimizer/`. For the current `rail_gen` pipeline,
-> see [the README](../README.md) and [fast generator guide](FAST_GENERATOR.md).
+> see [the README](../README.md) and [fast generator guide](../docs/FAST_GENERATOR.md).
 > Commands below use paths relative to the repository root. Historical run outputs
 > may no longer be present.
 
@@ -37,7 +42,7 @@ validated result when available. `exploration.png` and `exploration.json`
 preserve the broader developing network when its components are not yet joined.
 
 ```sh
-.venv/bin/python optimize.py --profile netherlands --solver annealing --output runs/annealing
+.venv/bin/python -m train_optimizer --profile netherlands --solver annealing --output runs/annealing
 ```
 
 Corridor addition proposals are weighted by demand divided by an estimate of
@@ -47,7 +52,7 @@ samples and never substitutes for actual routing or validation.
 
 `annealing_iterations` defaults to 1000 proposals in bounded mode. `--time-limit` includes lazy
 routing and passenger evaluation; population preparation is additional. See
-[ALGORITHM.md](../ALGORITHM.md) for the complete formula, settings, constraints,
+[ALGORITHM.md](docs/ALGORITHM.md) for the complete formula, settings, constraints,
 checkpoint behavior, and limitations. Existing run outputs are not modified.
 
 `config.json` is the single source of configuration: `defaults` contains every
@@ -76,7 +81,7 @@ all hard constraints checked. No optimality guarantee is reported. An unsuccessf
 search does not prove infeasibility; the final status is `search_exhausted`.
 
 ```sh
-.venv/bin/python optimize.py --profile netherlands --solver heuristic --output runs/heuristic
+.venv/bin/python -m train_optimizer --profile netherlands --solver heuristic --output runs/heuristic
 ```
 
 `heuristic_iterations` (default 100) limits proposed designs, and `--time-limit`
@@ -106,7 +111,7 @@ Separate rail components are allowed. The profile inherits the default search li
 and the default 75% rail-eligible need-satisfaction target.
 
 ```sh
-.venv/bin/python optimize.py --profile uk --output runs/uk
+.venv/bin/python -m train_optimizer --profile uk --output runs/uk
 ```
 
 ## Regional coverage scenario
@@ -179,8 +184,8 @@ Python 3.9+; run from this project directory:
 
 ```sh
 python3 -m venv .venv
-.venv/bin/python -m pip install -r requirements.txt
-.venv/bin/python optimize.py --profile netherlands --output runs/my-region --time-limit 3600 --snapshot-every 5
+.venv/bin/python -m pip install -r train_optimizer/requirements.txt
+.venv/bin/python -m train_optimizer --profile netherlands --output runs/my-region --time-limit 3600 --snapshot-every 5
 ```
 
 The command runs for up to one hour of **solver time**, with additional time for
@@ -219,15 +224,15 @@ a higher trip rate and a higher fare, to exercise feasible network searches. A
 profitable result with it is not evidence of real-world profitability:
 
 ```sh
-.venv/bin/python optimize.py --profile exploratory --output runs/exploration --time-limit 120 --snapshot-every 5 --gif-frame-ms 400
+.venv/bin/python -m train_optimizer --profile exploratory --output runs/exploration --time-limit 120 --snapshot-every 5 --gif-frame-ms 400
 ```
 
 Export the current effective defaults, edit the JSON, then use it with `--config`
 (the export includes your current defaults and any selected profile):
 
 ```sh
-.venv/bin/python optimize.py --write-default-config my-config.json
-.venv/bin/python optimize.py --config my-config.json --output runs/custom
+.venv/bin/python -m train_optimizer --write-default-config my-config.json
+.venv/bin/python -m train_optimizer --config my-config.json --output runs/custom
 ```
 
 Paths in JSON resolve relative to the current working directory. Unknown keys and
@@ -246,7 +251,7 @@ solver limit.
 Run the Netherlands–Belgium scenario with the supplied 3 km population H3 tiles:
 
 ```sh
-.venv/bin/python optimize.py --output runs/my-netherlands-belgium-3km
+.venv/bin/python -m train_optimizer --output runs/my-netherlands-belgium-3km
 ```
 
 Conventional track costs **€10M/km**. The urban surcharge applies only above
@@ -357,7 +362,7 @@ and GIF writing happen off the solver thread.
 Start fresh in an existing output directory (permanently deletes its contents):
 
 ```sh
-.venv/bin/python optimize.py --profile netherlands --output runs/netherlands-belgium --overwrite
+.venv/bin/python -m train_optimizer --profile netherlands --output runs/netherlands-belgium --overwrite
 ```
 
 `--overwrite` and `--resume` cannot be used together.
@@ -365,7 +370,7 @@ Start fresh in an existing output directory (permanently deletes its contents):
 Resume with the **same model configuration and input data**:
 
 ```sh
-.venv/bin/python optimize.py --profile exploratory --output runs/exploration --resume runs/exploration/checkpoint.npz --time-limit 3600 --snapshot-every 10
+.venv/bin/python -m train_optimizer --profile exploratory --output runs/exploration --resume runs/exploration/checkpoint.npz --time-limit 3600 --snapshot-every 10
 ```
 
 This is an incumbent **warm start**, not restoration of the previous solver's
@@ -631,7 +636,7 @@ still exclude water entirely when that is desired.
 To visualize construction costs on H3 tiles for the configured region:
 
 ```sh
-.venv/bin/python plot_terrain_costs.py
+.venv/bin/python -m train_optimizer.plot_terrain_costs
 ```
 
 This writes `runs/terrain_cost_tiles.png`, comparing the terrain baseline with
@@ -716,7 +721,7 @@ output modules are separated to support this extension.
 - `train_optimizer/runner.py`: callbacks, stopping and resume.
 - `rail_model.py`: shared modeling helpers and the dependency-free single-line evaluator.
 - `generate_terrain.py`: DEM resampling for 3 km and 22 km elevation grids.
-- [docs/FORMULATION.md](FORMULATION.md): the implemented algorithm and mathematical formulation.
+- [docs/FORMULATION.md](docs/FORMULATION.md): the implemented algorithm and mathematical formulation.
 
 ## Lifecycle appraisal
 
@@ -819,7 +824,7 @@ These weights are relative priorities rather than fixed selection percentages.
 Gravity seeding and faster sampling can be enabled together:
 
 ```sh
-python optimize.py --profile europe --gravity-heuristic --speed-up --output runs/europe-gravity
+python -m train_optimizer --profile europe --gravity-heuristic --speed-up --output runs/europe-gravity
 ```
 
 `--gravity-heuristic` starts annealing by adding feasible conventional-rail pairs
@@ -851,7 +856,7 @@ also have JSON settings `gravity_heuristic`,
 ### Trial: slope-based construction difficulty
 
 Fetch the trial elevation grid with `.venv/bin/python fetch_slope_terrain.py`.
-Then use `--config configs/slope-terrain.json` with `optimize.py`, or
+Then use `--config train_optimizer/configs/slope-terrain.json` with `optimize.py`, or
 `--config configs/slope-fast.json` with `python -m rail_gen run`.
 These configurations set `terrain_dem_file`, an optional single-band elevation
 GeoTIFF in metres. The RGB `terrain_file` remains in use for water detection;

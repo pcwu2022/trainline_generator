@@ -6,7 +6,7 @@ from pathlib import Path
 import math
 
 
-DEFAULT_CONFIG_PATH = Path(__file__).resolve().parents[1] / 'config.json'
+DEFAULT_CONFIG_PATH = Path(__file__).resolve().parent / 'config.json'
 
 
 def read_configuration(path=DEFAULT_CONFIG_PATH):

@@ -1,5 +1,5 @@
 > Historical algorithm for `train_optimizer/`, not the current `rail_gen` default.
-> See [the fast generator guide](docs/FAST_GENERATOR.md) for current demand,
+> See [the fast generator guide](../../docs/FAST_GENERATOR.md) for current demand,
 > service, capacity-expansion and search behavior.
 
 # Railway network optimization

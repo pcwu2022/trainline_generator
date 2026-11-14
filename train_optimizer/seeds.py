@@ -5,7 +5,7 @@ from pathlib import Path
 import numpy as np
 from pyproj import Transformer
 from scipy.spatial import cKDTree
-from rail_model import center_radius
+from train_optimizer.rail_model import center_radius
 
 
 def population_seeds(cells, config):

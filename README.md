@@ -153,9 +153,14 @@ sourced metro populations and corridor backtests are required before
 interpreting the results. See [configuration, calibration, outputs and
 limitations](docs/FAST_GENERATOR.md).
 
-The earlier optimizer is documented in [the legacy guide](docs/LEGACY_OPTIMIZER.md)
+The earlier optimizer is documented in [the legacy guide](train_optimizer/README.md)
 and remains available with
-`optimize.py --solver annealing`, `heuristic`, or `milp`.
+`python -m train_optimizer --solver annealing`, `heuristic`, or `milp`.
+Its configuration, tests, dependencies and documentation live in `train_optimizer/`.
+Shared terrain utilities and input datasets remain at the repository root.
+
+Run the current tests with `.venv/bin/python -m unittest discover -s tests`
+and the legacy tests with `.venv/bin/python -m unittest discover -s train_optimizer/tests`.
 
 ## Documentation
 
@@ -164,5 +169,5 @@ and remains available with
 - [Hybrid services, capacity and financial accounting](docs/HYBRID_SERVICES.md)
 - [Performance measurements](docs/RAILGEN_PERFORMANCE.md)
 - [Historical capacity-repair experiment](docs/experiments/capacity-repair.md)
-- [Legacy optimizer, terrain tools and earlier run notes](docs/LEGACY_OPTIMIZER.md)
-- [Legacy algorithm](ALGORITHM.md) and [legacy formulation](docs/FORMULATION.md)
+- [Legacy optimizer, terrain tools and earlier run notes](train_optimizer/README.md)
+- [Legacy algorithm](train_optimizer/docs/ALGORITHM.md) and [legacy formulation](train_optimizer/docs/FORMULATION.md)

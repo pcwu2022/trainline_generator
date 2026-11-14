@@ -298,7 +298,7 @@
         "BY"
       ],
       "prep": {
-        "max_cities": 200
+        "max_cities": 500
       },
       "alignment": {
         "sea_crossings_enabled": true,

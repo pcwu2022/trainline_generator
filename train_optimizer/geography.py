@@ -15,7 +15,7 @@ from shapely.geometry import Point, LineString, shape
 from shapely.ops import unary_union
 from shapely.prepared import prep
 
-from rail_model import uptake
+from train_optimizer.rail_model import uptake
 
 
 @dataclass

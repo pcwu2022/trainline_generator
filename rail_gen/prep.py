@@ -7,7 +7,7 @@ from pathlib import Path
 import numpy as np
 from pyproj import Transformer
 from scipy.spatial import Delaunay, QhullError, cKDTree
-from rail_model import center_radius
+from train_optimizer.rail_model import center_radius
 
 TO_METRIC = Transformer.from_crs('EPSG:4326', 'EPSG:3035', always_xy=True)
 TO_WGS84 = Transformer.from_crs('EPSG:3035', 'EPSG:4326', always_xy=True)
