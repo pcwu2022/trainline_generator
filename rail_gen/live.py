@@ -88,7 +88,7 @@ def cost_log(graph, result, iteration, phase):
 
 
 class LiveReporter:
-    def __init__(self, graph, config, output, calibration=None):
+    def __init__(self, graph, config, output, calibration=None, resume=False):
         # Reuse the original optimizer's streaming GIF encoder, which appends
         # compressed frames atomically without retaining historical image buffers.
         from train_optimizer.outputs import ProgressGif
@@ -100,6 +100,8 @@ class LiveReporter:
         self.every = config['reporting']['snapshot_every']
         self.animation = ProgressGif(self.output / 'progress.gif', config['reporting']['gif_frame_ms'])
         self.history = []
+        if resume and (self.output / 'history.jsonl').exists():
+            self.history = [json.loads(line) for line in (self.output / 'history.jsonl').read_text().splitlines() if line.strip()]
         self.snapshot = 0
         self.last_update = None
         self.calibration = calibration or dict(status='not_calibrated', reason='No user-supplied observed backtest table')
@@ -169,13 +171,14 @@ class LiveReporter:
         atomic_json(self.output / 'latest.json', data)
         atomic_json(self.output / 'latest.geojson', geojson(self.graph, result))
         atomic_text(self.output / 'cost_breakdown.log', cost_log(self.graph, result, update.iteration, update.phase))
-        # A current-state artifact, not a claim of resumable solver/RNG state.
+        # Evaluated network and optional incremental continuation state.
         checkpoint = self.output / '.checkpoint.tmp.npz'
         try:
             np.savez_compressed(checkpoint, genome=result.genome, objectives=result.objectives,
                 iteration=update.iteration, graph_fingerprint=self.graph.metadata.get('fingerprint', ''),
                 config_json=json.dumps(self.config, sort_keys=True), model_version=MODEL_VERSION,
-                track_counts=result.track_counts, services_json=json.dumps(result.services))
+                track_counts=result.track_counts, services_json=json.dumps(result.services),
+                search_state_json=json.dumps((update.metadata or {}).get('search_state', {})))
             checkpoint.replace(self.output / 'checkpoint.npz')
         finally:
             checkpoint.unlink(missing_ok=True)

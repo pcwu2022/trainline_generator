@@ -146,11 +146,13 @@ def structured_mutation(x, evaluator, rng):
     return x
 
 
-def search(graph, config, progress=print, observer=None, interrupted=None):
+def search(graph, config, progress=print, observer=None, interrupted=None, resume=None):
     """Run an evolving incumbent by default, or explicitly select a population search."""
     if config['search']['algorithm'] == 'incremental':
         from .incremental import search_incremental
-        return search_incremental(graph, config, progress, observer, interrupted)
+        return search_incremental(graph, config, progress, observer, interrupted, resume)
+    if resume is not None:
+        raise ValueError('Resume supports only incremental search')
     return _search_population(graph, config, progress, observer, interrupted)
 
 

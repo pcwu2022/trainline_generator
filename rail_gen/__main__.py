@@ -52,6 +52,7 @@ def parser():
                              help=('New calibration report JSON path (required)' if name == 'calibrate'
                                    else 'Run directory (default: runs/<profile>-pareto)'))
         if name == 'run':
+            sub.add_argument('--resume', type=Path, help='Continue an incremental checkpoint; iterations are additional updates')
             sub.add_argument('--overwrite', action='store_true',
                              help='Delete the output directory contents before starting a fresh run')
             sub.add_argument('--batch-accept-limit', type=int, help='Maximum compatible proposals per incremental update (default: 10; 1 disables batching)')
@@ -92,6 +93,13 @@ def main(argv=None):
                 if value is not None}
             if args.output is None:
                 args.output = Path('runs') / f'{args.profile}-pareto'
+        if args.command == 'run' and args.resume:
+            if args.overwrite:
+                raise ValueError('--resume and --overwrite cannot be used together')
+            if args.config is None:
+                args.config = args.resume.parent / 'run_config.json'
+            if args.output == Path('runs') / f'{args.profile}-pareto':
+                args.output = args.resume.parent
         config = load_config(args.config, args.profile, overrides)
         if args.backtest:
             config['backtest_file'] = str(args.backtest)
@@ -104,7 +112,7 @@ def main(argv=None):
                     raise ValueError('--overwrite cannot delete the working directory or its ancestors')
                 if args.output.is_symlink():
                     raise ValueError('--overwrite requires an output directory that is not a symlink')
-            elif args.output.exists() and any(args.output.iterdir()):
+            elif args.output.exists() and any(args.output.iterdir()) and not (args.resume and args.output.resolve() == args.resume.parent.resolve()):
                 raise ValueError(f'Output directory is not empty: {args.output}. Use --overwrite or a new directory.')
         from .calibrate import calibrate
         calibration = None
@@ -147,7 +155,11 @@ def main(argv=None):
         from .search import search
         from .report import sensitivity, write_report
         from .live import LiveReporter
-        reporter = LiveReporter(graph, config, args.output, calibration)
+        resume = None
+        if args.resume:
+            from .checkpoint import load_checkpoint
+            resume = load_checkpoint(args.resume, graph, config)
+        reporter = LiveReporter(graph, config, args.output, calibration, resume=bool(resume))
         interrupted = threading.Event()
         def stop(signum, frame):
             if interrupted.is_set():
@@ -156,7 +168,7 @@ def main(argv=None):
             print('Stopping after the current update; saving the evolving network.', flush=True)
         previous_handler = signal.signal(signal.SIGINT, stop)
         try:
-            run = search(graph, config, observer=reporter, interrupted=interrupted)
+            run = search(graph, config, observer=reporter, interrupted=interrupted, resume=resume)
             reporter.finish(run)
         finally:
             signal.signal(signal.SIGINT, previous_handler)

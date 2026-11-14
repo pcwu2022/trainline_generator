@@ -258,9 +258,10 @@ x, counts = migrate_legacy_genome(old_genome)
 new_result = evaluator.evaluate(x, track_counts=counts)
 ```
 
-States 3/4/5 otherwise raise an explanatory error. Search does not resume solver
-or RNG state from historical results. Original result files should be retained;
-start a new output directory for a new search.
+States 3/4/5 otherwise raise an explanatory error. Incremental search supports `--resume path/to/checkpoint.npz` for compatible
+checkpoints. Older checkpoints restore the evaluated network; new checkpoints
+also restore the random generator and consolidation baselines. Population search
+does not support resume.
 
 Results carry `model_version=hybrid-services-v1`. Live snapshots and checkpoints
 contain infrastructure, independent counts and the **evaluated** service plan.

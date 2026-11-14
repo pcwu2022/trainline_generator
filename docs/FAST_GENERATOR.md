@@ -230,3 +230,25 @@ worse; consult the archive for preserved alternatives. Integration/consolidation
 rules resume after exploration. Existing internal service
 plan selection remains unchanged. Annealing cannot add edges outside the prepared
 candidate graph, and does not guarantee better results within a fixed run budget.
+
+## Continuing an incremental run
+
+```bash
+.venv/bin/python -m rail_gen run --profile europe \
+  --resume runs/europe/checkpoint.npz --iterations 1000
+```
+
+Resume reads the checkpoint directory's `run_config.json` by default and writes
+back to that directory, preserving history and appending animation frames. Use
+`--output` with a new empty directory to branch the run. `--iterations` specifies
+additional updates; the time limit applies to this invocation. Iteration numbers
+continue from the checkpoint. Resume and overwrite are mutually exclusive.
+
+The saved genome, independent track counts and service decisions are restored.
+Model, geography and configuration must match; only iterations, time limit,
+workers and reporting settings may change. New checkpoints also restore the RNG
+and consolidation/profit baselines. Historical checkpoints without those fields
+start a fresh random stream and phase schedule from the saved network. Each
+invocation uses its own growth/annealing schedule and rebuilds proposal caches
+and the Pareto archive, so continuation is not a bit-for-bit uninterrupted run.
+Population algorithms currently reject resume.

@@ -367,18 +367,24 @@ def capacity_packages(current, evaluator, should_stop=lambda: False):
     return feasible, diagnostics
 
 
-def search_incremental(graph, config, progress=print, observer=None, interrupted=None):
+def search_incremental(graph, config, progress=print, observer=None, interrupted=None, resume=None):
     p = config['search']
     evaluator = Evaluator(graph, config)
     rng = np.random.default_rng(p['seed'])
     started = time.perf_counter()
     evaluations = 1
     current = evaluator.evaluate(np.zeros(evaluator.m, dtype=int), repair=True)
+    offset = resume['iteration'] if resume else 0
+    restored = resume.get('state', {}) if resume else {}
+    if resume:
+        current = evaluator.evaluate(resume['genome'], track_counts=resume['track_counts'], services=resume['services'])
+        if 'rng' in restored:
+            rng.bit_generator.state = restored['rng']
     archive = {tuple(current.genome): current.objectives.copy()} if current.feasible else {}
     history = []
     attempted = set()
     cache = OrderedDict()
-    baseline = None
+    baseline = restored.get('baseline')
     annealing_scales = np.array([p['finance_scale_eur'], max(1, evaluator.reference_trips.sum()),
                                  max(1, evaluator.population.sum())])
     weight_phase, active_weights = objective_weights(current.metrics['need_satisfaction_ratio'])
@@ -387,12 +393,13 @@ def search_incremental(graph, config, progress=print, observer=None, interrupted
     annealing_diagnostics = None
     status = 'completed'
     package_diagnostics = None
-    profit_baseline = None
+    profit_baseline = restored.get('profit_baseline')
     profit_enabled = p.get('profit', False)
     profit_start_after = math.ceil(p['generations'] * .8)
     workers = ThreadPoolExecutor(p['workers']) if p['workers'] > 1 else None
 
     def publish(iteration, phase, previous=None, accepted=False):
+        iteration += offset
         changes = tuple((int(i), int(previous[i]), int(current.genome[i]))
             for i in np.flatnonzero(previous != current.genome)) if previous is not None else ()
         elapsed = time.perf_counter() - started
@@ -415,7 +422,8 @@ def search_incremental(graph, config, progress=print, observer=None, interrupted
             observer(SearchUpdate(iteration, phase, current, len(archive), evaluations,
                                   elapsed, accepted, changes, previous,
                 {key: record[key] for key in ('weight_phase', 'objective_weights',
-                                             'objective_scales', 'weighted_objective')}))
+                                             'objective_scales', 'weighted_objective')} |
+                {'search_state': dict(rng=rng.bit_generator.state, baseline=baseline, profit_baseline=profit_baseline)}))
         if progress:
             progress(f'Iteration {iteration}/{p["generations"]}: {phase}; '
                 f'{current.metrics["active_edges"]} edges, {current.metrics["passengers"]/1e6:.2f}M trips/year, '
@@ -425,7 +433,7 @@ def search_incremental(graph, config, progress=print, observer=None, interrupted
                 f'net EUR {current.metrics["net_eur"]/1e6:.1f}M/year; '
                 f'{"accepted change" if accepted else "retained network"}', flush=True)
 
-    publish(0, 'growth')
+    publish(0, 'resumed' if resume else 'growth')
     try:
         for iteration in range(1, p['generations'] + 1):
             if interrupted is not None and interrupted.is_set():
