@@ -103,6 +103,37 @@ def growth_choice(current, candidates):
     return max(useful, key=lambda value: value[0])[1] if useful else None
 
 
+def annealing_energy(candidate, scales):
+    """Fixed normalization for net cost, annual trips and population."""
+    return float(np.sum(candidate.objectives[:3] / scales))
+
+
+def annealing_accept(current, candidate, scales, temperature, rng):
+    if not buildable(candidate):
+        return False
+    delta = annealing_energy(candidate, scales) - annealing_energy(current, scales)
+    return delta <= 0 or rng.random() < math.exp(-delta / temperature)
+
+
+def exploratory_batch(current, proposals, rng, limit):
+    """Combine raw disjoint edits without requiring individual improvement."""
+    genome = current.genome.copy()
+    occupied = np.zeros(len(genome), dtype=bool)
+    count = 0
+    target = int(rng.integers(1, limit + 1))
+    for index in rng.permutation(len(proposals)):
+        proposal = proposals[index]
+        changed = proposal != current.genome
+        if not changed.any() or np.any(occupied & changed):
+            continue
+        genome[changed] = proposal[changed]
+        occupied |= changed
+        count += 1
+        if count == target:
+            break
+    return genome
+
+
 def buildable(candidate):
     """Spill is unmet demand to serve; all other feasibility limits stay hard."""
     hard = np.arange(len(candidate.constraints)) != 2
@@ -327,6 +358,9 @@ def search_incremental(graph, config, progress=print, observer=None, interrupted
     attempted = set()
     cache = OrderedDict()
     baseline = None
+    annealing_scales = np.array([1e8, max(1, evaluator.reference_trips.sum()),
+                                 max(1, evaluator.population.sum())])
+    annealing_diagnostics = None
     status = 'completed'
     package_diagnostics = None
     profit_baseline = None
@@ -344,6 +378,8 @@ def search_incremental(graph, config, progress=print, observer=None, interrupted
             genome=current.genome.tolist(), services=current.services, track_counts=current.track_counts.tolist(), accepted=accepted,
             changes=[list(change) for change in changes], metrics=current.metrics.copy(),
             front_size=len(archive), evaluations=evaluations, seconds=elapsed)
+        if annealing_diagnostics is not None:
+            record['annealing'] = annealing_diagnostics.copy()
         if baseline is not None:
             record['growth_baseline'] = baseline.copy()
         if package_diagnostics is not None:
@@ -382,6 +418,12 @@ def search_incremental(graph, config, progress=print, observer=None, interrupted
                 cache.clear()
             phase = ('profit' if profit_baseline is not None else 'consolidation' if baseline is not None else
                      'integration' if iteration > math.ceil(p['generations'] * p['growth_fraction']) else 'growth')
+            annealing_active = (p['annealing'] and baseline is None and profit_baseline is None
+                                and iteration <= math.ceil(p['generations'] * p['growth_fraction']))
+            annealing_diagnostics = None
+            if annealing_active:
+                phase = 'annealing'
+                attempted.clear()
             previous = current.genome.copy()
             proposals = neighbours(current, evaluator)
             connection_proposals = demand_connections(current, evaluator) if baseline is None and profit_baseline is None else {}
@@ -481,8 +523,27 @@ def search_incremental(graph, config, progress=print, observer=None, interrupted
                 return ((interrupted is not None and interrupted.is_set()) or
                         (p['time_limit_seconds'] > 0 and
                          time.perf_counter() - started >= p['time_limit_seconds']))
-            selected, combined = combined_choice(current, candidates, choose, score,
-                p['batch_accept_limit'], batch_should_stop)
+            if annealing_active:
+                genome = exploratory_batch(current, [item[1] for item in batch], rng,
+                                           p['batch_accept_limit'])
+                proposal = cache.get(tuple(genome))
+                combined = []
+                if proposal is None and not batch_should_stop():
+                    proposal = score(genome)
+                    combined.append(proposal)
+                fraction = (iteration - 1) / max(1, math.ceil(p['generations'] * p['growth_fraction']) - 1)
+                temperature = p['annealing_initial_temperature'] * (
+                    p['annealing_final_temperature'] / p['annealing_initial_temperature']) ** fraction
+                selected = (proposal if proposal is not None and
+                            annealing_accept(current, proposal, annealing_scales, temperature, rng)
+                            and not np.array_equal(proposal.genome, current.genome) else None)
+                annealing_diagnostics = dict(temperature=temperature,
+                    energy=annealing_energy(current, annealing_scales),
+                    proposed_energy=annealing_energy(proposal, annealing_scales) if proposal is not None else None,
+                    accepted=selected is not None)
+            else:
+                selected, combined = combined_choice(current, candidates, choose, score,
+                    p['batch_accept_limit'], batch_should_stop)
             evaluations += len(combined)
             for candidate in combined:
                 if candidate.feasible:

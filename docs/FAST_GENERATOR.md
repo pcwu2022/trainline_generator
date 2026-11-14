@@ -171,3 +171,38 @@ or comparing designs. Profit allocations are not independent route-closure savin
 - [Performance measurements](RAILGEN_PERFORMANCE.md)
 - [Historical capacity experiment](experiments/capacity-repair.md)
 - [Legacy optimizer and terrain tools](LEGACY_OPTIMIZER.md)
+
+### Optional simulated annealing
+
+Enable `search.annealing` in a JSON configuration override:
+
+```json
+{"search": {"annealing": true, "annealing_initial_temperature": 0.1,
+            "annealing_final_temperature": 0.001}}
+```
+
+For example, pass this file with `python -m rail_gen run --config annealing.json`.
+Annealing is opt-in and supported only by incremental search. During the first
+`ceil(generations * growth_fraction)` iterations it replaces greedy acceptance
+with one Metropolis decision on a randomly assembled, freshly evaluated batch
+of disjoint edits. Individual edits need not improve the network. Existing
+sampled evaluations are reused; a novel batch adds at most one evaluation per
+iteration. Rejected edits can be tried again on later iterations.
+
+The energy to minimize is `(annual_cost - revenue) / 100M EUR - annual_trips /
+reference_trips - population_served / total_candidate_population`. The demand
+and population scales are fixed at initialization and floored at one. These
+terms have equal normalized weight; the optional journey-time archive objective
+does not enter annealing energy. Temperature cools geometrically between the
+configured positive endpoints. Improvements are always accepted; deterioration
+by delta is accepted with probability `exp(-delta / temperature)`. This is a
+heuristic annealing search, not an exact Metropolis–Hastings sampler.
+
+Budget, subsidy, component-share and infrastructure-capacity checks remain hard;
+the existing spill exception still applies to live states. Only fully feasible
+results enter the Pareto archive. History records temperature, current and
+proposed energies, and acceptance under `annealing`. The live network may get
+worse; consult the archive for preserved alternatives. Integration/consolidation
+and optional profit rules resume after exploration. Existing internal service
+plan selection remains unchanged. Annealing cannot add edges outside the prepared
+candidate graph, and does not guarantee better results within a fixed run budget.

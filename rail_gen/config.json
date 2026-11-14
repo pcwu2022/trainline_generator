@@ -153,6 +153,9 @@
       "sensitivity": false,
       "time_limit_seconds": 0,
       "growth_fraction": 0.7,
+      "annealing": false,
+      "annealing_initial_temperature": 0.1,
+      "annealing_final_temperature": 0.001,
       "profit": false,
       "retained_ridership": 0.98,
       "journey_time_allowance": 0.05

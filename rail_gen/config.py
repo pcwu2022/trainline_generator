@@ -89,6 +89,11 @@ def validate(c):
         raise ValueError('terrain_kind must be relief, dem, or flat')
     if c['search']['algorithm'] not in ('incremental', 'nsga2', 'nsga3'):
         raise ValueError('search.algorithm must be incremental, nsga2 or nsga3')
+    a = c['search']
+    if a['annealing'] and a['algorithm'] != 'incremental':
+        raise ValueError('annealing requires incremental search')
+    if not 0 < a['annealing_final_temperature'] <= a['annealing_initial_temperature']:
+        raise ValueError('Require 0 < final temperature <= initial temperature')
     if c['search']['profit'] and c['search']['algorithm'] != 'incremental':
         raise ValueError('--profit requires the incremental algorithm')
     for section, keys in {
