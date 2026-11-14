@@ -127,32 +127,44 @@ For each service:
 - Active formations = `ceil(cycle_hours * frequency)`; active units are this count
   times `formation`. Fleet units = `ceil(active_units * (1 + spare_ratio))`.
 - Annual unit-km = `2 * frequency * route_km * hours_per_day * days_per_year * formation`.
-- Annual train operating cost = `annual_train_km * opex_eur_trainkm *
-  (1 + additional_unit_cost_fraction * (formation - 1))`, where annual train-km
-  excludes formation size. `operations.additional_unit_cost_fraction` defaults
-  to `0.6` and accepts values from 0 to 1. Each extra coupled trainset adds 60%
-  of the single-set operating rate; a pair costs 1.6 times the single-set rate.
-  The existing operating overhead applies after this calculation. Capacity,
-  physical unit-km and fleet purchases still count every trainset in full.
-- Purchase and operating costs use that service's rolling-stock parameters
-  throughout, including conventional sections of an HSR through service.
+- Annual train operating cost = `annual_train_km * opex_eur_trainkm`.
+  Train-km counts train movements, independent of coupled formation size.
+  Capacity, unit-km, and fleet purchases still count each trainset.
+- Defaults are 365 operating days and train rates 19.50 (CR) / 31.00 (HSR).
+  Frequency remains trains/hour/direction; daily frequency is
+  `frequency * hours_per_day`, so annual train-km equals
+  `2 * route_km * daily_frequency * days_per_year`.
+- Physical infrastructure sets maintenance rates: fixed 105,000 (CR) /
+  145,000 (HSR) per physical track-km/year; variable 1.55 (CR) / 2.90 (HSR)
+  per train-km. HSR trains on CR infrastructure use the HSR train rate and CR
+  maintenance rates. Fixed maintenance multiplies by the number of tracks;
+  variable maintenance counts train passages without a track-count multiplier.
+- Shared raster cells and crossing assets pay fixed maintenance once, using
+  the maximum selected occupied length, track count, and infrastructure type.
+  Variable maintenance sums service movements over each resource; each service
+  consumes a shared resource once. Explicit crossing assets use their full km
+  length, including approaches. Unused built tracks still pay fixed maintenance.
+- Railway recurring cost = train operation + fixed and variable track maintenance.
+  Station operating expenses and annualized track/station/fleet capital remain
+  additional components of the overall annual financial objective. Corridor cost
+  allocations reconcile to the network totals.
 
-Default trainset purchase prices (`rolling_stock.CR.train_meur` and
-`rolling_stock.HSR.train_meur`) are EUR 10 million and EUR 30 million. Single-set
-operating rates remain EUR 12/km and EUR 20/km, respectively. The purchase
-assumptions use historical Italian procurement as a guide; the 60% marginal
-operating fraction is a modeling assumption for sensitivity analysis.
+The displayed formula `L * (a + b*K)` is interpreted using the worked example:
+when K is already annual train-km, variable cost is `b*K`; equivalently, use
+`L * (a + b*N)` with N the annual train passages. Length is never multiplied twice.
+The requested numerical rates are adopted in the project's existing constant-EUR
+accounting; no currency conversion is applied.
 
-Older configuration overrides that omit the coupling parameter inherit the new
-default when loaded through `load_config`. Set the fraction to `1.0` to reproduce
-the former linear operating-cost scaling, and explicitly set purchase prices
-to 20/35 to reproduce the former purchase assumptions. Saved run artifacts keep
-their original results; changing defaults does not recalculate past runs.
+Default trainset purchase prices remain EUR 10 million (CR) and EUR 30 million
+(HSR). Legacy config keys `operations.additional_unit_cost_fraction`,
+`finance.overhead_rate`, and `finance.track_maintenance_rate` remain accepted for
+loading older configurations but no longer affect railway operating costs.
+Saved run artifacts retain their original results until explicitly re-evaluated.
 
 Fleet rounding occurs per complete service and rounds whole active formations before
 multiplying by units, with no pooling between services. Spare units may be held
 individually; operating formations always remain complete.
-The existing capital recovery factors, asset lives, overhead, maintenance,
+The existing capital recovery factors and asset lives,
 station costs, subsidy/budget/spill limits and objectives remain: net annual cost,
 negative carried trips, negative population at built stations, and optional mean
 generalized time. Population coverage continues to mean built station coverage;

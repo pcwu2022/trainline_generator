@@ -40,7 +40,7 @@ mode compares annual net benefit. Passenger assignment tries up to eight shortes
 viable paths around saturated service segments, recalculating elastic demand for
 each alternative journey before recording residual spill.
 
-This changes evaluation semantics to `network-capacity-v3`. Historical snapshots
+This changes evaluation semantics to `network-operating-cost-v4`. Historical snapshots
 must be explicitly re-evaluated for comparison; the currently running process
 continues using the code it loaded at startup.
 
@@ -72,6 +72,43 @@ The existing `python -m rail_gen run ...` command uses the same incremental
 default. Select `--algorithm nsga2` / `--algorithm nsga3`, or
 `optimize.py --solver nsga2` / `--solver nsga3`, for population evolution.
 Parameters for the fast pipeline are in `rail_gen/config.json`.
+
+Construction keeps the double-track baselines of EUR 6M/km (CR) and EUR 20M/km
+(HSR). Ground-slope anchors 0%, 1%, 2%, 5%, 10%, 20% use multipliers
+1, 1.2, 1.5, 2, 3, 5, linearly interpolated and capped at 5. Land costs add
+`base * 0.35 * max(0, log10((100 + density) / 5100))` in million EUR/km.
+Water replaces the land rate: unclassified inland water defaults to EUR 40M/km;
+sea defaults to EUR 120M/km. Sea routing is enabled by default.
+Configured `alignment.water_crossings` accept an optional `water_type`:
+`small_river` (20), `large_river` (40), `wide_river_bay` (60), `sea` (120), or
+`difficult_sea` (180), in million EUR/km for either track technology. For example:
+
+```json
+{"id": "bay", "geometry": [[2.0, 46.0], [2.1, 46.0]], "water_type": "wide_river_bay"}
+```
+
+Crossing portals must be on land. Explicit crossing assets price water segments
+by their length and land approaches at the local land rate, without exponential
+water growth. Crossing geometry is split at raster boundaries; water extent still
+comes from the input mask, so subcell river widths require finer water data.
+Without explicit assets, routing can traverse water cells directly. With explicit
+assets, water is traversed through those portal links.
+Construction charges actual unsmoothed segment kilometres within each cell,
+including station offsets. Shared cells/assets pay the highest selected charge
+once; track multipliers remain 0.5/1/2. Alignment caches are rebuilt automatically
+for this pricing version. Existing run snapshots and running processes retain
+their previous costs until re-evaluated/restarted.
+
+
+Railway operating costs use annual train-km times 19.50 (CR trains) or 31.00
+(HSR trains). Shared physical track maintenance uses 105,000/145,000 per
+track-km/year plus 1.55/2.90 per train-km for CR/HSR infrastructure, respectively.
+Defaults use 365 operating days; daily departures equal hourly frequency times
+operating hours. Train costs follow rolling stock; maintenance follows physical
+infrastructure, including HSR trains running on CR tracks. Formation size does
+not multiply train movement costs. Annualized capital and station operating
+expenses remain part of the total financial objective. See the
+[operating-cost definitions](docs/HYBRID_SERVICES.md#fleet-and-annual-finance).
 
 Demand defaults to `demand.model = "reference_elasticity"` for **all** eligible city
 pairs, including international journeys, with no country distinction. Routing

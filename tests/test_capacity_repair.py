@@ -55,12 +55,10 @@ class CapacityRepairTests(unittest.TestCase):
         self.assertTrue(np.all(double.train_units <= 2))
         self.assertEqual(double.train_units[2], 0)
         self.assertGreater(double.metrics['fleet_capital_eur'], single.metrics['fleet_capital_eur'])
-        self.assertGreater(double.metrics['train_opex_eur'], single.metrics['train_opex_eur'])
+        self.assertEqual(double.metrics['train_opex_eur'], single.metrics['train_opex_eur'])
         self.assertEqual(double.metrics['track_capital_eur'], single.metrics['track_capital_eur'])
         train_km = 2 * double.frequency * Evaluator(graph, c).lengths[np.arange(3), double.genome] * c['operations']['hours_per_day'] * c['operations']['days_per_year']
-        formation_cost = np.where(double.train_units > 0,
-            1 + (double.train_units - 1) * c['operations']['additional_unit_cost_fraction'], 0)
-        expected_opex = (train_km * formation_cost).sum() * c['rolling_stock']['CR']['opex_eur_trainkm']
+        expected_opex = train_km.sum() * c['rolling_stock']['CR']['opex_eur_trainkm']
         self.assertAlmostEqual(double.metrics['train_opex_eur'], expected_opex)
         lines = [f for f in geojson(graph, double)['features'] if f['geometry']['type'] == 'LineString']
         self.assertEqual([f['properties']['train_units'] for f in lines], double.train_units[:2].tolist())
@@ -120,7 +118,7 @@ class CapacityRepairTests(unittest.TestCase):
         self.assertTrue(expanded.feasible)
         self.assertFalse(limited.feasible)
         self.assertGreater(expanded.metrics['passengers'], limited.metrics['passengers'])
-        self.assertGreater(expanded.metrics['train_opex_eur'], limited.metrics['train_opex_eur'])
+        self.assertEqual(expanded.metrics['train_opex_eur'], limited.metrics['train_opex_eur'])
 
     def test_capacity_settings_are_validated(self):
         for overrides in [

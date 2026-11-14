@@ -75,13 +75,13 @@ class HybridServiceTests(unittest.TestCase):
         self.assertEqual(r.metrics['fleet_CR'], 0)
         self.assertEqual(r.metrics['fleet_HSR'], fleet)
         self.assertEqual(r.metrics['fleet_capital_eur'], fleet * stock['train_meur'] * 1e6)
-        self.assertAlmostEqual(r.metrics['train_opex_eur'], 2 * 2 * 200 * o['hours_per_day'] * o['days_per_year'] * 1.6 * stock['opex_eur_trainkm'])
+        self.assertAlmostEqual(r.metrics['train_opex_eur'], 2 * 2 * 200 * o['hours_per_day'] * o['days_per_year'] * stock['opex_eur_trainkm'])
         np.testing.assert_array_equal(r.train_units[:2], [2, 2])
         self.assertEqual(r.segment_capacity[0], r.segment_capacity[1])
         self.assertAlmostEqual(r.edge_net.sum(), r.metrics['net_eur'], delta=1e-6)
 
-    def test_coupled_operating_cost_shares_fixed_costs_but_buys_all_sets(self):
-        for train_type, rate, purchase_meur in [('CR', 12, 10), ('HSR', 20, 30)]:
+    def test_train_movement_cost_is_independent_of_coupling_but_buys_all_sets(self):
+        for train_type, rate, purchase_meur in [('CR', 19.5, 10), ('HSR', 31, 30)]:
             for fraction in (0, .6, 1):
                 with self.subTest(train_type=train_type, fraction=fraction):
                     c = deepcopy(self.c)
@@ -89,15 +89,15 @@ class HybridServiceTests(unittest.TestCase):
                     e = Evaluator(self.g, c)
                     single = e.evaluate([2, 1, 0], services=[Service((0, 1, 2), train_type, 2, 1)])
                     coupled = e.evaluate([2, 1, 0], services=[Service((0, 1, 2), train_type, 2, 2)])
-                    annual_km = 2 * 2 * 200 * 16 * 360
+                    annual_km = 2 * 2 * 200 * 16 * 365
                     self.assertAlmostEqual(single.metrics['train_opex_eur'], annual_km * rate)
-                    self.assertAlmostEqual(coupled.metrics['train_opex_eur'], annual_km * rate * (1 + fraction))
+                    self.assertAlmostEqual(coupled.metrics['train_opex_eur'], annual_km * rate)
                     self.assertEqual(coupled.metrics['train_km_per_year'], annual_km)
                     self.assertEqual(coupled.metrics['train_unit_km_per_year'], 2 * annual_km)
                     self.assertEqual(coupled.metrics['fleet_capital_eur'],
                                      coupled.services[0]['fleet_units'] * purchase_meur * 1e6)
                     self.assertAlmostEqual(coupled.segment_capacity[0], 2 * single.segment_capacity[0])
-                    extra_operations = annual_km * rate * fraction * 1.1
+                    extra_operations = 0
                     self.assertAlmostEqual(coupled.metrics['operating_cost_eur'] -
                                            single.metrics['operating_cost_eur'], extra_operations)
                     self.assertAlmostEqual(coupled.edge_net.sum(), coupled.metrics['net_eur'], delta=1e-6)

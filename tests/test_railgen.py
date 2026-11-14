@@ -406,6 +406,7 @@ class TerrainSurfaceTests(unittest.TestCase):
 
     def test_sea_is_blocked_inland_water_is_priced(self):
         c, samples = self.base()
+        c['alignment']['sea_crossings_enabled'] = False
         flat, _, _, transform = cost_surfaces(c, samples)
         classes = np.zeros(flat.shape[1:])
         classes[2, 2], classes[3, 3] = 1, 2
@@ -415,7 +416,7 @@ class TerrainSurfaceTests(unittest.TestCase):
             c['land_class_file'] = str(path)
             rates, water, _, _ = cost_surfaces(c, samples)
             self.assertTrue(water[2, 2])
-            self.assertAlmostEqual(rates[0, 2, 2], c['tracks']['CR']['base_meur_km'] + c['alignment']['water_meur_km'])
+            self.assertAlmostEqual(rates[0, 2, 2], c['alignment']['water_meur_km'])
             self.assertTrue(np.isinf(rates[:, 3, 3]).all())
 
     def test_blocked_corner_uses_feasible_cardinal_fallback(self):

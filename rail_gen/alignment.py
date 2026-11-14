@@ -1,7 +1,7 @@
 """Windowed, cached cost-distance routing. Search never opens a raster.
 
-Infrastructure is charged in fixed cell-length units, so shared cell accounting
-is exact under this raster approximation. Display smoothing never changes the
+Infrastructure uses actual segment lengths within each occupied cell. Shared
+cells pay the highest selected construction charge. Display smoothing never changes the
 engineering footprint or its price.
 """
 from dataclasses import asdict, dataclass
@@ -17,7 +17,7 @@ from scipy.spatial import cKDTree
 
 from .prep import City, TO_METRIC, TO_WGS84
 
-CACHE_VERSION = 8
+CACHE_VERSION = 9
 TRACKS = ('CR', 'HSR')
 
 
@@ -31,6 +31,7 @@ class Alignment:
     pct_steep: float = 0.0
     crossing_ids: tuple = ()
     water_km: float = 0.0
+    tile_lengths: list = None
 
 
 @dataclass
@@ -44,8 +45,8 @@ class Edge:
 class CandidateGraph:
     cities: list
     edges: list
-    matrices: tuple  # binary (candidate edges x compact infrastructure tiles)
-    tile_costs: np.ndarray  # (2, tiles), MEUR
+    matrices: tuple  # length weights (or 1 for crossing assets); (candidate edges x compact infrastructure tiles)
+    tile_costs: np.ndarray  # (2, tiles), MEUR/km for cells, MEUR for assets
     metadata: dict
 
     @classmethod
@@ -54,21 +55,29 @@ class CandidateGraph:
         compact = {tile: i for i, tile in enumerate(used)}
         matrices = []
         for track in TRACKS:
-            rows, columns = [], []
+            rows, columns, weights = [], [], []
             for i, edge in enumerate(edges):
                 if track in edge.alignments:
-                    tiles = sorted(set(edge.alignments[track].tiles))
+                    alignment = edge.alignments[track]
+                    tiles = sorted(set(alignment.tiles))
+                    lengths = dict(zip(alignment.tiles, alignment.tile_lengths)) if alignment.tile_lengths is not None else {}
+                    weights.extend(lengths.get(t, 1.) for t in tiles)
                     rows.extend([i] * len(tiles))
                     columns.extend(compact[t] for t in tiles)
-            matrices.append(sparse.csr_matrix((np.ones(len(rows)), (rows, columns)),
+            matrices.append(sparse.csr_matrix((weights, (rows, columns)),
                                              shape=(len(edges), len(used))))
         costs = np.asarray(tile_costs)[:, used]
         return cls(cities, edges, tuple(matrices), costs, metadata or {})
 
-    def selected_tiles(self, x):
+    def selected_lengths(self, x):
         x = np.asarray(x)
         return (self.matrices[0].multiply((x == 1)[:, None]) +
                 self.matrices[1].multiply((x == 2)[:, None])).tocsr()
+
+    def selected_tiles(self, x):
+        matrix = self.selected_lengths(x)
+        matrix.data[:] = 1
+        return matrix
 
     def track_allocation(self, x, layouts=None, track_counts=None, *, selected=None):
         from .track_layout import LAYOUT_BY_COUNT
@@ -77,9 +86,9 @@ class CandidateGraph:
         multipliers = {'single': .5, 'double': 1, 'four': 2}
         if layouts is not None:
             multipliers = {k: v['cost_multiplier'] for k, v in layouts.items()}
-        matrix = (self.selected_tiles(x) if selected is None else selected).tocoo()
+        matrix = self.selected_lengths(x).tocoo()
         factors = np.array([multipliers[LAYOUT_BY_COUNT[int(count)]] if count else 0 for count in counts])
-        rates = self.tile_costs[x[matrix.row] - 1, matrix.col] * factors[matrix.row]
+        rates = self.tile_costs[x[matrix.row] - 1, matrix.col] * factors[matrix.row] * matrix.data
         highest = np.zeros(self.tile_costs.shape[1])
         np.maximum.at(highest, matrix.col, rates)
         winners = rates == highest[matrix.col]
@@ -204,16 +213,45 @@ def cost_surfaces(config, samples, terrain_only=False):
     surfaces = []
     for track in TRACKS:
         t = config['tracks'][track]
-        rate = t['base_meur_km'] * terrain + water * a['water_meur_km']
-        if a['sea_crossings_enabled']:
-            rate = np.where(water, max(t['base_meur_km'], a['water_meur_km']), rate)
-        rate += a['urban_meur_per_density_km'] * np.maximum(0, raster_density - a['urban_reference'])
+        urban = t['base_meur_km'] * a['urban_cost_fraction'] * np.maximum(0,
+            np.log10((a['urban_density_offset'] + raster_density) /
+                     (a['urban_density_offset'] + a['urban_reference'])))
+        rate = t['base_meur_km'] * terrain + urban
+        rate = np.where(water, np.where(sea, a['water_costs_meur_km']['sea'], a['water_meur_km']), rate)
         # A relief+DEM overlay prices ground difficulty only. Preserve the
         # existing explicit DEM mode's grade-limit scenario separately.
         forbidden_grade = (grade > t['grade_limit']) if config['terrain_kind'] == 'dem' else False
         rate[blocked | forbidden_grade] = np.inf
         surfaces.append(rate)
     return np.asarray(surfaces), water, grade, transform
+
+
+def segment_cell_lengths(points, transform, width):
+    """Accumulate projected km inside each raster cell, including endpoint offsets."""
+    from rasterio.transform import rowcol
+    lengths = {}
+    for start, end in zip(points, points[1:]):
+        delta = end - start
+        distance = float(np.linalg.norm(delta))
+        if distance == 0:
+            continue
+        fractions = [0., 1.]
+        for axis, origin, pixel in [(0, transform.c / 1000, transform.a / 1000),
+                                     (1, transform.f / 1000, transform.e / 1000)]:
+            if abs(delta[axis]) < 1e-12:
+                continue
+            lo, hi = sorted(((start[axis] - origin) / pixel, (end[axis] - origin) / pixel))
+            for boundary in range(math.floor(lo) + 1, math.ceil(hi)):
+                value = (origin + boundary * pixel - start[axis]) / delta[axis]
+                if 0 < value < 1:
+                    fractions.append(value)
+        fractions = sorted(set(fractions))
+        for left, right in zip(fractions, fractions[1:]):
+            mid = start + (left + right) / 2 * delta
+            r, c = rowcol(transform, *(mid * 1000))
+            tile = int(r * width + c)
+            lengths[tile] = lengths.get(tile, 0.) + distance * (right - left)
+    return lengths
 
 
 def _smooth(points, surface, transform, tolerance):
@@ -248,10 +286,10 @@ def route(cities, pairs, config, samples, progress=print):
     from .water import prepare_crossings, linked_paths
     assets = prepare_crossings(config, surfaces, water, transform)
     routing_surfaces = surfaces.copy()
-    if config['alignment']['sea_crossings_enabled']:
+    if assets:
         routing_surfaces[:, water] = np.inf
     asset_costs = np.array([a['costs'] for a in assets]).T if assets else np.empty((2, 0))
-    resource_costs = np.concatenate((surfaces.reshape(2, -1) * step, asset_costs), axis=1)
+    resource_costs = np.concatenate((surfaces.reshape(2, -1), asset_costs), axis=1)
     cells = []
     for city in cities:
         r, c = rowcol(transform, *(city.xy * 1000))
@@ -273,7 +311,7 @@ def route(cities, pairs, config, samples, progress=print):
             if not (0 <= r < height and 0 <= c < width) or not np.isfinite(surface[r, c]):
                 continue
             ends = [(cells[b][0] - r0, cells[b][1] - c0) for b in targets]
-            if config['alignment']['sea_crossings_enabled']:
+            if assets:
                 paths = linked_paths(surface, step, assets, track_index, (r0, r1, c0, c1), width, start, ends)
                 for target, nodes in zip(targets, paths):
                     if nodes is None:
@@ -296,9 +334,28 @@ def route(cities, pairs, config, samples, progress=print):
                             rr, cc = divmod(previous, local.shape[1])
                             forward = (rr + r0) * width + cc + c0 == asset['start']
                             points.extend(asset['points'] if forward else asset['points'][::-1])
-                    tiles = sorted(set(tile_ids))
-                    capex = float(resource_costs[track_index, tiles].sum())
-                    if config['alignment']['max_capex_meur'] and capex > config['alignment']['max_capex_meur']:
+                    footprint = {}
+                    for u, v in zip(nodes, nodes[1:]):
+                        if u >= local_size or v >= local_size:
+                            continue
+                        coords = []
+                        for node in (u, v):
+                            rr, cc = divmod(node, local.shape[1])
+                            coords.append([(transform.c + (cc + c0 + .5) * transform.a) / 1000,
+                                           (transform.f + (rr + r0 + .5) * transform.e) / 1000])
+                        for tile, km in segment_cell_lengths(np.array(coords), transform, width).items():
+                            footprint[tile] = footprint.get(tile, 0.) + km
+                    for city, cell in [(cities[source], cells[source]), (cities[target], cells[target])]:
+                        rr, cc = cell
+                        center = np.array([(transform.c + (cc + .5) * transform.a) / 1000,
+                                           (transform.f + (rr + .5) * transform.e) / 1000])
+                        for tile, km in segment_cell_lengths(np.array([city.xy, center]), transform, width).items():
+                            footprint[tile] = footprint.get(tile, 0.) + km
+                    for asset in used_assets:
+                        footprint[height * width + next(i for i, value in enumerate(assets) if value['id'] == asset['id'])] = 1.
+                    tiles = sorted(footprint)
+                    capex = float(sum(resource_costs[track_index, t] * footprint[t] for t in tiles))
+                    if not np.isfinite(capex) or (config['alignment']['max_capex_meur'] and capex > config['alignment']['max_capex_meur']):
                         continue
                     points = np.vstack((cities[source].xy, points, cities[target].xy))
                     length = float(np.linalg.norm(np.diff(points, axis=0), axis=1).sum())
@@ -307,7 +364,7 @@ def route(cities, pairs, config, samples, progress=print):
                     records[(source, target)][track] = Alignment(length, capex, tiles,
                         np.column_stack((lon, lat)).tolist(), water_km / length if length else 0,
                         float(np.mean(grade.ravel()[[t for t in tiles if t < height * width]] > .02)),
-                        tuple(a['id'] for a in used_assets), water_km)
+                        tuple(a['id'] for a in used_assets), water_km, [footprint[t] for t in tiles])
                 continue
             mcp = MCP_Geometric(local, fully_connected=True, sampling=(step, step))
             costs, _ = mcp.find_costs([start], ends=ends)
@@ -328,20 +385,24 @@ def route(cities, pairs, config, samples, progress=print):
                             continue
                         path = np.asarray(cardinal.traceback(end)) + (r0, c0)
                 tiles = np.unique(path[:, 0] * width + path[:, 1]).tolist()
-                capex = float(surface.ravel()[tiles].sum() * step)
-                if config['alignment']['max_capex_meur'] and capex > config['alignment']['max_capex_meur']:
-                    continue
                 points = np.column_stack((transform.c + (path[:, 1] + .5) * transform.a,
                                           transform.f + (path[:, 0] + .5) * transform.e))
-                # Include station-to-cell offsets in operating distance, not tile capex.
+                # Include station offsets in both construction and operating distance.
                 points = np.vstack((cities[source].xy * 1000, points, cities[target].xy * 1000))
+                footprint = segment_cell_lengths(points / 1000, transform, width)
+                tiles = sorted(footprint)
+                capex = sum(surface.ravel()[t] * footprint[t] for t in tiles)
+                if not np.isfinite(capex) or (config['alignment']['max_capex_meur'] and capex > config['alignment']['max_capex_meur']):
+                    continue
                 points = _smooth(points, surface, transform,
                                  config['alignment']['smooth_cells'] * step * 1000)
                 length = float(np.linalg.norm(np.diff(points, axis=0), axis=1).sum() / 1000)
                 lon, lat = TO_WGS84.transform(points[:, 0], points[:, 1])
                 geometry = np.column_stack((lon, lat)).tolist()
                 records[(source, target)][track] = Alignment(length, capex, tiles, geometry,
-                    float(water.ravel()[tiles].mean()), float((grade.ravel()[tiles] > .02).mean()))
+                    float(water.ravel()[tiles].mean()), float((grade.ravel()[tiles] > .02).mean()),
+                    water_km=sum(footprint[t] for t in tiles if water.ravel()[t]),
+                    tile_lengths=[footprint[t] for t in tiles])
         if progress:
             progress(f'Alignment sweep {source + 1}/{len(cities)}: {cities[source].name}', flush=True)
     edges = [Edge(a, b, records[(a, b)]) for a, b in pairs if records[(a, b)]]
@@ -354,7 +415,7 @@ def route(cities, pairs, config, samples, progress=print):
                     water_crossings=[dict(id=a['id'], resource_id=height * width + i,
                         length_km=a['length_km'], water_km=a['water_km'],
                         costs_meur=[v if np.isfinite(v) else None for v in a['costs']]) for i, a in enumerate(assets)],
-                    tile_accounting='fixed cell_km per occupied cell plus shared crossing assets; HSR overrides CR')
+                    tile_accounting='actual segment km per cell plus shared crossing assets; highest charge wins')
     return CandidateGraph.build(cities, edges, resource_costs, metadata)
 
 

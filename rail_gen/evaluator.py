@@ -7,6 +7,7 @@ from scipy import sparse
 from scipy.sparse.csgraph import connected_components
 
 from .alignment import TRACKS
+from .maintenance import length_matrices, maintenance
 from .track_layout import LAYOUT_BY_COUNT, MODEL_VERSION
 from .demand import gravity_matrix, reference_demand
 from .prep import distances
@@ -73,6 +74,7 @@ class Infrastructure:
 
 class Evaluator:
     def __init__(self, graph, config):
+        self.maintenance_lengths = length_matrices(graph)
         self.graph, self.config = graph, config
         self.n, self.m = len(graph.cities), len(graph.edges)
         self.a = np.array([e.a for e in graph.edges], dtype=int)
@@ -330,10 +332,7 @@ class Evaluator:
             capital = fleet * stock[sid]['train_meur'] * 1e6
             fleet_capital += capital
             section_km = 2 * frequency[sid] * network.lengths[selected] * hours
-            # The first set incurs the full operating rate; additional coupled
-            # sets share some costs (e.g. driver), but add energy and maintenance.
-            operating_multiplier = 1 + o['additional_unit_cost_fraction'] * (units[sid] - 1)
-            section_opex = section_km * operating_multiplier * stock[sid]['opex_eur_trainkm']
+            section_opex = section_km * stock[sid]['opex_eur_trainkm']
             np.add.at(edge_opex, edges, section_opex)
             np.add.at(edge_fleet, edges, capital * section_times / one_way)
             np.maximum.at(max_units, edges, units[sid])
@@ -345,6 +344,8 @@ class Evaluator:
                 section_speeds_kmh=network.speeds[selected].tolist(), one_way_hours=one_way,
                 cycle_hours=cycle, active_formations=active_formations, active_train_units=base_fleet, fleet_units=fleet, fleet_capital_eur=capital,
                 operating_cost_eur=float(section_opex.sum()),
+                annual_train_km=float(section_km.sum()),
+                daily_frequency_per_direction=float(frequency[sid] * o['hours_per_day']),
                 directional_annual_load=segment_load[selected].tolist(),
                 directional_annual_capacity=float(service_capacity[sid])))
         active, length = infrastructure.active, infrastructure.length
@@ -354,7 +355,12 @@ class Evaluator:
         station_capital = float(self.station_capital[served].sum())
         annual_capital = track_capital * self.crf['track'] + station_capital * self.crf['station'] + fleet_capital * self.crf['fleet']
         train_opex = float(edge_opex.sum())
-        operating_cost = train_opex * (1 + f['overhead_rate']) + track_capital * f['track_maintenance_rate'] + station_capital * f['station_opex_rate']
+        edge_fixed_maintenance, edge_variable_maintenance, physical_track_km = maintenance(
+            self.maintenance_lengths, x, counts, c['tracks'], network, frequency, hours)
+        fixed_maintenance = float(edge_fixed_maintenance.sum())
+        variable_maintenance = float(edge_variable_maintenance.sum())
+        railway_opex = train_opex + fixed_maintenance + variable_maintenance
+        operating_cost = railway_opex + station_capital * f['station_opex_rate']
         revenue = float(np.sum(trips * assignment['fares']))
         total_cost = annual_capital + operating_cost
         net = revenue - total_cost
@@ -387,7 +393,11 @@ class Evaluator:
             objectives.append(mean_gt if passengers else 1e6)
         metrics = dict(model_version=MODEL_VERSION, net_eur=net, revenue_eur=revenue, annual_cost_eur=total_cost,
             annual_capital_eur=annual_capital, operating_cost_eur=operating_cost,
-            train_opex_eur=train_opex, upfront_eur=upfront, track_capital_eur=track_capital,
+            train_opex_eur=train_opex, railway_opex_eur=railway_opex,
+            track_fixed_maintenance_eur=fixed_maintenance,
+            track_variable_maintenance_eur=variable_maintenance,
+            track_maintenance_eur=fixed_maintenance + variable_maintenance,
+            physical_track_km=physical_track_km, upfront_eur=upfront, track_capital_eur=track_capital,
             station_capital_eur=station_capital, fleet_capital_eur=fleet_capital, passengers=passengers,
             eligible_need_trips=eligible_needs, need_satisfaction_ratio=passengers / eligible_needs if eligible_needs else 0.0,
             population_served=float(self.population[served].sum()), mean_generalized_hours=mean_gt,
@@ -414,7 +424,7 @@ class Evaluator:
         edge_revenue = assignment['edge_fare_flow'] * length
         station_split = np.divide(self.station_capital, degree, out=np.zeros(self.n), where=degree > 0)
         edge_station = (station_split[self.a] + station_split[self.b]) * (x > 0)
-        edge_net = edge_revenue - edge_opex * (1 + f['overhead_rate']) - edge_track * (self.crf['track'] + f['track_maintenance_rate']) - edge_station * (self.crf['station'] + f['station_opex_rate']) - edge_fleet * self.crf['fleet']
+        edge_net = edge_revenue - edge_opex - edge_fixed_maintenance - edge_variable_maintenance - edge_track * self.crf['track'] - edge_station * (self.crf['station'] + f['station_opex_rate']) - edge_fleet * self.crf['fleet']
         multipliers = infrastructure.multipliers.copy()
         return Evaluation(x.copy(), np.asarray(objectives), constraints, metrics, edge_frequency, edge_load,
             edge_revenue, edge_net, trips, gt, max_units, multipliers, counts.copy(), tuple(final_plan), services,

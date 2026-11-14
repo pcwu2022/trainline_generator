@@ -51,8 +51,10 @@ def validate(c):
     check(c, schema)
     crossing_ids = set()
     for item in c['alignment']['water_crossings']:
-        if not isinstance(item, dict) or set(item) != {'id', 'geometry'} or not isinstance(item['id'], str) or not item['id'] or item['id'] in crossing_ids:
+        if not isinstance(item, dict) or not {'id', 'geometry'} <= set(item) or set(item) - {'id', 'geometry', 'water_type'} or not isinstance(item['id'], str) or not item['id'] or item['id'] in crossing_ids:
             raise ValueError('water_crossings requires unique nonempty IDs and geometry')
+        if item.get('water_type', 'sea') not in c['alignment']['water_costs_meur_km']:
+            raise ValueError('Unknown crossing water_type')
         crossing_ids.add(item['id'])
         points = item['geometry']
         if not isinstance(points, list) or len(points) < 2:
@@ -91,7 +93,7 @@ def validate(c):
         raise ValueError('--profit requires the incremental algorithm')
     for section, keys in {
         'prep': ['max_cities', 'center_coefficient', 'access_speed_kmh', 'neighbors', 'max_edge_km'],
-        'alignment': ['cell_km', 'window_factor', 'water_meur_km', 'water_growth_km', 'water_sample_km'],
+        'alignment': ['cell_km', 'window_factor', 'water_meur_km', 'water_growth_km', 'water_sample_km', 'urban_density_offset'],
         'demand': ['a', 'beta', 'minimum_distance_km', 'maximum_distance_km', 'sigma_hours', 'value_of_time_eur', 'fare_reference_km'],
         'operations': ['maximum_train_units', 'hours_per_day', 'days_per_year', 'minimum_frequency', 'target_load_factor', 'maximum_load_factor', 'assignment_iterations', 'peak_factor'],
         'finance': ['track_life_years', 'station_life_years', 'fleet_life_years'],

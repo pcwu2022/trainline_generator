@@ -12,11 +12,11 @@ from rasterio.transform import from_origin, rowcol
 from rasterio.warp import reproject, Resampling, transform_bounds
 
 SLOPE_ANCHORS = np.array([0, .01, .02, .05, .10, .20])
-COST_MULTIPLIERS = np.array([1, 1.5, 2.5, 4, 7, 12])
+COST_MULTIPLIERS = np.array([1, 1.2, 1.5, 2, 3, 5])
 
 
 def slope_multiplier(grade):
-    return np.interp(grade, SLOPE_ANCHORS, COST_MULTIPLIERS, left=1, right=12)
+    return np.interp(grade, SLOPE_ANCHORS, COST_MULTIPLIERS, left=1, right=5)
 
 
 def slope_cost_million(grade, baseline, ranges):

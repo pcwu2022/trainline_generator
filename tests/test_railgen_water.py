@@ -31,12 +31,12 @@ class CrossingTests(unittest.TestCase):
         surfaces[:, water] = 120.
         return c, cities, surfaces, water, transform
 
-    def test_growth_and_land_reset_and_subdivision(self):
+    def test_linear_water_cost_and_subdivision(self):
         value = crossing_cost([10, 20], [120, 120], [True, True], 25)
-        self.assertAlmostEqual(value, 30 * 120 * math.exp(30 / 25))
+        self.assertAlmostEqual(value, 30 * 120)
         self.assertAlmostEqual(value, crossing_cost([30], [120], [True], 25))
         self.assertAlmostEqual(crossing_cost([10, 1, 20], [120, 6, 120], [True, False, True], 25),
-            10 * 120 * math.exp(10 / 25) + 6 + 20 * 120 * math.exp(20 / 25))
+            10 * 120 + 6 + 20 * 120)
 
     def test_route_shared_asset_and_cache(self):
         c, cities, surfaces, water, transform = self.fixture()
@@ -46,7 +46,7 @@ class CrossingTests(unittest.TestCase):
             a = e.alignments['HSR']
             self.assertEqual(a.crossing_ids, ('test',))
             self.assertAlmostEqual(a.water_km, 3, places=5)
-            self.assertGreater(a.capex_meur, 360 * math.exp(3 / 25))
+            self.assertGreater(a.capex_meur, 360)
         shared = set(graph.edges[0].alignments['HSR'].tiles) & set(graph.edges[1].alignments['HSR'].tiles)
         self.assertIn(6 * 9, shared)
         total = graph.track_capital([2, 2])

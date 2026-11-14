@@ -38,12 +38,21 @@
       "max_capex_meur": 25000,
       "urban_reference": 5000,
       "urban_meur_per_density_km": 0.001,
-      "water_meur_km": 120,
+      "water_meur_km": 40,
       "smooth_cells": 1,
-      "sea_crossings_enabled": false,
+      "sea_crossings_enabled": true,
       "water_growth_km": 25,
       "water_sample_km": 0.25,
-      "water_crossings": []
+      "water_crossings": [],
+      "urban_cost_fraction": 0.35,
+      "urban_density_offset": 100,
+      "water_costs_meur_km": {
+        "small_river": 20,
+        "large_river": 40,
+        "wide_river_bay": 60,
+        "sea": 120,
+        "difficult_sea": 180
+      }
     },
     "demand": {
       "model": "reference_elasticity",
@@ -54,7 +63,7 @@
       "reference_wait_hours": 0.5,
       "reference_transfer_hours": 0,
       "reference_yield_eur_pkm": 0.085,
-      "k": 0.0000005,
+      "k": 5e-07,
       "a": 1.3,
       "beta": 1.2,
       "minimum_distance_km": 30,
@@ -70,20 +79,24 @@
         "speed_kmh": 140,
         "base_meur_km": 6,
         "grade_limit": 0.03,
-        "max_frequency": 6
+        "max_frequency": 6,
+        "maintenance_fixed_eur_track_km_year": 105000,
+        "maintenance_variable_eur_trainkm": 1.55
       },
       "HSR": {
         "speed_kmh": 230,
         "base_meur_km": 20,
         "grade_limit": 0.04,
-        "max_frequency": 12
+        "max_frequency": 12,
+        "maintenance_fixed_eur_track_km_year": 145000,
+        "maintenance_variable_eur_trainkm": 2.9
       }
     },
     "operations": {
       "maximum_train_units": 2,
       "additional_unit_cost_fraction": 0.6,
       "hours_per_day": 16,
-      "days_per_year": 360,
+      "days_per_year": 365,
       "initial_frequency": 2,
       "minimum_frequency": 0.3333333333333333,
       "low_frequencies": [
@@ -174,14 +187,14 @@
       "CR": {
         "seats": 350,
         "train_meur": 10,
-        "opex_eur_trainkm": 12,
+        "opex_eur_trainkm": 19.5,
         "yield_eur_pkm": 0.085,
         "speed_kmh": 140
       },
       "HSR": {
         "seats": 450,
         "train_meur": 30,
-        "opex_eur_trainkm": 20,
+        "opex_eur_trainkm": 31,
         "yield_eur_pkm": 0.11,
         "speed_kmh": 230
       }

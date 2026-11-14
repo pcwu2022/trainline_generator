@@ -19,7 +19,7 @@ class SlopeTests(unittest.TestCase):
     def test_curve_is_continuous_monotone_and_matches_cost_anchors(self):
         config = Config()
         grade = np.array([0, .01, .02, .05, .10, .20])
-        np.testing.assert_allclose(slope_multiplier(grade), [1, 1.5, 2.5, 4, 7, 12])
+        np.testing.assert_allclose(slope_multiplier(grade), [1, 1.2, 1.5, 2, 3, 5])
         np.testing.assert_allclose(slope_cost_million(grade, 10, config.terrain_cost_ranges_million),
                                    [10, 15, 25, 40, 70, 120])
         around_boundary = slope_multiplier(np.array([.02 - 1e-8, .02, .02 + 1e-8]))
@@ -69,7 +69,7 @@ class SlopeTests(unittest.TestCase):
             c.update(terrain_kind='dem', terrain_file=str(path))
             rates, _, grade, _ = cost_surfaces(c, samples, terrain_only=True)
             np.testing.assert_allclose(grade, .015, atol=1e-6)
-            np.testing.assert_allclose(rates, c['tracks']['CR']['base_meur_km'] * 2., rtol=1e-5)
+            np.testing.assert_allclose(rates, c['tracks']['CR']['base_meur_km'] * 1.35, rtol=1e-5)
             land = Path(temporary) / 'land.tif'
             with rasterio.open(land, 'w', driver='GTiff', count=1, width=width, height=height,
                                dtype='uint8', crs='EPSG:3035', transform=transform) as dst:

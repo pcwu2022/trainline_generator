@@ -9,18 +9,8 @@ from .prep import TO_METRIC
 
 
 def crossing_cost(lengths, rates, water, growth_km):
-    """Legacy continuous-water growth, invariant to subdivision of a segment."""
-    total = run_length = run_base = 0.0
-    for length, rate, wet in zip(lengths, rates, water):
-        base = float(length * rate)
-        total += base
-        if wet:
-            run_length += length
-            run_base += base
-        else:
-            total += run_base * math.expm1(min(100, run_length / growth_km))
-            run_length = run_base = 0.0
-    return total + run_base * math.expm1(min(100, run_length / growth_km))
+    """Linear construction cost; growth_km is retained for config compatibility."""
+    return float(np.dot(lengths, rates))
 
 
 def prepare_crossings(config, surfaces, water, transform):
@@ -77,7 +67,9 @@ def prepare_crossings(config, surfaces, water, transform):
         wet = water[rr, cc]
         costs = []
         for surface in surfaces:
-            rates = surface[rr, cc]
+            rates = surface[rr, cc].copy()
+            if 'water_type' in item:
+                rates[wet & np.isfinite(rates)] = a['water_costs_meur_km'][item['water_type']]
             costs.append(crossing_cost(lengths, rates, wet, a['water_growth_km'])
                          if np.isfinite(rates).all() and np.isfinite(surface[pr, pc]).all() else math.inf)
         assets.append(dict(id=item['id'], start=int(pr[0] * width + pc[0]),
