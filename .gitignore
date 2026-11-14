@@ -45,3 +45,6 @@ data/europe_terrain_*km.tif
 # Public elevation tiles and the slope-cost trial DEM
 data/slope_tiles/
 data/slope_trial/
+
+# Raw Taiwan elevation source (keep locally; exceeds GitHub file limit)
+/data/taiwan/taiwan_dem_30m.tif
