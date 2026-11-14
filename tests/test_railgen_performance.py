@@ -5,6 +5,7 @@ from unittest.mock import patch
 
 import numpy as np
 from scipy import sparse
+from scipy.sparse.csgraph import shortest_path
 
 from test_railgen import config
 from test_hybrid_services import fixture
@@ -58,6 +59,57 @@ class EvaluationReuseTests(TestCase):
             frequencies = np.full(len(network.services), 4.)
             self.assert_assignment_equal(network.assign(frequencies), rebuilt.assign(frequencies))
             self.assertTrue(np.all(network.resource_services @ frequencies <= network.resource_caps + 1e-9))
+
+    def test_plan_routing_uses_sparse_dijkstra_with_source_subset(self):
+        # Source city 1 occupies result row 0. Its only path to city 2 goes
+        # through city 0, including a valid zero-weight infrastructure edge.
+        self.e.origins = np.array([1])
+        self.e.destinations = np.array([2])
+        self.e.sources = np.array([1])
+        self.e.source_row = np.array([0])
+        self.e.ranked_od = [0]
+        self.e.lengths[0, 1] = 0
+        with patch('rail_gen.services.shortest_path', wraps=shortest_path) as routing:
+            plans = generate_plans(self.e, np.array([1, 0, 1]), np.array([2, 0, 2]))
+        self.assertTrue(any(s.route == (1, 0, 2) for plan in plans for s in plan))
+        self.assertTrue(sparse.isspmatrix_csr(routing.call_args.args[0]))
+        self.assertEqual(routing.call_args.kwargs['method'], 'D')
+        np.testing.assert_array_equal(routing.call_args.kwargs['indices'], [1])
+
+        disconnected = generate_plans(self.e, np.array([0, 0, 1]), np.array([0, 0, 2]))
+        self.assertTrue(all(s.route == (0, 2) for plan in disconnected for s in plan))
+
+    def test_direct_segment_lookup_preserves_assignment(self):
+        network = ServiceNetwork(self.e, np.array([2, 1, 2]),
+            [Service((2, 1, 0), 'HSR', 1), Service((0, 1), 'CR', 1),
+             Service((1, 2), 'CR', 1), Service((0, 2), 'HSR', 1)],
+            np.full(3, 2))
+        network._prepare_assignment()
+
+        def binary_lookup(parents, nodes):
+            keys = parents.astype(np.int64) * network._size + nodes
+            return network._arc_segments[np.searchsorted(network._arc_keys, keys)]
+
+        # Check every graph arc, including reverse riding, boarding, and the
+        # explicit zero-cost alighting arcs that sparse nonzero() would omit.
+        adjacency = network._adjacency
+        parents = np.repeat(np.arange(network._size), np.diff(adjacency.indptr))
+        np.testing.assert_array_equal(
+            network._segments_for_arcs(parents, adjacency.indices),
+            binary_lookup(parents, adjacency.indices))
+
+        for frequencies in ([6., 1., 2., 1.], [1., 6., 6., 2.]):
+            for blocked in (None, np.zeros(5, dtype=bool),
+                            np.array([True, False, False, False, True]),
+                            np.ones(5, dtype=bool)):
+                actual = network.assign(frequencies, blocked)
+                with patch.object(network, '_segments_for_arcs', side_effect=binary_lookup):
+                    expected = network.assign(frequencies, blocked)
+                self.assert_assignment_equal(actual, expected)
+                for name in ('incidence', 'edge_incidence'):
+                    for array in ('data', 'indices', 'indptr'):
+                        np.testing.assert_array_equal(
+                            getattr(actual[name], array), getattr(expected[name], array))
 
     def test_candidate_resources_do_not_leak_between_threads_or_track_counts(self):
         cases = [(np.array(x), np.array(counts)) for x, counts in [

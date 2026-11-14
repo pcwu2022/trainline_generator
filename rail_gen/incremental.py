@@ -372,6 +372,7 @@ def search_incremental(graph, config, progress=print, observer=None, interrupted
     evaluator = Evaluator(graph, config)
     rng = np.random.default_rng(p['seed'])
     started = time.perf_counter()
+    iteration_started = started
     evaluations = 1
     current = evaluator.evaluate(np.zeros(evaluator.m, dtype=int), repair=True)
     offset = resume['iteration'] if resume else 0
@@ -402,13 +403,16 @@ def search_incremental(graph, config, progress=print, observer=None, interrupted
         iteration += offset
         changes = tuple((int(i), int(previous[i]), int(current.genome[i]))
             for i in np.flatnonzero(previous != current.genome)) if previous is not None else ()
-        elapsed = time.perf_counter() - started
+        now = time.perf_counter()
+        elapsed = now - started
+        iteration_seconds = now - iteration_started
         record = dict(generation=iteration, iteration=iteration, phase=phase,
             parent_iteration=iteration - 1 if iteration else None,
             parent_genome=previous.tolist() if previous is not None else None,
             genome=current.genome.tolist(), services=current.services, track_counts=current.track_counts.tolist(), accepted=accepted,
             changes=[list(change) for change in changes], metrics=current.metrics.copy(),
             front_size=len(archive), evaluations=evaluations, seconds=elapsed,
+            iteration_seconds=iteration_seconds,
             weight_phase=weight_phase, objective_weights=active_weights.tolist(),
             objective_scales=annealing_scales.tolist(), weighted_objective=objective(current))
         if annealing_diagnostics is not None:
@@ -421,7 +425,7 @@ def search_incremental(graph, config, progress=print, observer=None, interrupted
         if observer:
             observer(SearchUpdate(iteration, phase, current, len(archive), evaluations,
                                   elapsed, accepted, changes, previous,
-                {key: record[key] for key in ('weight_phase', 'objective_weights',
+                {key: record[key] for key in ('iteration_seconds', 'weight_phase', 'objective_weights',
                                              'objective_scales', 'weighted_objective')} |
                 {'search_state': dict(rng=rng.bit_generator.state, baseline=baseline, profit_baseline=profit_baseline)}))
         if progress:
@@ -431,11 +435,13 @@ def search_incremental(graph, config, progress=print, observer=None, interrupted
                 f'spill {current.metrics["spill_fraction"]:.2%}, '
                 f'{current.metrics["unserved_stations"]} unserved cities, {current.metrics["active_components"]} components, '
                 f'net EUR {current.metrics["net_eur"]/1e6:.1f}M/year; '
-                f'{"accepted change" if accepted else "retained network"}', flush=True)
+                f'{"accepted change" if accepted else "retained network"}; '
+                f'{iteration_seconds:.2f}s this iteration', flush=True)
 
     publish(0, 'resumed' if resume else 'growth')
     try:
         for iteration in range(1, p['generations'] + 1):
+            iteration_started = time.perf_counter()
             if interrupted is not None and interrupted.is_set():
                 status = 'interrupted'
                 break

@@ -114,6 +114,7 @@ class ServiceNetwork:
         e = self.e
         rows, cols, weights, arc_segment = [], [], [], []
         size = e.n + sum(len(s.route) for s in self.services)
+        self._forward_segments = np.full(size, -1, dtype=int)
         cursor = e.n
         transfer = e.config['operations']['transfer_hours']
         for sid, service in enumerate(self.services):
@@ -125,6 +126,7 @@ class ServiceNetwork:
                 arc_segment.extend((-1, -1))
             for j, _ in enumerate(self.edges[sid]):
                 segment = self.offsets[sid] + j
+                self._forward_segments[cursor + j] = segment
                 t = self.times[segment] + self.lengths[segment] * self.yields[segment] / e.config['demand']['value_of_time_eur']
                 rows.extend((cursor + j, cursor + j + 1))
                 cols.extend((cursor + j + 1, cursor + j))
@@ -145,6 +147,15 @@ class ServiceNetwork:
                          for sid, service in enumerate(self.services)]
         self._node_services = np.concatenate(node_services) if node_services else np.empty(0, dtype=int)
         self._boarding_services = self._node_services[cols[boardings] - e.n]
+
+    def _segments_for_arcs(self, parents, nodes):
+        # Riding arcs join consecutive nodes within one service's contiguous
+        # node block. The lower node identifies the segment in either direction.
+        # Boarding/alighting arcs touch a city node and have no riding segment.
+        segments = np.full(len(nodes), -1, dtype=int)
+        riding = (parents >= self.e.n) & (nodes >= self.e.n)
+        segments[riding] = self._forward_segments[np.minimum(parents[riding], nodes[riding])]
+        return segments
 
     def assign(self, frequencies, blocked=None):
         """All-or-nothing shortest generalized journeys on explicit services.
@@ -172,7 +183,6 @@ class ServiceNetwork:
         duration, previous = shortest_path(adjacency, method='D', directed=True, indices=sources, return_predecessors=True)
         source_row = e.source_row
         connected = np.isfinite(duration[source_row, e.destinations])
-        keys, values = self._arc_keys, self._arc_segments
         positions = e.destinations.copy()
         ri, ci = [], []
         boardings, wait = np.zeros(q), np.zeros(q)
@@ -186,7 +196,7 @@ class ServiceNetwork:
             parents = previous[source_row[pairs], nodes]
             if np.any(parents < 0):
                 raise RuntimeError('Invalid service journey predecessor')
-            segments = values[np.searchsorted(keys, parents.astype(np.int64) * size + nodes)]
+            segments = self._segments_for_arcs(parents, nodes)
             riding = segments >= 0
             ri.extend(segments[riding].tolist())
             ci.extend(pairs[riding].tolist())
@@ -295,22 +305,24 @@ def generate_plans(e, x, track_counts, *, infrastructure=None, return_networks=F
     active = np.flatnonzero(x)
     if not len(active):
         return [ServiceNetwork(e, x, (), track_counts, infrastructure)] if return_networks else [()]
-    adjacency = np.full((e.n, e.n), np.inf)
-    np.fill_diagonal(adjacency, 0)
-    for i in active:
-        speed = e.config['tracks']['CR' if x[i] == 1 else 'HSR']['speed_kmh']
-        adjacency[e.a[i], e.b[i]] = adjacency[e.b[i], e.a[i]] = e.lengths[i, x[i]] / speed
-    duration, previous = shortest_path(adjacency, method='FW', directed=False, return_predecessors=True)
+    travel_times = np.array([e.lengths[i, x[i]] /
+        e.config['tracks']['CR' if x[i] == 1 else 'HSR']['speed_kmh'] for i in active])
+    adjacency = sparse.csr_matrix((np.r_[travel_times, travel_times],
+        (np.r_[e.a[active], e.b[active]], np.r_[e.b[active], e.a[active]])),
+        shape=(e.n, e.n))
+    duration, previous = shortest_path(adjacency, method='D', directed=False,
+        indices=e.sources, return_predecessors=True)
     limit = e.config['services']['max_route_edges']
     routes, seen = [], set()
     ranked = e.ranked_od
     for j in ranked:
         a, b = int(e.origins[j]), int(e.destinations[j])
-        if not np.isfinite(duration[a, b]):
+        row = e.source_row[j]
+        if not np.isfinite(duration[row, b]):
             continue
         route = [b]
         while route[-1] != a and len(route) <= limit:
-            route.append(int(previous[a, route[-1]]))
+            route.append(int(previous[row, route[-1]]))
         if route[-1] != a or len(route) < 3:
             continue
         route = tuple(route[::-1])

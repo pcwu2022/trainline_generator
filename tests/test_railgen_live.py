@@ -32,7 +32,13 @@ class IncrementalSearchTests(unittest.TestCase):
     def test_updates_inherit_the_preceding_network_and_are_reproducible(self):
         c, g = incremental_config(), graph_fixture()
         updates = []
-        first = search(g, c, progress=None, observer=updates.append)
+        progress = unittest.mock.Mock()
+        first = search(g, c, progress=progress, observer=updates.append)
+        for row, update, logged in zip(first.history, updates, progress.call_args_list):
+            self.assertGreaterEqual(row['iteration_seconds'], 0)
+            self.assertLessEqual(row['iteration_seconds'], row['seconds'])
+            self.assertEqual(update.metadata['iteration_seconds'], row['iteration_seconds'])
+            self.assertIn(f"{row['iteration_seconds']:.2f}s this iteration", logged.args[0])
         second = search(g, c, progress=None)
         np.testing.assert_array_equal(first.current_genome, second.current_genome)
         np.testing.assert_array_equal(first.genomes, second.genomes)
