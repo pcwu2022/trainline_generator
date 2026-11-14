@@ -156,9 +156,9 @@
       "annealing": false,
       "annealing_initial_temperature": 0.1,
       "annealing_final_temperature": 0.001,
-      "profit": false,
       "retained_ridership": 0.98,
-      "journey_time_allowance": 0.05
+      "journey_time_allowance": 0.05,
+      "finance_scale_eur": 100000000
     },
     "reporting": {
       "snapshot_every": 10,

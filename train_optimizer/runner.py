@@ -97,7 +97,7 @@ def main(argv=None):
         return generate(['run', '--algorithm', algorithm, *remaining])
     parser = argparse.ArgumentParser(
         description='Optimize stations, corridors, all-stop services and passenger flows.',
-        epilog='Fast generator options (including --iterations and --profit): '
+        epilog='Fast generator options (including --iterations and --population): '
                'use optimize.py --solver pareto --help or python -m rail_gen run --help.')
     parser.add_argument('--config', default=str(DEFAULT_CONFIG_PATH), help='Optional external JSON overrides')
     parser.add_argument('--profile', help='Named profile from config.json (europe, exploratory, france, italy, netherlands, switzerland, uk)')

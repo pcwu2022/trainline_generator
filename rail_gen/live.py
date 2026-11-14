@@ -1,7 +1,6 @@
 """Iteration-triggered live map, charts, accounting and bounded-memory GIF."""
 from datetime import datetime, timezone
 import json
-import shutil
 from pathlib import Path
 
 import numpy as np
@@ -127,16 +126,13 @@ class LiveReporter:
             genome=update.result.genome.tolist(), services=update.result.services, track_counts=update.result.track_counts.tolist(), changes=[list(c) for c in update.changes],
             front_size=update.front_size, evaluations=update.evaluations,
             seconds=update.elapsed_seconds, metrics=metrics)
+        row.update(update.metadata or {})
         self.history.append(row)
         with (self.output / 'history.jsonl').open('a', encoding='utf8') as stream:
             stream.write(json.dumps(row, allow_nan=False) + '\n')
         # Initial frame contains the real region and city nodes, never a blank canvas.
-        if update.phase == 'before_profit' or update.iteration == 0 or update.iteration % self.every == 0:
+        if update.iteration == 0 or update.iteration % self.every == 0:
             self.render(update)
-        if update.phase == 'before_profit':
-            for extension in ('png', 'json', 'geojson'):
-                shutil.copyfile(self.output / f'latest.{extension}',
-                                self.output / f'before_profit.{extension}')
 
     def render(self, update):
         # Search updates already contain complete assignments and allocations.
@@ -204,7 +200,7 @@ class LiveReporter:
             '![Progress over iterations](progress.png)', '',
             'The live network is the accepted state carried between iterations. '
             'Rejected proposals leave it unchanged. Growth and integration aim to serve all candidate cities in one component '
-            'before cost consolidation with a fixed service baseline. '
+            'before cost consolidation with a fixed service baseline. Satisfaction controls the objective weights. '
             f'{m["unserved_stations"]} candidate cities remain unserved; {m["active_components"]} active components.', '',
             '[Pareto alternatives and backtests](pareto/report.md) are comparison designs, not animation frames.']
         if data['algorithm'] != 'incremental':

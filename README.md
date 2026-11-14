@@ -35,8 +35,8 @@ underserved city-pair markets each iteration. These demand-ranked packages are
 considered deterministically alongside sampled edge edits, with no city-specific
 rules. Expansion candidates inherit paid track capacity and retain the accepted
 service plan as an alternative. Added services reserve incumbent frequencies and
-formations. Growth compares passenger gains per additional annual cost; profit
-mode compares annual net benefit. Passenger assignment tries up to eight shortest
+formations. Proposal selection compares the normalized financial, ridership and population
+objectives using satisfaction-dependent weights. Passenger assignment tries up to eight shortest
 viable paths around saturated service segments, recalculating elastic demand for
 each alternative journey before recording residual spill.
 
@@ -50,15 +50,14 @@ continues using the code it loaded at startup.
   --output runs/france-live --iterations 200 --snapshot-every 5 --gif-frame-ms 500
 ```
 
-Add `--profit` to incremental runs to switch after `ceil(iterations * 0.8)` updates,
-reserving the final 20% of iterations (rounded down) for profit optimization.
-The switch saves `before_profit.png`, `before_profit.json`, and
-`before_profit.geojson`. Profit mode gives normalized annual revenue minus total
-annual cost 100 times the weight of ridership and population rewards; it allows
-service reductions and accepts only profit-improving moves. It continues until
-the iteration limit or `profit_saturated` (the entire local neighborhood has
-been checked without an acceptable improvement). Time limits and interrupts
-still apply. Population algorithms do not support this flag.
+Incremental search uses the original 150-proposal neighborhood, complete demand
+connection packages, capacity repair, integration and validated batching. Candidate
+ranking now uses normalized `w1*(annual_cost-revenue) - w2*passengers - w3*population`.
+Weights are `(0.05, 0.70, 0.25)` below 30% demand satisfaction,
+`(0.20, 0.55, 0.25)` from 30% to below 60%, and `(0.70, 0.20, 0.10)`
+from 60% onward. The original service and topology protections still apply.
+The `--profit` and `--restarts` options are removed: each invocation grows one network,
+with the original iteration/exhaustion stopping rules and no ten-failure cutoff.
 
 Watch `latest.png` for the evolving network, `progress.png` for its metrics, and
 `progress.gif` for the animation. Maps use the original population-density

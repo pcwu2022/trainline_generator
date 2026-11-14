@@ -28,18 +28,13 @@ def parser():
                                   formatter_class=argparse.RawDescriptionHelpFormatter)
         if name == 'run':
             sub.epilog = (                'Unspecified search and reporting options use the selected configuration/profile.\n'
-                'Profit mode (incremental only): after ceil(iterations * 0.8) updates, save\n'
-                'before_profit.png, before_profit.json and before_profit.geojson, then give\n'
-                'normalized annual revenue minus total annual cost 100x the weight of\n'
-                'ridership and population rewards. Service reductions are allowed; accepted\n'
-                'moves must increase profit. Stop at the iteration limit or profit_saturated\n'
-                '(all local moves checked without an acceptable improvement). Time limits\n'
-                'and interrupts still apply.\n\n'
+                'Incremental search evaluates up to 150 sampled proposals plus demand packages per update.\n'
+                'Objective weights change at 30% and 60% demand satisfaction.\n\n'
                 'Outputs: latest.png/json/geojson, progress.gif, progress.png, report.md,\n'
                 'cost_breakdown.log and pareto/ alternatives. Use an empty output directory\n'
                 'or --overwrite.\n\n'
                 'Example: python -m rail_gen run --profile france --iterations 200\n'
-                '           --profit --output runs/france-profit --snapshot-every 5')
+                '           --output runs/france-weighted --snapshot-every 5')
         elif name == 'calibrate':
             sub.epilog = ('Requires --backtest or backtest_file in the configuration.\n'
                           'Example: python -m rail_gen calibrate --backtest observations.csv\n'
@@ -66,8 +61,6 @@ def parser():
             sub.add_argument('--seed', type=int, help='Nonnegative random seed for reproducible search')
             sub.add_argument('--workers', type=int, help='Parallel evaluation threads (positive integer; 1 is serial)')
             sub.add_argument('--sensitivity', action='store_true', help='Run six additional searches with demand, capital costs and fare yields varied by +/-25%%')
-            sub.add_argument('--profit', action='store_true',
-                             help='Switch to profit maximization for the final 20%% of iterations; save the pre-switch network (see below)')
             sub.add_argument('--algorithm', choices=['incremental', 'nsga2', 'nsga3'],
                              help='Persistent network edits or NSGA population evolution (bundled default: incremental)')
             sub.add_argument('--time-limit', type=float, help='Positive search time limit in seconds, excluding geography preparation')
@@ -86,8 +79,6 @@ def main(argv=None):
         overrides = {}
         if args.command == 'run':
             overrides['search'] = {key: getattr(args, key) for key in ('population', 'batch_accept_limit', 'generations', 'seed', 'workers') if getattr(args, key) is not None}
-            if args.profit:
-                overrides['search']['profit'] = True
             if args.sensitivity:
                 overrides['search']['sensitivity'] = True
             if args.algorithm:

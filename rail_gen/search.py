@@ -33,6 +33,7 @@ class SearchUpdate:
     accepted: bool = False
     changes: tuple = ()
     parent_genome: Optional[np.ndarray] = None
+    metadata: Optional[dict] = None
 
 
 def nondominated(objectives):

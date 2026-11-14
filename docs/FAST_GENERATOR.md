@@ -14,9 +14,10 @@ Run commands from the repository root:
   --output runs/italy-live --snapshot-every 10
 ```
 
-Add `--profit` to optimize profit during the final 20% of iterations. The equivalent
-entry point is `optimize.py --solver pareto`. Optional population algorithms are
-`--algorithm nsga2` and `--algorithm nsga3`; they do not support `--profit`.
+The equivalent entry point is `optimize.py --solver pareto`. Optional population
+algorithms are `--algorithm nsga2` and `--algorithm nsga3`. Incremental search runs
+one continuous search, with 150 sampled proposals per update by default
+(`--population 150`). There is no `--profit` or `--restarts` flag.
 Use an empty output directory. `--overwrite` deletes existing contents.
 
 ## Configuration
@@ -123,8 +124,8 @@ complete construction paths for up to twelve markets ranked by unmet reference
 demand per iteration. All missing sections are evaluated together. Expansions
 inherit purchased capacity and retain the accepted timetable as an alternative;
 new services reserve incumbent frequencies and formations. Service-plan selection
-uses passenger gain per additional annual cost in growth and net annual benefit
-in profit mode. Results use model version `network-capacity-v3`. Growth favors carried
+retains its original internal service-plan rules; outer proposal selection uses
+the weighted objective. Results use model version `network-capacity-v3`. Growth favors carried
 ridership gains relative to added annual cost and can add coverage. When an incumbent
 has excessive spill, capacity-expansion selection favors more carried passengers
 without losing coverage or worsening component count. Integration prioritizes
@@ -137,11 +138,36 @@ track-capacity constraints remain hard. `feasible` still includes the spill limi
 only fully feasible alternatives enter the Pareto archive. Reaching the iteration
 limit with excessive spill gives `capacity_shortfall`.
 
-With `--profit`, the transition happens after `ceil(0.8 * iterations)` updates:
-for 200 iterations, profit starts at 161. It saves `before_profit` artifacts.
-Profit selection requires a net annual improvement and permits service reductions.
-The bounded search can stop at neighborhood exhaustion, incomplete coverage or
-profit saturation. More iterations do not guarantee a connected or optimal network.
+### Adaptive objective weights
+
+The original proposal generation, sampling, deterministic connection packages,
+capacity expansion, integration, fixed service protections, caching, batching and
+stopping rules are retained. Only candidate ranking adds the weighted objective:
+
+`F = w1*(annual_cost-revenue)/finance_scale_eur - w2*passengers/reference_trips - w3*population_served/total_population`.
+
+| Demand satisfaction of incumbent | Cost | Passengers | Population |
+| --- | ---: | ---: | ---: |
+| Below 30% | 0.05 | 0.70 | 0.25 |
+| 30% to below 60% | 0.20 | 0.55 | 0.25 |
+| At least 60% | 0.70 | 0.20 | 0.10 |
+
+Normalization scales are fixed for the run: `search.finance_scale_eur` defaults to
+EUR 100 million; reference trips and total candidate population are floored at one.
+Weights come from the incumbent and stay fixed while comparing all proposals and
+batches in that iteration. Internal demand assignment and service-plan rules remain unchanged.
+Growth requires an improving weighted score and retains its service protections.
+Capacity expansion retains its passenger and topology requirements and ranks by F.
+Integration still prioritizes connecting components and covering cities, then ranks
+by F: it can accept a necessary connection without immediate objective improvement.
+Consolidation requires a lower F while retaining its original fixed service baseline.
+The satisfaction thresholds change weights, not the original structural search phases.
+
+Each invocation starts one network. It stops at the iteration/time limit, interruption,
+or the original neighborhood-exhaustion conditions. There is no ten-unsuccessful-iteration
+cutoff, extra 60% acceptance floor, recovery controller or automatic seed restarts.
+History records `weight_phase`, `objective_weights`, `objective_scales` and
+`weighted_objective` alongside the original search phase and metrics.
 
 ## Outputs and interpretation
 
@@ -189,20 +215,18 @@ of disjoint edits. Individual edits need not improve the network. Existing
 sampled evaluations are reused; a novel batch adds at most one evaluation per
 iteration. Rejected edits can be tried again on later iterations.
 
-The energy to minimize is `(annual_cost - revenue) / 100M EUR - annual_trips /
-reference_trips - population_served / total_candidate_population`. The demand
-and population scales are fixed at initialization and floored at one. These
-terms have equal normalized weight; the optional journey-time archive objective
-does not enter annealing energy. Temperature cools geometrically between the
-configured positive endpoints. Improvements are always accepted; deterioration
-by delta is accepted with probability `exp(-delta / temperature)`. This is a
-heuristic annealing search, not an exact Metropolis–Hastings sampler.
+The energy to minimize is the normalized weighted objective above, using the
+incumbent's demand-satisfaction weights for both states in each comparison.
+The optional journey-time archive objective does not enter the energy. Temperature
+cools geometrically between the configured positive endpoints. Improvements are
+accepted; deterioration by delta is accepted with probability `exp(-delta / temperature)`.
+This is a heuristic annealing search, not an exact Metropolis–Hastings sampler.
 
 Budget, subsidy, component-share and infrastructure-capacity checks remain hard;
 the existing spill exception still applies to live states. Only fully feasible
 results enter the Pareto archive. History records temperature, current and
 proposed energies, and acceptance under `annealing`. The live network may get
 worse; consult the archive for preserved alternatives. Integration/consolidation
-and optional profit rules resume after exploration. Existing internal service
+rules resume after exploration. Existing internal service
 plan selection remains unchanged. Annealing cannot add edges outside the prepared
 candidate graph, and does not guarantee better results within a fixed run budget.

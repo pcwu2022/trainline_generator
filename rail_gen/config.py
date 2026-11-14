@@ -94,8 +94,8 @@ def validate(c):
         raise ValueError('annealing requires incremental search')
     if not 0 < a['annealing_final_temperature'] <= a['annealing_initial_temperature']:
         raise ValueError('Require 0 < final temperature <= initial temperature')
-    if c['search']['profit'] and c['search']['algorithm'] != 'incremental':
-        raise ValueError('--profit requires the incremental algorithm')
+    if a['finance_scale_eur'] <= 0:
+        raise ValueError('finance_scale_eur must be positive')
     for section, keys in {
         'prep': ['max_cities', 'center_coefficient', 'access_speed_kmh', 'neighbors', 'max_edge_km'],
         'alignment': ['cell_km', 'window_factor', 'water_meur_km', 'water_growth_km', 'water_sample_km', 'urban_density_offset'],

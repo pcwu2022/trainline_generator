@@ -85,7 +85,20 @@ def demand_connections(current, evaluator, limit=12):
     return proposals
 
 
-def growth_choice(current, candidates):
+def objective_weights(satisfaction):
+    """Cost, passengers and population weights, selected from the incumbent."""
+    if satisfaction < .30:
+        return 'expansion', np.array([.05, .70, .25])
+    if satisfaction < .60:
+        return 'development', np.array([.20, .55, .25])
+    return 'consolidation', np.array([.70, .20, .10])
+
+
+def weighted_objective(candidate, weights, scales):
+    return float(np.dot(weights, candidate.objectives[:3] / scales))
+
+
+def growth_choice(current, candidates, objective=None):
     """Prefer useful ridership gains per added annual euro; never reset the network."""
     useful = []
     for candidate in candidates:
@@ -99,19 +112,23 @@ def growth_choice(current, candidates):
         # A cost-saving edit that preserves service is always attractive.
         rank = (delta_cost < -.01, delta_trips / max(1e6, delta_cost),
                 delta_population, -candidate.objectives[0])
+        if objective is not None:
+            if objective(candidate) >= objective(current) - 1e-12:
+                continue
+            rank = (-objective(candidate),)
         useful.append((rank, candidate))
     return max(useful, key=lambda value: value[0])[1] if useful else None
 
 
-def annealing_energy(candidate, scales):
+def annealing_energy(candidate, scales, weights=None):
     """Fixed normalization for net cost, annual trips and population."""
-    return float(np.sum(candidate.objectives[:3] / scales))
+    return float(np.dot(np.ones(3) if weights is None else weights, candidate.objectives[:3] / scales))
 
 
-def annealing_accept(current, candidate, scales, temperature, rng):
+def annealing_accept(current, candidate, scales, temperature, rng, weights=None):
     if not buildable(candidate):
         return False
-    delta = annealing_energy(candidate, scales) - annealing_energy(current, scales)
+    delta = annealing_energy(candidate, scales, weights) - annealing_energy(current, scales, weights)
     return delta <= 0 or rng.random() < math.exp(-delta / temperature)
 
 
@@ -140,7 +157,7 @@ def buildable(candidate):
     return bool(np.all(candidate.constraints[hard] <= 1e-9))
 
 
-def capacity_choice(current, candidates, evaluator):
+def capacity_choice(current, candidates, evaluator, objective=None):
     """Reward additional carried trips without sacrificing coverage or connections."""
     old_missing, old_components = topology(current.genome, evaluator)
     useful = []
@@ -151,19 +168,22 @@ def capacity_choice(current, candidates, evaluator):
                 or candidate.metrics['population_served'] < current.metrics['population_served'] - 1e-6):
             continue
         cost = candidate.metrics['annual_cost_eur'] - current.metrics['annual_cost_eur']
-        useful.append(((gain / max(1e6, cost), gain), candidate))
+        rank = (-objective(candidate), gain) if objective is not None else (gain / max(1e6, cost), gain)
+        useful.append((rank, candidate))
     return max(useful, key=lambda item: item[0])[1] if useful else None
 
 
-def consolidation_choice(current, candidates, baseline, config):
+def consolidation_choice(current, candidates, baseline, config, objective=None):
     """Retain a fixed growth baseline, preventing repeated percentage erosion."""
     p = config['search']
     eligible = [candidate for candidate in candidates
-        if candidate.objectives[0] < current.objectives[0] - .01
+        if (objective(candidate) < objective(current) - 1e-12 if objective is not None
+            else candidate.objectives[0] < current.objectives[0] - .01)
         and candidate.metrics['passengers'] + 1e-6 >= baseline['passengers'] * p['retained_ridership']
         and candidate.metrics['population_served'] + 1e-6 >= baseline['population_served'] * p['retained_ridership']
         and candidate.metrics['mean_generalized_hours'] <= baseline['mean_generalized_hours'] * (1 + p['journey_time_allowance']) + 1e-9]
-    return min(eligible, key=lambda candidate: (candidate.objectives[0], -candidate.metrics['passengers'])) if eligible else None
+    return min(eligible, key=lambda candidate: (objective(candidate) if objective is not None else candidate.objectives[0],
+                                                  -candidate.metrics['passengers'])) if eligible else None
 
 
 def profit_choice(current, candidates, baseline):
@@ -196,7 +216,7 @@ def topology(genome, evaluator):
     return evaluator.n - len(served), max(0, len(np.unique(labels[served])) - 1)
 
 
-def integration_choice(current, candidates, evaluator):
+def integration_choice(current, candidates, evaluator, objective=None):
     missing, components = topology(current.genome, evaluator)
     eligible = []
     for candidate in candidates:
@@ -205,7 +225,8 @@ def integration_choice(current, candidates, evaluator):
         if new_missing <= missing and new_missing + new_components < missing + components:
             eligible.append(candidate)
     return min(eligible, key=lambda candidate: (
-        sum(topology(candidate.genome, evaluator)), candidate.objectives[0],
+        sum(topology(candidate.genome, evaluator)),
+        objective(candidate) if objective is not None else candidate.objectives[0],
         -candidate.metrics['passengers'])) if eligible else None
 
 
@@ -358,8 +379,11 @@ def search_incremental(graph, config, progress=print, observer=None, interrupted
     attempted = set()
     cache = OrderedDict()
     baseline = None
-    annealing_scales = np.array([1e8, max(1, evaluator.reference_trips.sum()),
+    annealing_scales = np.array([p['finance_scale_eur'], max(1, evaluator.reference_trips.sum()),
                                  max(1, evaluator.population.sum())])
+    weight_phase, active_weights = objective_weights(current.metrics['need_satisfaction_ratio'])
+    def objective(candidate):
+        return weighted_objective(candidate, active_weights, annealing_scales)
     annealing_diagnostics = None
     status = 'completed'
     package_diagnostics = None
@@ -377,7 +401,9 @@ def search_incremental(graph, config, progress=print, observer=None, interrupted
             parent_genome=previous.tolist() if previous is not None else None,
             genome=current.genome.tolist(), services=current.services, track_counts=current.track_counts.tolist(), accepted=accepted,
             changes=[list(change) for change in changes], metrics=current.metrics.copy(),
-            front_size=len(archive), evaluations=evaluations, seconds=elapsed)
+            front_size=len(archive), evaluations=evaluations, seconds=elapsed,
+            weight_phase=weight_phase, objective_weights=active_weights.tolist(),
+            objective_scales=annealing_scales.tolist(), weighted_objective=objective(current))
         if annealing_diagnostics is not None:
             record['annealing'] = annealing_diagnostics.copy()
         if baseline is not None:
@@ -387,7 +413,9 @@ def search_incremental(graph, config, progress=print, observer=None, interrupted
         history.append(record)
         if observer:
             observer(SearchUpdate(iteration, phase, current, len(archive), evaluations,
-                                  elapsed, accepted, changes, previous))
+                                  elapsed, accepted, changes, previous,
+                {key: record[key] for key in ('weight_phase', 'objective_weights',
+                                             'objective_scales', 'weighted_objective')}))
         if progress:
             progress(f'Iteration {iteration}/{p["generations"]}: {phase}; '
                 f'{current.metrics["active_edges"]} edges, {current.metrics["passengers"]/1e6:.2f}M trips/year, '
@@ -424,6 +452,7 @@ def search_incremental(graph, config, progress=print, observer=None, interrupted
             if annealing_active:
                 phase = 'annealing'
                 attempted.clear()
+            weight_phase, active_weights = objective_weights(current.metrics['need_satisfaction_ratio'])
             previous = current.genome.copy()
             proposals = neighbours(current, evaluator)
             connection_proposals = demand_connections(current, evaluator) if baseline is None and profit_baseline is None else {}
@@ -448,7 +477,7 @@ def search_incremental(graph, config, progress=print, observer=None, interrupted
                                      time.perf_counter() - started >= p['time_limit_seconds']))
                             packages, package_diagnostics = capacity_packages(current, evaluator, should_stop)
                             evaluations += package_diagnostics['evaluations']
-                            selected = integration_choice(current, packages, evaluator)
+                            selected = integration_choice(current, packages, evaluator, objective)
                             for candidate in packages:
                                 archive[tuple(candidate.genome)] = candidate.objectives.copy()
                             if archive:
@@ -489,7 +518,7 @@ def search_incremental(graph, config, progress=print, observer=None, interrupted
             missing = [(key, proposal) for key, proposal, _ in batch if key not in cache]
             def score(proposal):
                 return evaluator.evaluate(proposal, repair=True, incumbent=current,
-                                          decision='profit' if profit_baseline is not None else 'growth' if baseline is None else 'cost')
+                                          decision='growth' if baseline is None else 'cost')
             results = list(workers.map(score, [x for _, x in missing])) if workers else [score(x) for _, x in missing]
             evaluations += len(results)
             cache.update((key, result) for (key, _), result in zip(missing, results))
@@ -503,20 +532,20 @@ def search_incremental(graph, config, progress=print, observer=None, interrupted
                     return profit_choice(parent, options, profit_baseline)
                 if baseline is not None:
                     connected = [c for c in options if topology(c.genome, evaluator) == (0, 0)]
-                    return consolidation_choice(parent, connected, baseline, config)
+                    return consolidation_choice(parent, connected, baseline, config, objective)
                 if phase == 'integration':
-                    return integration_choice(parent, options, evaluator)
+                    return integration_choice(parent, options, evaluator, objective)
                 if phase == 'capacity_expansion':
-                    return capacity_choice(parent, options, evaluator)
-                return growth_choice(parent, options)
+                    return capacity_choice(parent, options, evaluator, objective)
+                return growth_choice(parent, options, objective)
 
             # Keep the committed capacity/growth/integration priority. Batching
             # combines only proposals accepted by that same phase's selector.
             if baseline is None and profit_baseline is None and phase == 'growth':
                 if (current.metrics['spill_fraction'] > config['constraints']['maximum_spill_fraction']
-                        and capacity_choice(current, candidates, evaluator) is not None):
+                        and capacity_choice(current, candidates, evaluator, objective) is not None):
                     phase = 'capacity_expansion'
-                elif growth_choice(current, candidates) is None:
+                elif growth_choice(current, candidates, objective) is None:
                     phase = 'integration'
 
             def batch_should_stop():
@@ -535,11 +564,11 @@ def search_incremental(graph, config, progress=print, observer=None, interrupted
                 temperature = p['annealing_initial_temperature'] * (
                     p['annealing_final_temperature'] / p['annealing_initial_temperature']) ** fraction
                 selected = (proposal if proposal is not None and
-                            annealing_accept(current, proposal, annealing_scales, temperature, rng)
+                            annealing_accept(current, proposal, annealing_scales, temperature, rng, active_weights)
                             and not np.array_equal(proposal.genome, current.genome) else None)
                 annealing_diagnostics = dict(temperature=temperature,
-                    energy=annealing_energy(current, annealing_scales),
-                    proposed_energy=annealing_energy(proposal, annealing_scales) if proposal is not None else None,
+                    energy=annealing_energy(current, annealing_scales, active_weights),
+                    proposed_energy=annealing_energy(proposal, annealing_scales, active_weights) if proposal is not None else None,
                     accepted=selected is not None)
             else:
                 selected, combined = combined_choice(current, candidates, choose, score,
