@@ -140,9 +140,9 @@ limit with excessive spill gives `capacity_shortfall`.
 
 ### Adaptive objective weights
 
-The original proposal generation, sampling, deterministic connection packages,
+The original proposal generation, deterministic connection packages,
 capacity expansion, integration, fixed service protections, caching, batching and
-stopping rules are retained. Only candidate ranking adds the weighted objective:
+stopping rules are retained. Candidate ranking uses the weighted objective:
 
 `F = w1*(annual_cost-revenue)/finance_scale_eur - w2*passengers/reference_trips - w3*population_served/total_population`.
 
@@ -162,6 +162,22 @@ Integration still prioritizes connecting components and covering cities, then ra
 by F: it can accept a necessary connection without immediate objective improvement.
 Consolidation requires a lower F while retaining its original fixed service baseline.
 The satisfaction thresholds change weights, not the original structural search phases.
+
+Edge sampling also follows the incumbent's satisfaction phase. Its demand-per-capital
+weight is multiplied by `1 + coefficient * served_endpoints`, where
+`search.served_station_bias` configures the coefficients:
+
+| Phase | Satisfaction | Coefficient | Neither served | One served | Both served |
+| --- | --- | ---: | ---: | ---: | ---: |
+| expansion | Below 30% | 0.5 | 1 | 1.5 | 2 |
+| development | 30% to below 60% | 2 | 1 | 3 | 5 |
+| consolidation | At least 60% | 4 | 1 | 5 | 9 |
+
+Coefficients must be finite and nonnegative; zero removes the station preference.
+The same sampling schedule applies during capacity expansion and integration.
+Deterministic demand packages and acceptance rules are unchanged, including the
+capacity selector's restriction on introducing disconnected components.
+Running processes retain their loaded configuration and code until restarted.
 
 Each invocation starts one network. It stops at the iteration/time limit, interruption,
 or the original neighborhood-exhaustion conditions. There is no ten-unsuccessful-iteration

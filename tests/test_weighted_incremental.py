@@ -6,11 +6,38 @@ import unittest
 import numpy as np
 
 from rail_gen.config import load_config
-from rail_gen.incremental import objective_weights, weighted_objective, growth_choice
+from rail_gen.incremental import objective_weights, weighted_objective, growth_choice, neighbours
 from rail_gen.search import search
 
 
 class WeightedIncrementalTests(unittest.TestCase):
+    def test_station_sampling_bias_follows_satisfaction(self):
+        c = load_config()
+        edges = [SimpleNamespace(a=a, b=b, alignments={'CR': SimpleNamespace(capex_meur=1)})
+                 for a, b in [(0, 1), (1, 2), (2, 3)]]
+        e = SimpleNamespace(n=4, graph=SimpleNamespace(edges=edges), config=c,
+                            a=np.array([0, 1, 2]), b=np.array([1, 2, 3]),
+                            gravity_scores=np.ones(3), allowed=np.ones((3, 3), dtype=bool))
+        current = SimpleNamespace(genome=np.array([1, 0, 0]), metrics={})
+        for satisfaction, expected in [(0, [2, 1.5, 1]), (.2999, [2, 1.5, 1]),
+                                       (.3, [5, 3, 1]), (.5999, [5, 3, 1]),
+                                       (.6, [9, 5, 1])]:
+            current.metrics['need_satisfaction_ratio'] = satisfaction
+            with patch('rail_gen.incremental.bridge_components', side_effect=lambda x, *_: x):
+                proposals = neighbours(current, e)
+            for edge, weight in enumerate(expected):
+                proposal = current.genome.copy()
+                proposal[edge] = 2
+                self.assertEqual(proposals[tuple(proposal)][1], weight)
+        c['search']['served_station_bias']['consolidation'] = 0
+        with patch('rail_gen.incremental.bridge_components', side_effect=lambda x, *_: x):
+            self.assertTrue(all(weight == 1 for _, weight in neighbours(current, e).values()))
+
+    def test_station_sampling_bias_validation(self):
+        for invalid in [-1, float('nan'), True, 'high']:
+            with self.assertRaises(ValueError):
+                load_config(overrides={'search': {'served_station_bias': {'expansion': invalid}}})
+
     def test_weight_boundaries_and_fixed_scales(self):
         for q, name, weights in [(0, 'expansion', [.05,.7,.25]),
                                  (.3, 'development', [.2,.55,.25]),

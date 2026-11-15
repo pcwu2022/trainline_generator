@@ -31,6 +31,32 @@ class CrossingTests(unittest.TestCase):
         surfaces[:, water] = 120.
         return c, cities, surfaces, water, transform
 
+    def test_station_relocation_capture_and_shared_endpoints(self):
+        c, cities, surfaces, water, transform = self.fixture()
+        from rail_gen.prep import TO_METRIC
+        original = cities[0].xy.copy()
+        cities[0].lon, cities[0].lat = TO_WGS84.transform(
+            *(original * 1000 + np.array([300., 200.])))
+        city_center = cities[0].xy.copy()
+        samples = (np.array([original, cities[1].xy, cities[2].xy]),
+                   np.array([1000., 2000., 3000.]), np.array([100., 100., 100.]))
+        with patch('rail_gen.alignment.cost_surfaces', return_value=(surfaces, water, np.zeros_like(water), transform)):
+            graph = route(cities, [(0, 1), (0, 2)], c, samples, progress=None)
+        np.testing.assert_allclose(cities[0].xy, city_center)
+        np.testing.assert_allclose(cities[0].station_xy, original)
+        self.assertAlmostEqual(cities[0].access_hours, 0., places=7)
+        self.assertAlmostEqual(cities[0].kappa, 1000 / cities[0].population * c['prep']['uptake'])
+        for edge in graph.edges:
+            for alignment in edge.alignments.values():
+                for coordinate, index in [(alignment.geometry[0], edge.a),
+                                          (alignment.geometry[-1], edge.b)]:
+                    np.testing.assert_allclose(np.array(TO_METRIC.transform(*coordinate)) / 1000,
+                                               cities[index].station_xy)
+        with tempfile.TemporaryDirectory() as folder:
+            save_graph(graph, folder)
+            loaded = load_graph(folder)
+            np.testing.assert_allclose(loaded.cities[0].station_xy, original)
+
     def test_linear_water_cost_and_subdivision(self):
         value = crossing_cost([10, 20], [120, 120], [True, True], 25)
         self.assertAlmostEqual(value, 30 * 120)

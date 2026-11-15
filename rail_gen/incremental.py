@@ -27,10 +27,12 @@ def neighbours(current, evaluator):
     served[evaluator.a[active]] = True
     served[evaluator.b[active]] = True
     demand = gravity_scores(evaluator)
+    weight_phase, _ = objective_weights(current.metrics['need_satisfaction_ratio'])
+    station_bias = evaluator.config['search']['served_station_bias'][weight_phase]
     for i, edge in enumerate(evaluator.graph.edges):
         capital = min(a.capex_meur for a in edge.alignments.values())
         preference = max(1e-12, demand[i] / max(1, capital))
-        preference *= 1 + 4 * (int(served[edge.a]) + int(served[edge.b]))
+        preference *= 1 + station_bias * (int(served[edge.a]) + int(served[edge.b]))
         for state in np.flatnonzero(evaluator.allowed[i]):
             if state == x[i]:
                 continue

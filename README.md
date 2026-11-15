@@ -171,3 +171,10 @@ and the legacy tests with `.venv/bin/python -m unittest discover -s train_optimi
 - [Historical capacity-repair experiment](docs/experiments/capacity-repair.md)
 - [Legacy optimizer, terrain tools and earlier run notes](train_optimizer/README.md)
 - [Legacy algorithm](train_optimizer/docs/ALGORITHM.md) and [legacy formulation](train_optimizer/docs/FORMULATION.md)
+
+Stations use one fixed location at the center of the city’s routing-grid cell,
+shared by CR and HSR alignments. Relocation is limited to half a cell diagonal
+and does not jump across water or excluded cells. City labels retain the original
+city coordinates; station markers, density-derived catchments, captured population
+and access times use station coordinates. Geography caches rebuild automatically
+for this change; existing running processes must be restarted to use it.

@@ -83,6 +83,10 @@ class MapBackground:
             raise ValueError('No population cells within the map bounding box/country selection')
         self.densities = np.asarray(densities)
         self.node_xy = self.project([[city.lon, city.lat] for city in graph.cities])
+        self.station_xy = self.project([[
+            city.lon if city.station_lon is None else city.station_lon,
+            city.lat if city.station_lat is None else city.station_lat]
+            for city in graph.cities])
         self.edge_xy = {(i, track): self.project(alignment.geometry)
                         for i, edge in enumerate(graph.edges) for track, alignment in edge.alignments.items()}
         lon, lat = np.linspace(west, east, 101), np.linspace(south, north, 101)
@@ -91,8 +95,8 @@ class MapBackground:
         points = np.vstack([perimeter, *self.polygons, *self.edge_xy.values()])
         lower, upper = points.min(axis=0), points.max(axis=0)
         radii = np.asarray([city.radius_km for city in graph.cities])[:, None]
-        lower = np.minimum(lower, (self.node_xy - radii).min(axis=0))
-        upper = np.maximum(upper, (self.node_xy + radii).max(axis=0))
+        lower = np.minimum(lower, (self.station_xy - radii).min(axis=0))
+        upper = np.maximum(upper, (self.station_xy + radii).max(axis=0))
         margin = max(5, float((upper - lower).max()) * .03)
         self.viewport = (float(lower[0] - margin), float(upper[0] + margin),
                          float(lower[1] - margin), float(upper[1] + margin))
@@ -168,7 +172,7 @@ class MapBackground:
                 ax.plot(coordinates[:, 0], coordinates[:, 1], **style)
                 served.update((edge.a, edge.b))
             for i in sorted(served):
-                xy = self.node_xy[i]
+                xy = self.station_xy[i]
                 ax.add_patch(Circle(xy, self.graph.cities[i].radius_km, **CATCHMENT_STYLE))
                 ax.plot(*xy, **STATION_STYLE)
             xmin, xmax, ymin, ymax = self.viewport

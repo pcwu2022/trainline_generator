@@ -17,7 +17,7 @@ from scipy.spatial import cKDTree
 
 from .prep import City, TO_METRIC, TO_WGS84
 
-CACHE_VERSION = 9
+CACHE_VERSION = 10
 TRACKS = ('CR', 'HSR')
 
 
@@ -293,13 +293,23 @@ def route(cities, pairs, config, samples, progress=print):
     cells = []
     for city in cities:
         r, c = rowcol(transform, *(city.xy * 1000))
-        # The nearest city-centre cell is fixed across track types. No snapping
-        # across water/exclusions to fabricate a feasible station.
-        cells.append((int(r), int(c)))
+        r, c = int(r), int(c)
+        # The containing cell bounds the offset by half a cell diagonal.
+        # Never relocate across water or exclusions to fabricate feasibility.
+        city.station_lon = city.station_lat = None
+        if (0 <= r < height and 0 <= c < width and not water[r, c]
+                and np.isfinite(routing_surfaces[:, r, c]).any()):
+            x = transform.c + (c + .5) * transform.a
+            y = transform.f + (r + .5) * transform.e
+            city.station_lon, city.station_lat = TO_WGS84.transform(x, y)
+        cells.append((r, c))
+    from .prep import station_capture
+    if samples is not None:
+        station_capture(cities, *samples, config)
     records = {pair: {} for pair in pairs}
     for source in sorted({a for a, _ in pairs}):
         targets = [b for a, b in pairs if a == source]
-        radius = max(np.linalg.norm(cities[b].xy - cities[source].xy) for b in targets)
+        radius = max(np.linalg.norm(cities[b].station_xy - cities[source].station_xy) for b in targets)
         radius = math.ceil(radius * config['alignment']['window_factor'] / step) + 2
         r, c = cells[source]
         r0, r1 = max(0, r - radius), min(height, r + radius + 1)
@@ -349,7 +359,7 @@ def route(cities, pairs, config, samples, progress=print):
                         rr, cc = cell
                         center = np.array([(transform.c + (cc + .5) * transform.a) / 1000,
                                            (transform.f + (rr + .5) * transform.e) / 1000])
-                        for tile, km in segment_cell_lengths(np.array([city.xy, center]), transform, width).items():
+                        for tile, km in segment_cell_lengths(np.array([city.station_xy, center]), transform, width).items():
                             footprint[tile] = footprint.get(tile, 0.) + km
                     for asset in used_assets:
                         footprint[height * width + next(i for i, value in enumerate(assets) if value['id'] == asset['id'])] = 1.
@@ -357,7 +367,7 @@ def route(cities, pairs, config, samples, progress=print):
                     capex = float(sum(resource_costs[track_index, t] * footprint[t] for t in tiles))
                     if not np.isfinite(capex) or (config['alignment']['max_capex_meur'] and capex > config['alignment']['max_capex_meur']):
                         continue
-                    points = np.vstack((cities[source].xy, points, cities[target].xy))
+                    points = np.vstack((cities[source].station_xy, points, cities[target].station_xy))
                     length = float(np.linalg.norm(np.diff(points, axis=0), axis=1).sum())
                     lon, lat = TO_WGS84.transform(points[:, 0] * 1000, points[:, 1] * 1000)
                     water_km = sum(a['water_km'] for a in used_assets)
@@ -388,7 +398,7 @@ def route(cities, pairs, config, samples, progress=print):
                 points = np.column_stack((transform.c + (path[:, 1] + .5) * transform.a,
                                           transform.f + (path[:, 0] + .5) * transform.e))
                 # Include station offsets in both construction and operating distance.
-                points = np.vstack((cities[source].xy * 1000, points, cities[target].xy * 1000))
+                points = np.vstack((cities[source].station_xy * 1000, points, cities[target].station_xy * 1000))
                 footprint = segment_cell_lengths(points / 1000, transform, width)
                 tiles = sorted(footprint)
                 capex = sum(surface.ravel()[t] * footprint[t] for t in tiles)

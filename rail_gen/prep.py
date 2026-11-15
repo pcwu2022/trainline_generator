@@ -1,5 +1,6 @@
 """Metro nodes, exclusive station catchments and a small static candidate graph."""
 from dataclasses import dataclass
+from typing import Optional
 import csv
 import json
 from pathlib import Path
@@ -24,6 +25,15 @@ class City:
     access_hours: float = 0.0
     country: str = ''
     radius_km: float = 0.0
+
+    station_lon: Optional[float] = None
+    station_lat: Optional[float] = None
+
+    @property
+    def station_xy(self):
+        return np.array(TO_METRIC.transform(
+            self.lon if self.station_lon is None else self.station_lon,
+            self.lat if self.station_lat is None else self.station_lat)) / 1000
 
     @property
     def xy(self):
@@ -84,9 +94,9 @@ def read_cities(config, samples=None):
     return selected
 
 
-def set_capture_radii(cities, xy, density, config):
+def set_capture_radii(cities, xy, density, config, *, stations=False):
     """Use the same local density for city screening, capture and map circles."""
-    _, nearest = cKDTree(xy).query([city.xy for city in cities])
+    _, nearest = cKDTree(xy).query([city.station_xy if stations else city.xy for city in cities])
     for city, index in zip(cities, nearest):
         city.radius_km = center_radius(float(density[index]), config['prep']['center_coefficient'])
 
@@ -156,8 +166,8 @@ def population_samples(config):
 def station_capture(cities, xy, people, density, config):
     """Assign samples exclusively; let the raster catchment exceed city-proper P."""
     p = config['prep']
-    set_capture_radii(cities, xy, density, config)
-    distance, owner = cKDTree([c.xy for c in cities]).query(xy)
+    set_capture_radii(cities, xy, density, config, stations=True)
+    distance, owner = cKDTree([c.station_xy for c in cities]).query(xy)
     for i, city in enumerate(cities):
         included = (owner == i) & (distance <= city.radius_km)
         total = float(people[included].sum())

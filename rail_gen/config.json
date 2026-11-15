@@ -22,11 +22,11 @@
     "prep": {
       "max_cities": 100,
       "minimum_population": 50000,
-      "center_coefficient": 0.3,
-      "uptake": 0.7,
+      "center_coefficient": 0.25,
+      "uptake": 0.6,
       "access_speed_kmh": 25,
       "neighbors": 6,
-      "max_edge_km": 600,
+      "max_edge_km": 800,
       "force_pairs": 30,
       "via_tolerance_km": 15,
       "via_detour_ratio": 1.05
@@ -139,6 +139,11 @@
       "algorithm": "incremental",
       "population": 150,
       "batch_accept_limit": 10,
+      "served_station_bias": {
+        "expansion": 0.5,
+        "development": 2,
+        "consolidation": 4
+      },
       "generations": 200,
       "seed": 42,
       "workers": 1,
