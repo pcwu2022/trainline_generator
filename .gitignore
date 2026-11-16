@@ -48,3 +48,8 @@ data/slope_trial/
 
 # Raw Taiwan elevation source (keep locally; exceeds GitHub file limit)
 /data/taiwan/taiwan_dem_30m.tif
+
+# Local elevation rasters and downloaded DEM archives
+/data/**/*.tif
+/data/**/*.tiff
+/data/rasters_GEDTM30.tar.gz

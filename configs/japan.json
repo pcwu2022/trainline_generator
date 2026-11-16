@@ -1,0 +1,20 @@
+{
+  "profiles": {
+    "japan": {
+      "bbox": [134.28, 33.42, 141.61, 38.61],
+      "countries": ["JP"],
+      "population_file": "data/japan/japan_population.geojson",
+      "cities_file": "data/japan/japan_cities.json",
+      "terrain_kind": "relief",
+      "terrain_file": "data/japan/japan_land_relief.tif",
+      "terrain_dem_file": "data/japan/japan_terrain_3km.tif",
+      "prep": {
+        "center_coefficient": 0.15
+      },
+      "alignment": {
+        "cell_km": 3
+      }
+    }
+  },
+  "defaults": {}
+}
