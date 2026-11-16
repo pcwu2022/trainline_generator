@@ -162,6 +162,51 @@ Shared terrain utilities and input datasets remain at the repository root.
 Run the current tests with `.venv/bin/python -m unittest discover -s tests`
 and the legacy tests with `.venv/bin/python -m unittest discover -s train_optimizer/tests`.
 
+## Example run results
+
+Saved incremental-search snapshots for France, the Netherlands (including Belgian
+cities), and Europe. All three use `network-operating-cost-v4`; the figures below
+come from the [saved metrics](docs/results/summary.json). These are uncalibrated
+prototype results with synthetic demand and unverified city populations.
+
+| Scenario | Iteration | Stations | Corridors | Route length (km) | Carried trips/year (millions) | Demand fulfillment | Annual net (EUR billions) |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| France | 7 | 74 | 109 | 11,969.1 | 244.36 | 50.33% | -17.32 |
+| Netherlands and Belgium | 27 | 30 | 49 | 2,535.4 | 475.77 | 89.16% | -2.22 |
+| Europe | 33 | 282 | 373 | 33,299.9 | 2,954.13 | 22.07% | -54.53 |
+
+Demand fulfillment is carried trips divided by eligible demand, using candidate
+potential demand for connected pairs and reference trips for unreachable pairs.
+Annual net is fare revenue minus total annual cost, including annualized capital;
+negative values indicate a shortfall. Route length counts corridors once rather
+than summing individual tracks.
+
+### France
+
+![Generated railway network in France](docs/results/france.png)
+
+Snapshot from `runs/france`, iteration 7, during capacity expansion. It connects
+74 of 75 candidate cities in one component. Capacity spill remains 49.67%, so this
+snapshot does not satisfy the full feasibility constraints.
+
+### Netherlands and Belgium
+
+![Generated railway network in the Netherlands and Belgium](docs/results/netherlands.png)
+
+Snapshot from `runs/netherlands`, iteration 27, when the search exhausted its
+neighborhood. All 30 candidate cities form one connected component. This snapshot
+is feasible under the configured constraints, with 8.19% capacity spill.
+
+### Europe
+
+![Generated railway network across Europe](docs/results/europe.png)
+
+Snapshot from `runs/europe_60`, iteration 33, during capacity expansion. It connects
+282 of 500 candidate cities in one component. Capacity spill remains 70.06%, so
+this snapshot does not satisfy the full feasibility constraints. It has the highest
+saved demand fulfillment among the local Europe runs; other runs use different
+settings or older model versions.
+
 ## Documentation
 
 - [Fast generator: configuration, formulas, search and outputs](docs/FAST_GENERATOR.md)
