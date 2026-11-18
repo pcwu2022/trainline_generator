@@ -45,8 +45,8 @@ must be explicitly re-evaluated for comparison; the currently running process
 continues using the code it loaded at startup.
 
 ```sh
-.venv/bin/python -m pip install -r requirements-railgen.txt
-.venv/bin/python optimize.py --solver pareto --profile france \
+.venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python -m rail_gen run --profile france \
   --output runs/france-live --iterations 200 --snapshot-every 5 --gif-frame-ms 500
 ```
 
@@ -68,9 +68,8 @@ train types operating across infrastructure boundaries. `latest.json`, `latest.g
 maps are grouped under `pareto/`; they are not successive iterations.
 
 The existing `python -m rail_gen run ...` command uses the same incremental
-default. Select `--algorithm nsga2` / `--algorithm nsga3`, or
-`optimize.py --solver nsga2` / `--solver nsga3`, for population evolution.
-Parameters for the fast pipeline are in `rail_gen/config.json`.
+default. Select `--algorithm nsga2` or `--algorithm nsga3` for population evolution.
+Parameters for the fast pipeline are in `config/config.json`.
 
 Construction keeps the double-track baselines of EUR 6M/km (CR) and EUR 20M/km
 (HSR). Ground-slope anchors 0%, 1%, 2%, 5%, 10%, 20% use multipliers
@@ -147,20 +146,26 @@ Set `demand.model = "rail_share"` to reproduce the previous demand calculation.
 Old calibrated parameters should be recalibrated for the new model.
 
 Use a new or empty output directory, or add `--overwrite` to delete its previous
-contents and start a fresh run. Both fast-generator entry points accept this flag.
+contents and start a fresh run. The generator CLI accepts this flag.
 The supplied city and relief data support uncalibrated development runs;
 sourced metro populations and corridor backtests are required before
 interpreting the results. See [configuration, calibration, outputs and
 limitations](docs/FAST_GENERATOR.md).
 
-The earlier optimizer is documented in [the legacy guide](train_optimizer/README.md)
-and remains available with
-`python -m train_optimizer --solver annealing`, `heuristic`, or `milp`.
-Its configuration, tests, dependencies and documentation live in `train_optimizer/`.
-Shared terrain utilities and input datasets remain at the repository root.
+Repository layout:
 
-Run the current tests with `.venv/bin/python -m unittest discover -s tests`
-and the legacy tests with `.venv/bin/python -m unittest discover -s train_optimizer/tests`.
+- `config/config.json`: shared defaults.
+- `config/profile_locations.json`: profile names mapped to paths relative to `config/`.
+- `config/profiles/`: individual country, Europe and smoke profiles.
+- `config/overrides/`: optional scenario overrides.
+- `rail_gen/`: generator, evaluation and reporting code.
+- `tools/`: terrain preparation commands.
+- `requirements/`: optional dependency lists; terrain downloads use `requirements/terrain.txt`.
+- `tests/`, `docs/`, `examples/`, `data/`, `runs/`: tests, guides, examples, inputs and outputs.
+
+Run tests with `.venv/bin/python -m unittest discover -s tests`.
+Run terrain tools as modules, e.g. `.venv/bin/python -m tools.fetch_terrain --help`.
+Data paths remain relative to the repository root; run commands from there.
 
 ## Example run results
 
@@ -214,8 +219,6 @@ settings or older model versions.
 - [Hybrid services, capacity and financial accounting](docs/HYBRID_SERVICES.md)
 - [Performance measurements](docs/RAILGEN_PERFORMANCE.md)
 - [Historical capacity-repair experiment](docs/experiments/capacity-repair.md)
-- [Legacy optimizer, terrain tools and earlier run notes](train_optimizer/README.md)
-- [Legacy algorithm](train_optimizer/docs/ALGORITHM.md) and [legacy formulation](train_optimizer/docs/FORMULATION.md)
 
 Stations use one fixed location at the center of the city’s routing-grid cell,
 shared by CR and HSR alignments. Relocation is limited to half a cell diagonal

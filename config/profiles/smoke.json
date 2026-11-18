@@ -1,0 +1,13 @@
+{
+  "prep": {
+    "max_cities": 12
+  },
+  "alignment": {
+    "cell_km": 6
+  },
+  "search": {
+    "population": 24,
+    "generations": 8,
+    "representatives": 5
+  }
+}

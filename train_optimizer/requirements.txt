@@ -1,2 +1,0 @@
--r ../requirements.txt
-highspy>=1.15,<2

@@ -39,7 +39,7 @@ def parser():
             sub.epilog = ('Requires --backtest or backtest_file in the configuration.\n'
                           'Example: python -m rail_gen calibrate --backtest observations.csv\n'
                           '           --fit k beta --output runs/calibration.json')
-        sub.add_argument('--config', type=Path, help='JSON overrides for the bundled rail_gen/config.json')
+        sub.add_argument('--config', type=Path, help='JSON overrides for the config/config.json defaults')
         sub.add_argument('--profile', default='france', help='Named configuration profile (default: france)')
         sub.add_argument('--backtest', type=Path, help='Observed demand CSV; overrides backtest_file and fits demand before running')
         sub.add_argument('--fit', nargs='+', choices=['k', 'a', 'beta', 't0_hours'], default=['k'],

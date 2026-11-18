@@ -1,10 +1,11 @@
-"""Single JSON parameter source, strict recursive overrides, and input validation."""
+"""Shared defaults, indexed profiles, strict overrides, and input validation."""
 from copy import deepcopy
 import json
 import math
 from pathlib import Path
 
-DEFAULT_CONFIG = Path(__file__).with_name('config.json')
+DEFAULT_CONFIG = Path(__file__).resolve().parents[1] / 'config' / 'config.json'
+PROFILE_LOCATIONS = DEFAULT_CONFIG.with_name('profile_locations.json')
 
 
 def merge(base, overrides, prefix=''):
@@ -177,17 +178,23 @@ def migrate_config(custom):
 def load_config(path=None, profile='france', overrides=None):
     raw = json.loads(DEFAULT_CONFIG.read_text())
     c = raw['defaults']
+    locations = json.loads(PROFILE_LOCATIONS.read_text())
+    profiles = {}
     if path:
         custom = json.loads(Path(path).read_text())
         if 'defaults' in custom:
             if set(custom) - {'defaults', 'profiles'}:
                 raise ValueError('Configuration document only accepts defaults and profiles')
             c = merge(c, migrate_config(custom['defaults']))
-            raw['profiles'].update(custom.get('profiles', {}))
+            profiles.update(custom.get('profiles', {}))
         else:
             c = merge(c, migrate_config(custom))
     if profile:
-        if profile not in raw['profiles']:
+        if profile in profiles:
+            selected = profiles[profile]
+        elif profile in locations:
+            selected = json.loads((PROFILE_LOCATIONS.parent / locations[profile]).read_text())
+        else:
             raise ValueError(f'Unknown profile: {profile}')
-        c = merge(c, migrate_config(raw['profiles'][profile]))
+        c = merge(c, migrate_config(selected))
     return validate(merge(c, migrate_config(overrides or {})))

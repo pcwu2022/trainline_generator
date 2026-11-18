@@ -1,4 +1,4 @@
-"""Population-density maps with the original optimizer's shared visual design."""
+"""Population-density maps for railway networks."""
 import json
 import math
 from pathlib import Path
@@ -12,10 +12,10 @@ from shapely.geometry import Point, shape
 from shapely.ops import unary_union
 from shapely.prepared import prep
 
-from train_optimizer.map_style import (CITY_STYLE, STATION_STYLE, CATCHMENT_STYLE,
+from rail_gen.map_style import (CITY_STYLE, STATION_STYLE, CATCHMENT_STYLE,
     population_collection, satisfaction_scale, track_style, add_track_reference)
-from train_optimizer.outputs import city_label_indices, map_figure_size, map_projector
-from train_optimizer.map_terrain import fast_terrain, add_terrain
+from rail_gen.map_utils import city_label_indices, map_figure_size, map_projector
+from rail_gen.map_terrain import fast_terrain, add_terrain
 from .alignment import TRACKS
 from .track_layout import track_type
 from .evaluator import Evaluator

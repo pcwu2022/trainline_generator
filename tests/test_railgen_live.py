@@ -233,14 +233,6 @@ class LiveOutputTests(unittest.TestCase):
             self.assertEqual(sum(f['geometry']['type'] == 'LineString' for f in geo['features']),
                              np.count_nonzero(run.current_genome))
 
-    def test_legacy_entry_point_routes_the_new_solver_and_live_flags(self):
-        from train_optimizer.runner import main
-        with patch('rail_gen.__main__.main', return_value=0) as generate:
-            self.assertEqual(main(['--profile', 'smoke', '--solver', 'pareto',
-                '--output', 'runs/example', '--snapshot-every', '2', '--gif-frame-ms', '300']), 0)
-        generate.assert_called_once_with(['run', '--algorithm', 'incremental',
-            '--profile', 'smoke', '--output', 'runs/example', '--snapshot-every', '2', '--gif-frame-ms', '300'])
-
     def test_invalid_reporting_parameters_are_rejected(self):
         for override in [{'reporting': {'snapshot_every': 0}},
                          {'reporting': {'gif_frame_ms': 17}},

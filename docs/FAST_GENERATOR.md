@@ -9,12 +9,12 @@ costs. It is a strategic scenario model, not a calibrated traffic forecast.
 Run commands from the repository root:
 
 ```sh
-.venv/bin/python -m pip install -r requirements-railgen.txt
+.venv/bin/python -m pip install -r requirements.txt
 .venv/bin/python -m rail_gen run --profile italy --iterations 200 \
   --output runs/italy-live --snapshot-every 10
 ```
 
-The equivalent entry point is `optimize.py --solver pareto`. Optional population
+Optional population
 algorithms are `--algorithm nsga2` and `--algorithm nsga3`. Incremental search runs
 one continuous search, with 150 sampled proposals per update by default
 (`--population 150`). There is no `--profit` or `--restarts` flag.
@@ -22,12 +22,11 @@ Use an empty output directory. `--overwrite` deletes existing contents.
 
 ## Configuration
 
-[rail_gen/config.json](../rail_gen/config.json) contains defaults and named profiles.
-See [Country profiles](COUNTRY_PROFILES.md) for all 51 country names, scope, and data limitations.
+[config/config.json](../config/config.json) contains shared defaults. [profile_locations.json](../config/profile_locations.json) indexes the separate files in `config/profiles/`.
+See [Country profiles](COUNTRY_PROFILES.md) for country names, scope, and data limitations.
 The `netherlands` profile selects only the Netherlands; Belgium uses `belgium`.
 External `--config` overrides defaults, the selected profile applies next, and CLI
 arguments apply last. `run_config.json` records effective settings for each run.
-The legacy [config.json](../train_optimizer/config.json) belongs to the separate legacy optimizer.
 
 Input paths select city records, population cells, boundaries and terrain. `bbox`,
 `countries`, `minimum_population` and `max_cities` control city selection.
@@ -210,11 +209,10 @@ or comparing designs. Profit allocations are not independent route-closure savin
 
 ## Other documentation
 
-- [README and quick start](../README.md)
+- [README and quick start](../readme.md)
 - [Hybrid services and migration](HYBRID_SERVICES.md)
 - [Performance measurements](RAILGEN_PERFORMANCE.md)
 - [Historical capacity experiment](experiments/capacity-repair.md)
-- [Legacy optimizer and terrain tools](../train_optimizer/README.md)
 
 ### Optional simulated annealing
 

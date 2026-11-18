@@ -3,9 +3,7 @@
 Run from the repository root:
 
 ```bash
-.venv/bin/python optimize.py \
-  --solver pareto \
-  --config configs/japan.json \
+.venv/bin/python -m rail_gen run \
   --profile japan \
   --output runs/japan \
   --iterations 100 \
@@ -15,7 +13,7 @@ Run from the repository root:
 ```
 
 Add `--overwrite` to replace an existing run directory.
-The custom profile requires `--config configs/japan.json`.
+Select the bundled profile with `--profile japan`.
 
 Coverage is central Honshu, not all Japan. The supplied
 `data/rasters_GEDTM30.tar.gz` contains a single `output_be.tif`, with WGS84
@@ -26,7 +24,7 @@ Hokkaido, Kyushu, Okinawa and much of western Japan are outside this scenario.
 - `japan_dem_30m.tif`: the archive's original single-band float32 elevation
   raster, extracted and renamed. Elevations are assumed to be metres.
 - `japan_terrain_3km.tif`: mean elevations resampled directly from that raster
-  to EPSG:3035 at 3 km, using `generate_terrain.generate_terrain`. Coastal nodata
+  to EPSG:3035 at 3 km, using `tools.generate_terrain.generate_terrain`. Coastal nodata
   is filled from the nearest valid elevation within two cells (6 km), matching
   the Taiwan preparation. Remaining nodata is retained.
 - `japan_land_relief.tif`: neutral RGB placeholder (160,160,160), aligned to

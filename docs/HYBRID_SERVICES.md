@@ -1,8 +1,8 @@
 # Hybrid train services in rail_gen
 
 The `hybrid-services-v1` evaluator separates the newly constructed railway from
-its train services. This supersedes the edge-as-train evaluator described in the
-original v0.1 specification. The legacy optimizer in `train_optimizer` is unchanged.
+its train services. This supersedes the edge-as-train evaluator in the
+original v0.1 specification.
 
 ## Infrastructure and rolling stock
 

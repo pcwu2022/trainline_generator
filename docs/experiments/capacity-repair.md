@@ -10,13 +10,13 @@ per-unit fleet and operating costs. When ordinary integration moves exhaust,
 it tests paired approaches to unserved cities and bounded sequences of extra
 routes/upgrades near saturated corridors. Infeasible intermediate networks are
 never published as accepted states. Ordinary defaults retain single-unit trains
-and disable the package search; `configs/capacity-repair.json` enables both.
+and disable the package search; `config/overrides/capacity-repair.json` enables both.
 
 ## Europe trial
 
 ```sh
-.venv/bin/python optimize.py --solver pareto --profile europe \
-  --config configs/capacity-repair.json --output runs/europe-capacity-repair \
+.venv/bin/python -m rail_gen run --profile europe \
+  --config config/overrides/capacity-repair.json --output runs/europe-capacity-repair \
   --iterations 500 --snapshot-every 50 --gif-frame-ms 500
 ```
 

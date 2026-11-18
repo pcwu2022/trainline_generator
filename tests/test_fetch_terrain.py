@@ -9,7 +9,7 @@ import numpy as np
 import rasterio
 from rasterio.transform import from_origin
 
-from fetch_terrain import build_mosaic, fetch_terrain
+from tools.fetch_terrain import build_mosaic, fetch_terrain
 
 
 class TerrainTests(unittest.TestCase):

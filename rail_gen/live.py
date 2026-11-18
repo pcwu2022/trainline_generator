@@ -91,7 +91,7 @@ class LiveReporter:
     def __init__(self, graph, config, output, calibration=None, resume=False):
         # Reuse the original optimizer's streaming GIF encoder, which appends
         # compressed frames atomically without retaining historical image buffers.
-        from train_optimizer.outputs import ProgressGif
+        from rail_gen.map_utils import ProgressGif
         self.graph, self.config, self.output = graph, config, Path(output)
         self.output.mkdir(parents=True, exist_ok=True)
         self.evaluator = Evaluator(graph, config)

@@ -3,7 +3,7 @@
 Run from the repository root:
 
 ```sh
-.venv/bin/python -m rail_gen run --config configs/taiwan.json --profile taiwan --iterations 200 --output runs/taiwan
+.venv/bin/python -m rail_gen run --profile taiwan --iterations 200 --output runs/taiwan
 ```
 
 - Population: 689 H3 cells from `data/asia.geojson`, clipped to 119.6–122.4 E, 21.55–25.7 N with a buffer for density smoothing.

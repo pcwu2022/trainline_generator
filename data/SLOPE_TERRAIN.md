@@ -1,6 +1,6 @@
 # Slope-cost trial elevation data
 
-Run `.venv/bin/python fetch_slope_terrain.py` to reproduce the trial dataset.
+Run `.venv/bin/python -m tools.fetch_slope_terrain` to reproduce the trial dataset.
 It fetches zoom-6 GeoTIFF tiles covering European scenario bounds from
 [Mapzen Terrain Tiles on AWS](https://registry.opendata.aws/terrain-tiles/)
 and averages their elevations onto a 3 km EPSG:3035 grid. Downloaded tiles,
@@ -8,7 +8,7 @@ the VRT mosaic and the derived DEM are ignored by Git. Source tiles are cached
 in `data/slope_tiles`; the DEM is `data/slope_trial/europe_terrain_3km.tif`.
 
 This is a coarse regional trial, not the high-resolution Copernicus download
-provided by `fetch_terrain.py`. Resampling smooths slopes and omits small-scale
+provided by `tools/fetch_terrain.py`. Resampling smooths slopes and omits small-scale
 obstacles. The source may include bathymetry: water detection still comes from
 the existing relief/land-class data, not from elevation sign.
 

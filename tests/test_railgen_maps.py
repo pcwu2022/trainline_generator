@@ -17,7 +17,7 @@ from test_railgen import config, graph_fixture
 from rail_gen.demand import gravity_matrix
 from rail_gen.evaluator import Evaluator
 from rail_gen.maps import MapBackground
-from train_optimizer.outputs import draw_map
+from rail_gen.map_style import track_style
 
 
 class PopulationMapTests(unittest.TestCase):
@@ -76,19 +76,6 @@ class PopulationMapTests(unittest.TestCase):
             result = e.evaluate([1, 2, 0])
             result.frequency[:2] = [1, 4]
             ratios = background.satisfaction(result)
-            problem = SimpleNamespace(cells=cells,
-                cities=[dict(center=(city.lon, city.lat), name=city.name, population=city.population) for city in graph.cities],
-                locations=[dict(coordinate=(city.lon, city.lat)) for city in graph.cities],
-                stations=[dict(location=i, radius_km=graph.cities[i].radius_km) for i in range(3)],
-                edges=[dict(geometry=edge.alignments['CR'].geometry) for edge in graph.edges], demand=[])
-            legacy_config = SimpleNamespace(bbox=c['bbox'], terrain_file='', land_file='', accounting_years=10)
-            legacy_result = dict(phase='solving', iterations=1, elapsed_seconds=1, snapshot=1, feasible=True,
-                lines=[dict(id=i, edges=[i], train_type=track, frequency_per_hour_per_direction=frequency)
-                       for i, (track, frequency) in enumerate([('CR', 1), ('HSR', 4)])],
-                od_pairs=[dict(id=i, rail_eligible_needs=100) for i in range(2)],
-                passenger_flows=[dict(od=i, line=i, board_stop=0, alight_stop=1, trips_per_hour=100 * ratios[i]) for i in range(2)],
-                stations=[dict(coordinate=(city.lon, city.lat), radius_km=city.radius_km) for city in graph.cities],
-                metrics=dict(served_trips_per_hour=1, total_track_km=1, horizon_profit=0))
             captured = []
             original_save = Figure.savefig
             def capture(figure, path, **kwargs):
@@ -101,20 +88,17 @@ class PopulationMapTests(unittest.TestCase):
                     norm=(axis.collections[0].norm.vmin, axis.collections[0].norm.vmax)))
             with matplotlib.rc_context({'savefig.bbox': 'tight', 'figure.autolayout': True}):
                 with patch.object(Figure, 'savefig', autospec=True, side_effect=capture):
-                    draw_map(Path(temporary) / 'original.png', legacy_config, problem, legacy_result,
-                             viewport=background.viewport)
                     background.draw(result, Path(temporary) / 'populated.png', 'Populated')
                     background.draw(e.evaluate([0, 0, 0]), Path(temporary) / 'empty.png', 'Empty')
                     background.draw(result, Path(temporary) / 'financial.png', 'Financial', color_by='revenue_cost')
-            original, populated, empty, financial = captured
+            populated, empty, financial = captured
             self.assertEqual(populated['radii'], [4, 8, 12])
             self.assertEqual(financial['radii'], [4, 8, 12])
-            self.assertEqual(populated['palette'], original['palette'])
-            self.assertEqual(populated['norm'], original['norm'])
-            np.testing.assert_allclose(populated['values'], original['values'])
-            for actual, expected in zip(populated['tracks'], original['tracks']):
-                np.testing.assert_allclose(matplotlib.colors.to_rgba(actual[0]), matplotlib.colors.to_rgba(expected[0]))
-                self.assertEqual(actual[1:], expected[1:])
+            self.assertEqual(populated['palette'], 'YlOrRd')
+            for actual, (frequency, kind, satisfaction) in zip(populated['tracks'], [(1, 'CR', ratios[0]), (4, 'HSR', ratios[1])]):
+                expected = track_style(frequency, kind, satisfaction)
+                np.testing.assert_allclose(matplotlib.colors.to_rgba(actual[0]), expected['color'])
+                self.assertEqual(actual[1:], (expected['linewidth'], expected['linestyle']))
             self.assertEqual(len(populated['tracks']), 2)
             self.assertEqual(len(financial['tracks']), 2)
             for actual, expected in zip(financial['tracks'], populated['tracks']):

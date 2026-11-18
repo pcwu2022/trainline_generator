@@ -20,8 +20,7 @@ Saved run outputs have not been changed.
 
 ## Deferred idea: exploration, integration, profit
 
-The user identified this as resembling the discarded `train_optimizer` approach;
-it is recorded for possible later consideration, not approved for implementation.
+This idea is recorded for possible later consideration.
 
 - Maintain a current exploratory network separately from best-score, best-profit
   and best-connectivity checkpoints.

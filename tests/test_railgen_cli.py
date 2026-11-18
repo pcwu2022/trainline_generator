@@ -1,4 +1,4 @@
-"""Output replacement safeguards for both fast-generator entry points."""
+"""Output replacement safeguards for the generator CLI."""
 import contextlib
 import io
 from pathlib import Path
@@ -7,12 +7,11 @@ import unittest
 from unittest.mock import patch
 
 from rail_gen.__main__ import main
-from optimize import main as optimizer_main
 
 
 class RailgenCliTests(unittest.TestCase):
-    def test_overwrite_clears_output_through_both_entry_points(self):
-        for entry, prefix in [(main, ['run']), (optimizer_main, ['--solver', 'pareto'])]:
+    def test_overwrite_clears_output(self):
+        for entry, prefix in [(main, ['run'])]:
             with self.subTest(entry=entry), tempfile.TemporaryDirectory() as folder:
                 output = Path(folder) / 'run'
                 (output / 'snapshots').mkdir(parents=True)

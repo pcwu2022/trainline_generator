@@ -1,0 +1,79 @@
+{
+  "bbox": [
+    -11,
+    35,
+    32,
+    61
+  ],
+  "countries": [
+    "AL",
+    "AD",
+    "AT",
+    "BE",
+    "BA",
+    "BG",
+    "HR",
+    "CY",
+    "CZ",
+    "DK",
+    "EE",
+    "FI",
+    "FR",
+    "DE",
+    "GR",
+    "HU",
+    "IS",
+    "IE",
+    "IT",
+    "XK",
+    "LV",
+    "LI",
+    "LT",
+    "LU",
+    "MT",
+    "MD",
+    "MC",
+    "ME",
+    "NL",
+    "MK",
+    "NO",
+    "PL",
+    "PT",
+    "RO",
+    "RU",
+    "SM",
+    "RS",
+    "SK",
+    "SI",
+    "ES",
+    "SE",
+    "CH",
+    "TR",
+    "UA",
+    "GB",
+    "VA",
+    "BY"
+  ],
+  "prep": {
+    "max_cities": 500
+  },
+  "alignment": {
+    "sea_crossings_enabled": true,
+    "water_crossings": [
+      {
+        "id": "channel",
+        "geometry": [
+          [
+            1.12,
+            51.1
+          ],
+          [
+            1.8,
+            50.92
+          ]
+        ]
+      }
+    ],
+    "max_capex_meur": 50000
+  }
+}

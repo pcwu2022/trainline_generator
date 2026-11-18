@@ -17,8 +17,8 @@ import numpy as np
 from .alignment import load_graph
 from .config import load_config
 from .maps import MapBackground
-from train_optimizer.map_style import CITY_STYLE, population_collection
-from train_optimizer.map_terrain import add_terrain
+from rail_gen.map_style import CITY_STYLE, population_collection
+from rail_gen.map_terrain import add_terrain
 
 
 def main():

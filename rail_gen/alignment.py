@@ -124,7 +124,7 @@ def _projected_shapes(path):
 
 def cost_surfaces(config, samples, terrain_only=False):
     import rasterio
-    from train_optimizer.slope import elevation_gradient, slope_multiplier
+    from rail_gen.slope import elevation_gradient, slope_multiplier
     from rasterio.features import rasterize
     from rasterio.transform import from_origin
     from rasterio.warp import reproject, Resampling, transform_bounds
