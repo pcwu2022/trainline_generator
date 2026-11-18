@@ -50,6 +50,16 @@ continues using the code it loaded at startup.
   --output runs/france-live --iterations 200 --snapshot-every 5 --gif-frame-ms 500
 ```
 
+Use `--profile usa` for the contiguous United States (the lower 48, including
+Washington, DC; excluding Alaska, Hawaii and overseas territories). This profile
+uses `data/north-america.geojson` for population and selects up to 100 cities.
+Like the recent France production run, it accepts batches of up to 5 updates,
+saves a snapshot every iteration and uses 100 ms GIF frames:
+
+```sh
+.venv/bin/python -m rail_gen run --profile usa --output runs/usa-live
+```
+
 Incremental search uses the original 150-proposal neighborhood, complete demand
 connection packages, capacity repair, integration and validated batching. Candidate
 ranking now uses normalized `w1*(annual_cost-revenue) - w2*passengers - w3*population`.
@@ -70,6 +80,13 @@ maps are grouped under `pareto/`; they are not successive iterations.
 The existing `python -m rail_gen run ...` command uses the same incremental
 default. Select `--algorithm nsga2` or `--algorithm nsga3` for population evolution.
 Parameters for the fast pipeline are in `config/config.json`.
+
+Terrain now comes exclusively from `data/ETOPO_2022_v1_60s_N90W180_bed.tif`
+for all bundled country profiles. Elevations are averaged onto the existing
+3 km model grid, projected from each region’s bounding-box center, before
+calculating ground slope and construction costs. Country
+boundaries still identify sea; city and population data remain separate inputs.
+See [ETOPO validation, slope rasters and trial cost maps](docs/ETOPO.md).
 
 Construction keeps the double-track baselines of EUR 6M/km (CR) and EUR 20M/km
 (HSR). Ground-slope anchors 0%, 1%, 2%, 5%, 10%, 20% use multipliers
@@ -147,7 +164,7 @@ Old calibrated parameters should be recalibrated for the new model.
 
 Use a new or empty output directory, or add `--overwrite` to delete its previous
 contents and start a fresh run. The generator CLI accepts this flag.
-The supplied city and relief data support uncalibrated development runs;
+The supplied city and terrain data support uncalibrated development runs;
 sourced metro populations and corridor backtests are required before
 interpreting the results. See [configuration, calibration, outputs and
 limitations](docs/FAST_GENERATOR.md).

@@ -1,5 +1,8 @@
 # Taiwan railway inputs
 
+The active profile now uses the shared [ETOPO elevation source](../../docs/ETOPO.md).
+The local relief and DEM files described below are historical inputs.
+
 Run from the repository root:
 
 ```sh

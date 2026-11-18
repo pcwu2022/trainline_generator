@@ -53,5 +53,6 @@
   "ukraine": "profiles/ukraine.json",
   "vatican_city": "profiles/vatican_city.json",
   "japan": "profiles/japan.json",
-  "taiwan": "profiles/taiwan.json"
+  "taiwan": "profiles/taiwan.json",
+  "usa": "profiles/usa.json"
 }

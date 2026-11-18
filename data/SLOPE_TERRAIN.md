@@ -1,4 +1,7 @@
-# Slope-cost trial elevation data
+# Historical slope-cost trial elevation data
+
+The active terrain source is now [ETOPO 2022](../docs/ETOPO.md). The following
+notes describe the earlier trial and are retained for reproducibility.
 
 Run `.venv/bin/python -m tools.fetch_slope_terrain` to reproduce the trial dataset.
 It fetches zoom-6 GeoTIFF tiles covering European scenario bounds from

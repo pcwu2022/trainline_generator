@@ -7,17 +7,13 @@ import json
 from pathlib import Path
 
 import numpy as np
-from pyproj import Transformer
+from .projection import from_crs, regional_projection, project_cities
 from scipy.spatial import Delaunay, QhullError, cKDTree
 def center_radius(density, coefficient=0.1):
     """Density-derived city radius in km."""
     if any(not math.isfinite(v) or v < 0 for v in (density, coefficient)):
         raise ValueError('Density and coefficient must be finite and nonnegative')
     return coefficient * math.sqrt(density)
-
-
-TO_METRIC = Transformer.from_crs('EPSG:4326', 'EPSG:3035', always_xy=True)
-TO_WGS84 = Transformer.from_crs('EPSG:3035', 'EPSG:4326', always_xy=True)
 
 
 @dataclass
@@ -35,15 +31,23 @@ class City:
     station_lon: Optional[float] = None
     station_lat: Optional[float] = None
 
+    metric_crs: Optional[str] = None
+
+    @property
+    def projection(self):
+        if not self.metric_crs:
+            raise ValueError('City requires a regional projection; call project_cities(cities, config)')
+        return from_crs(self.metric_crs)
+
     @property
     def station_xy(self):
-        return np.array(TO_METRIC.transform(
+        return np.array(self.projection.to_metric.transform(
             self.lon if self.station_lon is None else self.station_lon,
             self.lat if self.station_lat is None else self.station_lat)) / 1000
 
     @property
     def xy(self):
-        return np.array(TO_METRIC.transform(self.lon, self.lat)) / 1000
+        return np.array(self.projection.to_metric.transform(self.lon, self.lat)) / 1000
 
 
 def distances(cities):
@@ -55,6 +59,7 @@ def distances(cities):
 
 
 def read_cities(config, samples=None):
+    projection = regional_projection(config)
     path = Path(config['cities_file'])
     if path.suffix.lower() == '.csv':
         with path.open(newline='') as stream:
@@ -75,7 +80,7 @@ def read_cities(config, samples=None):
         if population < config['prep']['minimum_population']:
             continue
         nodes.append(City(str(r.get('id', index)), r['name'], lon, lat, population,
-                          country=r.get('country', '')))
+                          country=r.get('country', ''), metric_crs=projection.crs.to_string()))
     nodes.sort(key=lambda c: (-c.population, c.id))
     if len(nodes) < 2 or len({c.id for c in nodes}) != len(nodes):
         raise ValueError('Need at least two cities with distinct IDs')
@@ -102,6 +107,7 @@ def read_cities(config, samples=None):
 
 def set_capture_radii(cities, xy, density, config, *, stations=False):
     """Use the same local density for city screening, capture and map circles."""
+    project_cities(cities, config)
     _, nearest = cKDTree(xy).query([city.station_xy if stations else city.xy for city in cities])
     for city, index in zip(cities, nearest):
         city.radius_km = center_radius(float(density[index]), config['prep']['center_coefficient'])
@@ -142,6 +148,7 @@ def population_samples(config):
     """Existing point/H3 GeoJSON, or polygon cells represented by their centroids."""
     import h3
     from shapely.geometry import shape
+    projection = regional_projection(config)
     features = json.loads(Path(config['population_file']).read_text())['features']
     smoothed_density = neighborhood_densities(features)
     xy, people, density = [], [], []
@@ -161,7 +168,7 @@ def population_samples(config):
         area = h3.cell_area(p['h3Index'], unit='km^2') if 'h3Index' in p else float(p['area_km2'])
         if not np.isfinite(area) or area <= 0:
             raise ValueError('Population cell area must be positive')
-        xy.append(np.array(TO_METRIC.transform(lon, lat)) / 1000)
+        xy.append(np.array(projection.to_metric.transform(lon, lat)) / 1000)
         people.append(count)
         density.append(local_density)
     if not xy:
@@ -185,6 +192,7 @@ def station_capture(cities, xy, people, density, config):
 
 
 def candidate_pairs(cities, config):
+    project_cities(cities, config)
     p = config['prep']
     d = distances(cities)
     n = len(cities)

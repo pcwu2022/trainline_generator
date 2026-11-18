@@ -3,7 +3,7 @@ import math
 import shutil
 from pathlib import Path
 import numpy as np
-from pyproj import Transformer
+from .projection import regional_projection
 from PIL import GifImagePlugin, Image
 
 def city_label_indices(cities):
@@ -13,9 +13,7 @@ def city_label_indices(cities):
 
 
 def map_projector(config):
-    west, south, east, north = config.bbox
-    crs = f'+proj=aeqd +lat_0={(south+north)/2} +lon_0={(west+east)/2} +datum=WGS84 +units=m'
-    transformer = Transformer.from_crs('EPSG:4326', crs, always_xy=True)
+    transformer = regional_projection({'bbox': config.bbox}).to_metric
     def project(coordinates):
         array = np.asarray(coordinates, dtype=float)
         if len(array) == 1:

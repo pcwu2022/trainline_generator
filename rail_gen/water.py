@@ -5,7 +5,7 @@ import numpy as np
 from scipy import sparse
 from scipy.sparse.csgraph import dijkstra
 
-from .prep import TO_METRIC
+from .projection import regional_projection
 
 
 def crossing_cost(lengths, rates, water, growth_km):
@@ -16,13 +16,14 @@ def crossing_cost(lengths, rates, water, growth_km):
 def prepare_crossings(config, surfaces, water, transform):
     """Sample configured geometry; never snap portals through invalid cells."""
     from rasterio.transform import rowcol
+    projection = regional_projection(config)
     a = config['alignment']
     if not a['sea_crossings_enabled']:
         return []
     height, width = water.shape
     assets = []
     for item in a['water_crossings']:
-        xy = np.array([TO_METRIC.transform(*p) for p in item['geometry']]) / 1000
+        xy = np.array([projection.to_metric.transform(*p) for p in item['geometry']]) / 1000
         points = []
         for start, end in zip(xy, xy[1:]):
             count = max(1, math.ceil(np.linalg.norm(end - start) / a['water_sample_km']))

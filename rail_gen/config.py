@@ -86,8 +86,8 @@ def validate(c):
     w, s, e, n = c['bbox']
     if not (-180 <= w < e <= 180 and -90 <= s < n <= 90):
         raise ValueError('bbox must be west, south, east, north in WGS84')
-    if c['terrain_kind'] not in ('relief', 'dem', 'flat'):
-        raise ValueError('terrain_kind must be relief, dem, or flat')
+    if c['terrain_kind'] not in ('relief', 'dem', 'etopo', 'flat'):
+        raise ValueError('terrain_kind must be relief, dem, etopo, or flat')
     if c['search']['algorithm'] not in ('incremental', 'nsga2', 'nsga3'):
         raise ValueError('search.algorithm must be incremental, nsga2 or nsga3')
     a = c['search']

@@ -10,15 +10,17 @@ from rasterio.transform import from_origin
 
 from rail_gen.alignment import route, save_graph, load_graph, cost_surfaces, fingerprint
 from rail_gen.config import load_config
-from rail_gen.prep import City, TO_WGS84
+from rail_gen.prep import City
+from rail_gen.projection import regional_projection, project_cities
 from rail_gen.water import crossing_cost
 
 
 class CrossingTests(unittest.TestCase):
     def fixture(self):
-        transform = from_origin(4000000, 3000000, 1000, 1000)
+        projection = regional_projection(load_config(profile=None))
+        transform = from_origin(-4000, 3000, 1000, 1000)
         def coordinate(r, c):
-            return list(TO_WGS84.transform(transform.c + (c + .5) * 1000,
+            return list(projection.to_wgs84.transform(transform.c + (c + .5) * 1000,
                                            transform.f - (r + .5) * 1000))
         cities = [City(str(i), str(i), *coordinate(r, c), 1e5, .8, .1)
                   for i, (r, c) in enumerate([(2, 1), (2, 7), (3, 7)])]
@@ -29,13 +31,14 @@ class CrossingTests(unittest.TestCase):
         water[:, 3:6] = True
         surfaces = np.full((2, 6, 9), 6.)
         surfaces[:, water] = 120.
+        project_cities(cities, c)
         return c, cities, surfaces, water, transform
 
     def test_station_relocation_capture_and_shared_endpoints(self):
         c, cities, surfaces, water, transform = self.fixture()
-        from rail_gen.prep import TO_METRIC
+        projection = regional_projection(c)
         original = cities[0].xy.copy()
-        cities[0].lon, cities[0].lat = TO_WGS84.transform(
+        cities[0].lon, cities[0].lat = projection.to_wgs84.transform(
             *(original * 1000 + np.array([300., 200.])))
         city_center = cities[0].xy.copy()
         samples = (np.array([original, cities[1].xy, cities[2].xy]),
@@ -50,7 +53,7 @@ class CrossingTests(unittest.TestCase):
             for alignment in edge.alignments.values():
                 for coordinate, index in [(alignment.geometry[0], edge.a),
                                           (alignment.geometry[-1], edge.b)]:
-                    np.testing.assert_allclose(np.array(TO_METRIC.transform(*coordinate)) / 1000,
+                    np.testing.assert_allclose(np.array(projection.to_metric.transform(*coordinate)) / 1000,
                                                cities[index].station_xy)
         with tempfile.TemporaryDirectory() as folder:
             save_graph(graph, folder)
@@ -123,14 +126,14 @@ class CrossingTests(unittest.TestCase):
         c = load_config(profile=None, overrides={'terrain_kind': 'flat', 'terrain_file': '',
             'boundaries_file': '', 'countries': [], 'bbox': [2, 45, 6, 47],
             'alignment': {'cell_km': 10, 'sea_crossings_enabled': True}})
-        samples = (np.array([City('x', 'x', 4, 46, 1).xy]), np.array([1]), np.array([0]))
+        samples = (np.array([City('x', 'x', 4, 46, 1, metric_crs=regional_projection(c).crs.to_string()).xy]), np.array([1]), np.array([0]))
         surfaces, _, _, transform = cost_surfaces(c, samples)
         shape = surfaces.shape[1:]
         with tempfile.TemporaryDirectory() as folder:
             def write(name, values):
                 path = str(Path(folder) / name)
                 with rasterio.open(path, 'w', driver='GTiff', width=shape[1], height=shape[0],
-                                   count=1, dtype='float32', crs='EPSG:3035', transform=transform,
+                                   count=1, dtype='float32', crs=regional_projection(c).crs, transform=transform,
                                    nodata=np.nan) as dst:
                     dst.write(values.astype('float32'), 1)
                 return path

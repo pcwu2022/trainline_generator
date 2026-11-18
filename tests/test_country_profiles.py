@@ -21,7 +21,7 @@ class CountryProfileTests(unittest.TestCase):
                     self.assertEqual(len(profile['countries']), 1)
                     countries.update(profile['countries'])
                     self.assertEqual(config['countries'], profile['countries'])
-        self.assertEqual(countries, set('AL AD AM AT AZ BY BE BA BG HR CY CZ DK EE FI FR GE DE GR HU IS IE IT KZ XK LV LI LT LU MT MD MC ME NL MK NO PL PT RO RU SM RS SK SI ES SE CH TR UA GB VA JP TW'.split()))
+        self.assertEqual(countries, set('AL AD AM AT AZ BY BE BA BG HR CY CZ DK EE FI FR GE DE GR HU IS IE IT KZ XK LV LI LT LU MT MD MC ME NL MK NO PL PT RO RU SM RS SK SI ES SE CH TR UA GB VA JP TW US'.split()))
 
     def test_custom_profile_and_final_overrides(self):
         with tempfile.TemporaryDirectory() as directory:

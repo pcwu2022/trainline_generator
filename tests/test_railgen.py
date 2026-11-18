@@ -12,6 +12,7 @@ import numpy as np
 from rail_gen.alignment import Alignment, CACHE_VERSION, CandidateGraph, Edge, cached_graph, cost_surfaces, fingerprint, load_graph, save_graph
 from rail_gen.calibrate import backtest, fit, predict_corridors, read_corridors
 from rail_gen.config import load_config, merge, validate
+from rail_gen.projection import regional_projection, project_cities
 from rail_gen.demand import fare, rail_share, reference_demand, elastic_demand
 from rail_gen.evaluator import Evaluator, capital_recovery_factor
 from rail_gen.prep import City, candidate_pairs, distances, read_cities, station_capture, neighborhood_densities
@@ -27,6 +28,7 @@ def graph_fixture(cities=None, edges=None):
     cities = cities or [City('a', 'A', 2, 46, 2e6, .8, .1),
                          City('b', 'B', 4, 46, 1e6, .8, .1),
                          City('c', 'C', 6, 46, 500000, .8, .1)]
+    project_cities(cities, config())
     if edges is None:
         edges = []
         for a, b, tiles in [(0, 1, [0, 1]), (1, 2, [1, 2]), (0, 2, [3, 4])]:
@@ -73,7 +75,7 @@ class PreparationTests(unittest.TestCase):
         records = [dict(id='a', name='Metro', lon=2, lat=46, population=1000000),
                    dict(id='b', name='Suburb', lon=2.01, lat=46, population=500000),
                    dict(id='c', name='Intercity', lon=4, lat=46, population=100000)]
-        xy = np.array([City(r['id'], r['name'], r['lon'], r['lat'], r['population']).xy for r in records])
+        xy = np.array([City(r['id'], r['name'], r['lon'], r['lat'], r['population'], metric_crs=regional_projection(c).crs.to_string()).xy for r in records])
         with tempfile.TemporaryDirectory() as temporary:
             path = Path(temporary) / 'cities.json'
             path.write_text(json.dumps(records))
@@ -375,14 +377,14 @@ class TerrainSurfaceTests(unittest.TestCase):
         c = load_config(profile=None, overrides={'terrain_kind': 'flat', 'terrain_file': '',
             'boundaries_file': '', 'countries': [], 'bbox': [2, 45, 6, 47],
             'alignment': {'cell_km': 10}})
-        samples = (np.array([City('x', 'x', 4, 46, 1).xy]), np.array([1]), np.array([0]))
+        samples = (np.array([City('x', 'x', 4, 46, 1, metric_crs=regional_projection(c).crs.to_string()).xy]), np.array([1]), np.array([0]))
         return c, samples
 
     def raster(self, path, array, transform):
         import rasterio
         array = np.asarray(array, dtype='float32')
         with rasterio.open(path, 'w', driver='GTiff', width=array.shape[1], height=array.shape[0],
-                           count=1, dtype='float32', crs='EPSG:3035', transform=transform,
+                           count=1, dtype='float32', crs=regional_projection(self.base()[0]).crs, transform=transform,
                            nodata=np.nan) as dataset:
             dataset.write(array, 1)
 
@@ -423,11 +425,12 @@ class TerrainSurfaceTests(unittest.TestCase):
         from unittest.mock import patch
         from rasterio.transform import from_origin
         from rail_gen.alignment import route
-        from rail_gen.prep import TO_WGS84
-        transform = from_origin(4000000, 3000000, 1000, 1000)
+        c = config()
+        projection = regional_projection(c)
+        transform = from_origin(-3000, 3000, 1000, 1000)
         cities = []
         for i, (row, col) in enumerate([(1, 1), (2, 2)]):
-            lon, lat = TO_WGS84.transform(transform.c + (col + .5) * 1000,
+            lon, lat = projection.to_wgs84.transform(transform.c + (col + .5) * 1000,
                                           transform.f - (row + .5) * 1000)
             cities.append(City(str(i), str(i), lon, lat, 100000, .8, .1))
         c = config()

@@ -1,0 +1,22 @@
+{
+  "bbox": [
+    -125.0,
+    24.4,
+    -66.9,
+    49.4
+  ],
+  "countries": [
+    "US"
+  ],
+  "population_file": "data/north-america.geojson",
+  "prep": {
+    "max_cities": 100
+  },
+  "search": {
+    "batch_accept_limit": 5
+  },
+  "reporting": {
+    "snapshot_every": 1,
+    "gif_frame_ms": 100
+  }
+}

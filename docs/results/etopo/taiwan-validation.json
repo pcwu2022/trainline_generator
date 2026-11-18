@@ -1,0 +1,64 @@
+{
+  "source": "data/ETOPO_2022_v1_60s_N90W180_bed.tif",
+  "crs": "EPSG:9518",
+  "units": "metre",
+  "dimensions": [
+    21600,
+    10800
+  ],
+  "bounds": [
+    -180.0,
+    -90.0,
+    180.0,
+    90.0
+  ],
+  "nodata": -99999.0,
+  "resolution_degrees": [
+    0.016666666666666666,
+    0.016666666666666666
+  ],
+  "tags": {
+    "TIFFTAG_IMAGEDESCRIPTION": "Topography-Bathymetry; EGM2008 height",
+    "TIFFTAG_DATETIME": "20220929123913",
+    "TIFFTAG_COPYRIGHT": "DOC/NOAA/NESDIS/NCEI > National Centers for Environmental Information, NESDIS, NOAA, U.S. Department of Commerce",
+    "NC_GLOBAL#node_offset": "1",
+    "tos#node_offset": "1",
+    "AREA_OR_POINT": "Area"
+  },
+  "valid_pixels": 233280000,
+  "missing_pixels": 0,
+  "elevation_range_m": [
+    -10752.08203125,
+    8157.3564453125
+  ],
+  "metric_crs": "PROJCRS[\"unknown\",BASEGEOGCRS[\"unknown\",DATUM[\"World Geodetic System 1984\",ELLIPSOID[\"WGS 84\",6378137,298.257223563,LENGTHUNIT[\"metre\",1]],ID[\"EPSG\",6326]],PRIMEM[\"Greenwich\",0,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8901]]],CONVERSION[\"unknown\",METHOD[\"Modified Azimuthal Equidistant\",ID[\"EPSG\",9832]],PARAMETER[\"Latitude of natural origin\",23.625,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8801]],PARAMETER[\"Longitude of natural origin\",121,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8802]],PARAMETER[\"False easting\",0,LENGTHUNIT[\"metre\",1],ID[\"EPSG\",8806]],PARAMETER[\"False northing\",0,LENGTHUNIT[\"metre\",1],ID[\"EPSG\",8807]]],CS[Cartesian,2],AXIS[\"(E)\",east,ORDER[1],LENGTHUNIT[\"metre\",1,ID[\"EPSG\",9001]]],AXIS[\"(N)\",north,ORDER[2],LENGTHUNIT[\"metre\",1,ID[\"EPSG\",9001]]]]",
+  "projection_center": [
+    121.0,
+    23.625
+  ],
+  "terrain_kind": "etopo",
+  "profile": "taiwan",
+  "grid_shape": [
+    172,
+    116
+  ],
+  "cell_km": 3,
+  "land_cells": 4216,
+  "water_cells": 15736,
+  "slope_percentiles_percent": [
+    0.010240362957119942,
+    4.718723297119141,
+    15.213844299316406,
+    22.10104560852051,
+    30.627914428710938
+  ],
+  "terrain_cost_range_meur_km": [
+    6.012288435827941,
+    30.0
+  ],
+  "cr_blocked_land_cells": 0,
+  "zero_density_trial": true,
+  "source_url": "https://www.ncei.noaa.gov/products/etopo-global-relief-model",
+  "slope_method": "Average elevation into regional metric cells, then hypot(dz/dx, dz/dy)",
+  "water_method": "Existing country boundaries and optional land_class_file; never elevation sign"
+}

@@ -15,9 +15,10 @@ import numpy as np
 from scipy import sparse
 from scipy.spatial import cKDTree
 
-from .prep import City, TO_METRIC, TO_WGS84
+from .prep import City
+from .projection import regional_projection, project_cities
 
-CACHE_VERSION = 10
+CACHE_VERSION = 12
 TRACKS = ('CR', 'HSR')
 
 
@@ -115,11 +116,19 @@ def fingerprint(config):
     return digest.hexdigest()
 
 
-def _projected_shapes(path):
-    from shapely.geometry import shape
+def _projected_shapes(path, projection, clip_bounds):
+    from shapely.geometry import shape, box
     from shapely.ops import transform
     raw = json.loads(Path(path).read_text())
-    return [transform(TO_METRIC.transform, shape(f['geometry'])) for f in raw['features']]
+    west, south, east, north = clip_bounds
+    clip = box(west, south, east, north) if west <= east else (
+        box(west, south, 180, north).union(box(-180, south, east, north)))
+    shapes = []
+    for feature in raw['features']:
+        geometry = shape(feature['geometry'])
+        if geometry.intersects(clip):
+            shapes.append(transform(projection.to_metric.transform, geometry.intersection(clip)))
+    return shapes
 
 
 def cost_surfaces(config, samples, terrain_only=False):
@@ -128,14 +137,17 @@ def cost_surfaces(config, samples, terrain_only=False):
     from rasterio.features import rasterize
     from rasterio.transform import from_origin
     from rasterio.warp import reproject, Resampling, transform_bounds
+    projection = regional_projection(config)
     a = config['alignment']
     step = a['cell_km'] * 1000
-    extent = transform_bounds('EPSG:4326', 'EPSG:3035', *config['bbox'], densify_pts=41)
+    extent = transform_bounds('EPSG:4326', projection.crs, *config['bbox'], densify_pts=41)
     padding = a['padding_km'] * 1000
     left, bottom, right, top = (extent[0] - padding, extent[1] - padding,
                                 extent[2] + padding, extent[3] + padding)
     width, height = math.ceil((right - left) / step), math.ceil((top - bottom) / step)
     transform = from_origin(left, top, step, step)
+    clip_bounds = transform_bounds(projection.crs, 'EPSG:4326', left, top-height*step,
+                                   left+width*step, top, densify_pts=41)
     shape = (height, width)
     rows, cols = np.indices(shape)
     xy = np.column_stack(((left + (cols.ravel() + .5) * step) / 1000,
@@ -146,15 +158,17 @@ def cost_surfaces(config, samples, terrain_only=False):
     blocked = np.zeros(shape, dtype=bool)
     sea = np.zeros(shape, dtype=bool)
     missing_terrain = np.zeros(shape, dtype=bool)
+    def mask_file(path):
+        geometries = _projected_shapes(path, projection, clip_bounds)
+        if not geometries:
+            return np.zeros(shape, dtype='uint8')
+        return rasterize([(g, 1) for g in geometries], out_shape=shape,
+                         transform=transform, fill=0, dtype='uint8')
     if config['boundaries_file']:
         # All countries form land, independently of the city-country filter.
-        land = rasterize([(g, 1) for g in _projected_shapes(config['boundaries_file'])],
-                         out_shape=shape, transform=transform, fill=0, dtype='uint8')
-        sea |= land == 0
+        sea |= mask_file(config['boundaries_file']) == 0
     if config['exclusions_file']:
-        excluded = rasterize([(g, 1) for g in _projected_shapes(config['exclusions_file'])],
-                             out_shape=shape, transform=transform, fill=0, dtype='uint8')
-        blocked |= excluded > 0
+        blocked |= mask_file(config['exclusions_file']) > 0
     water = np.zeros(shape, dtype=bool)
     terrain = np.ones(shape)
     grade = np.zeros(shape)
@@ -166,12 +180,14 @@ def cost_surfaces(config, samples, terrain_only=False):
             for target, band in zip(result, bands):
                 reproject(rasterio.band(src, band), target, src_transform=src.transform,
                           src_crs=src.crs, src_nodata=src.nodata, dst_transform=transform,
-                          dst_crs='EPSG:3035', dst_nodata=np.nan, resampling=resampling)
+                          dst_crs=projection.crs, dst_nodata=np.nan, resampling=resampling)
             return result
     if config['terrain_kind'] != 'flat':
         with rasterio.open(config['terrain_file']) as source:
-            if config['terrain_kind'] == 'dem' and source.count != 1:
+            if config['terrain_kind'] in ('dem', 'etopo') and source.count != 1:
                 raise ValueError('DEM terrain requires a single-band elevation raster in metres')
+            if config['terrain_kind'] == 'etopo' and source.units[0] not in ('metre', 'meter', 'm'):
+                raise ValueError('ETOPO elevation units must be metres')
             if config['terrain_kind'] == 'relief' and (source.count != 3 or any(t != 'uint8' for t in source.dtypes)):
                 raise ValueError('Relief terrain requires a three-band uint8 RGB raster')
     if config['terrain_kind'] == 'relief':
@@ -179,9 +195,9 @@ def cost_surfaces(config, samples, terrain_only=False):
         missing_terrain |= ~np.isfinite(r + g + b)
         water = (b > r * 1.12) & (b > g * 1.04)
         terrain[(r > g * 1.05) & (r > b * 1.15)] = 1.8
-    slope_based = config['terrain_kind'] == 'dem' or (config['terrain_kind'] != 'flat' and config.get('terrain_dem_file'))
+    slope_based = config['terrain_kind'] in ('dem', 'etopo') or (config['terrain_kind'] != 'flat' and config.get('terrain_dem_file'))
     if slope_based:
-        path = config['terrain_file'] if config['terrain_kind'] == 'dem' else config['terrain_dem_file']
+        path = config['terrain_file'] if config['terrain_kind'] in ('dem', 'etopo') else config['terrain_dem_file']
         with rasterio.open(path) as source:
             if source.count != 1:
                 raise ValueError('Slope terrain requires a single-band elevation DEM in metres')
@@ -218,8 +234,8 @@ def cost_surfaces(config, samples, terrain_only=False):
                      (a['urban_density_offset'] + a['urban_reference'])))
         rate = t['base_meur_km'] * terrain + urban
         rate = np.where(water, np.where(sea, a['water_costs_meur_km']['sea'], a['water_meur_km']), rate)
-        # A relief+DEM overlay prices ground difficulty only. Preserve the
-        # existing explicit DEM mode's grade-limit scenario separately.
+        # ETOPO and relief+DEM price ground difficulty, not railway longitudinal
+        # gradient. Preserve explicit DEM mode's historical hard-limit scenario.
         forbidden_grade = (grade > t['grade_limit']) if config['terrain_kind'] == 'dem' else False
         rate[blocked | forbidden_grade] = np.inf
         surfaces.append(rate)
@@ -280,6 +296,8 @@ def _smooth(points, surface, transform, tolerance):
 def route(cities, pairs, config, samples, progress=print):
     from rasterio.transform import rowcol
     from skimage.graph import MCP_Geometric
+    projection = regional_projection(config)
+    project_cities(cities, config)
     surfaces, water, grade, transform = cost_surfaces(config, samples)
     step = config['alignment']['cell_km']
     height, width = surfaces.shape[1:]
@@ -301,7 +319,7 @@ def route(cities, pairs, config, samples, progress=print):
                 and np.isfinite(routing_surfaces[:, r, c]).any()):
             x = transform.c + (c + .5) * transform.a
             y = transform.f + (r + .5) * transform.e
-            city.station_lon, city.station_lat = TO_WGS84.transform(x, y)
+            city.station_lon, city.station_lat = projection.to_wgs84.transform(x, y)
         cells.append((r, c))
     from .prep import station_capture
     if samples is not None:
@@ -369,7 +387,7 @@ def route(cities, pairs, config, samples, progress=print):
                         continue
                     points = np.vstack((cities[source].station_xy, points, cities[target].station_xy))
                     length = float(np.linalg.norm(np.diff(points, axis=0), axis=1).sum())
-                    lon, lat = TO_WGS84.transform(points[:, 0] * 1000, points[:, 1] * 1000)
+                    lon, lat = projection.to_wgs84.transform(points[:, 0] * 1000, points[:, 1] * 1000)
                     water_km = sum(a['water_km'] for a in used_assets)
                     records[(source, target)][track] = Alignment(length, capex, tiles,
                         np.column_stack((lon, lat)).tolist(), water_km / length if length else 0,
@@ -407,7 +425,7 @@ def route(cities, pairs, config, samples, progress=print):
                 points = _smooth(points, surface, transform,
                                  config['alignment']['smooth_cells'] * step * 1000)
                 length = float(np.linalg.norm(np.diff(points, axis=0), axis=1).sum() / 1000)
-                lon, lat = TO_WGS84.transform(points[:, 0], points[:, 1])
+                lon, lat = projection.to_wgs84.transform(points[:, 0], points[:, 1])
                 geometry = np.column_stack((lon, lat)).tolist()
                 records[(source, target)][track] = Alignment(length, capex, tiles, geometry,
                     float(water.ravel()[tiles].mean()), float((grade.ravel()[tiles] > .02).mean()),
@@ -418,7 +436,8 @@ def route(cities, pairs, config, samples, progress=print):
     edges = [Edge(a, b, records[(a, b)]) for a, b in pairs if records[(a, b)]]
     if not edges:
         raise ValueError('No feasible candidate alignments; check land mask, terrain, and station cells')
-    metadata = dict(cache_version=CACHE_VERSION, grid_shape=[height, width],
+    metadata = dict(cache_version=CACHE_VERSION, metric_crs=projection.crs.to_wkt(),
+                    projection_center=[sum(config['bbox'][::2])/2, sum(config['bbox'][1::2])/2], grid_shape=[height, width],
                     cell_km=step, rejected_pairs=len(pairs) - len(edges),
                     terrain_kind=config['terrain_kind'],
                     metro_populations_verified=config['metro_populations_verified'],

@@ -4,12 +4,12 @@ import tempfile
 import unittest
 
 import numpy as np
-from pyproj import Transformer
 import rasterio
 from rasterio.transform import from_origin
 
 from rail_gen.alignment import cost_surfaces
 from rail_gen.config import load_config
+from rail_gen.projection import regional_projection
 from rail_gen.slope import elevation_gradient, slope_multiplier
 
 
@@ -39,7 +39,7 @@ class SlopeTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             path = Path(temporary) / 'dem.tif'
             with rasterio.open(path, 'w', driver='GTiff', count=1, width=width, height=height,
-                               dtype='float32', crs='EPSG:3035', transform=transform) as dst:
+                               dtype='float32', crs=regional_projection(c).crs, transform=transform) as dst:
                 dst.write(np.tile(np.arange(width) * 45., (height, 1)).astype('float32'), 1)
             c.update(terrain_kind='dem', terrain_file=str(path))
             rates, _, grade, _ = cost_surfaces(c, samples, terrain_only=True)
@@ -47,10 +47,52 @@ class SlopeTests(unittest.TestCase):
             np.testing.assert_allclose(rates, c['tracks']['CR']['base_meur_km'] * 1.35, rtol=1e-5)
             land = Path(temporary) / 'land.tif'
             with rasterio.open(land, 'w', driver='GTiff', count=1, width=width, height=height,
-                               dtype='uint8', crs='EPSG:3035', transform=transform) as dst:
+                               dtype='uint8', crs=regional_projection(c).crs, transform=transform) as dst:
                 dst.write(np.zeros((height, width), dtype='uint8'), 1)
             c['land_class_file'] = str(land)
             routes, _, _, _ = cost_surfaces(c, samples)
             np.testing.assert_allclose(routes[0], rates)
             np.testing.assert_allclose(routes[1] / routes[0],
                                        c['tracks']['HSR']['base_meur_km'] / c['tracks']['CR']['base_meur_km'])
+
+
+class EtopoSurfaceTests(unittest.TestCase):
+    def test_ground_slope_costs_water_nodata_and_below_sea_level_land(self):
+        c = load_config(profile=None, overrides=dict(terrain_kind='flat', terrain_file='',
+            boundaries_file='', countries=[], bbox=[7, 45, 9, 47]))
+        samples = (np.array([[0., 0.]]), None, np.array([0.]))
+        flat, _, _, transform = cost_surfaces(c, samples)
+        shape = flat.shape[1:]
+        # 10% ground slope must increase construction costs, not ban routes.
+        dem = np.broadcast_to(np.arange(shape[1])*300., shape).copy() - 20000
+        dem[3, 3] = np.nan
+        classes = np.zeros(shape, dtype='float32')
+        classes[10, 10] = 2
+        with tempfile.TemporaryDirectory() as folder:
+            def write(name, data, unit=None):
+                path = str(Path(folder) / name)
+                with rasterio.open(path, 'w', driver='GTiff', count=1,
+                    width=shape[1], height=shape[0], dtype='float32',
+                    crs=regional_projection(c).crs, transform=transform, nodata=np.nan) as dst:
+                    dst.write(data.astype('float32'), 1)
+                    if unit:
+                        dst.set_band_unit(1, unit)
+                return path
+            c.update(terrain_kind='etopo', terrain_file=write('dem.tif', dem, 'metre'),
+                land_class_file=write('land.tif', classes), terrain_dem_file='')
+            rates, water, grade, _ = cost_surfaces(c, samples)
+            self.assertFalse(water[12, 12])  # Negative land elevation is not ocean.
+            self.assertAlmostEqual(float(grade[12, 12]), .1, places=5)
+            self.assertAlmostEqual(float(rates[0, 12, 12]), 18., places=4)
+            self.assertAlmostEqual(float(rates[1, 12, 12]), 60., places=4)
+            self.assertTrue(np.isinf(rates[:, 3, 3]).all())
+            self.assertTrue(water[10, 10])
+            np.testing.assert_allclose(rates[:, 10, 10], 120.)
+            terrain, _, _, _ = cost_surfaces(c, samples, terrain_only=True)
+            self.assertAlmostEqual(terrain[12, 12], rates[0, 12, 12])
+            c['alignment']['sea_crossings_enabled'] = False
+            blocked, _, _, _ = cost_surfaces(c, samples)
+            self.assertTrue(np.isinf(blocked[:, 10, 10]).all())
+            c['terrain_file'] = write('feet.tif', dem, 'foot')
+            with self.assertRaisesRegex(ValueError, 'units must be metres'):
+                cost_surfaces(c, samples)
