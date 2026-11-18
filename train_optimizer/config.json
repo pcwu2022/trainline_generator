@@ -171,6 +171,174 @@
     "speed_up": false
   },
   "profiles": {
+    "albania": {
+      "bbox": [
+        19.2,
+        39.6,
+        21.1,
+        42.7
+      ],
+      "countries": [
+        "AL"
+      ],
+      "max_cities": 8
+    },
+    "andorra": {
+      "bbox": [
+        1.4,
+        42.4,
+        1.8,
+        42.7
+      ],
+      "countries": [
+        "AD"
+      ],
+      "max_cities": 2
+    },
+    "armenia": {
+      "bbox": [
+        43.4,
+        38.8,
+        46.7,
+        41.4
+      ],
+      "countries": [
+        "AM"
+      ],
+      "max_cities": 2
+    },
+    "austria": {
+      "bbox": [
+        9.5,
+        46.3,
+        17.2,
+        49.1
+      ],
+      "countries": [
+        "AT"
+      ],
+      "max_cities": 5
+    },
+    "azerbaijan": {
+      "bbox": [
+        44.7,
+        38.3,
+        50.5,
+        41.9
+      ],
+      "countries": [
+        "AZ"
+      ],
+      "max_cities": 10
+    },
+    "belarus": {
+      "bbox": [
+        23.1,
+        51.2,
+        32.9,
+        56.2
+      ],
+      "countries": [
+        "BY"
+      ],
+      "max_cities": 20
+    },
+    "belgium": {
+      "bbox": [
+        2.5,
+        49.4,
+        6.5,
+        51.6
+      ],
+      "countries": [
+        "BE"
+      ],
+      "max_cities": 25
+    },
+    "bosnia_and_herzegovina": {
+      "bbox": [
+        15.7,
+        42.5,
+        19.7,
+        45.3
+      ],
+      "countries": [
+        "BA"
+      ],
+      "max_cities": 5
+    },
+    "bulgaria": {
+      "bbox": [
+        22.3,
+        41.2,
+        28.7,
+        44.3
+      ],
+      "countries": [
+        "BG"
+      ],
+      "max_cities": 15
+    },
+    "croatia": {
+      "bbox": [
+        13.4,
+        42.3,
+        19.5,
+        46.6
+      ],
+      "countries": [
+        "HR"
+      ],
+      "max_cities": 5
+    },
+    "cyprus": {
+      "bbox": [
+        32.2,
+        34.5,
+        34.7,
+        35.8
+      ],
+      "countries": [
+        "CY"
+      ],
+      "max_cities": 3
+    },
+    "czechia": {
+      "bbox": [
+        12.0,
+        48.5,
+        18.9,
+        51.1
+      ],
+      "countries": [
+        "CZ"
+      ],
+      "max_cities": 15
+    },
+    "denmark": {
+      "bbox": [
+        8.0,
+        54.5,
+        15.3,
+        57.9
+      ],
+      "countries": [
+        "DK"
+      ],
+      "max_cities": 10
+    },
+    "estonia": {
+      "bbox": [
+        21.7,
+        57.5,
+        28.3,
+        59.9
+      ],
+      "countries": [
+        "EE"
+      ],
+      "max_cities": 2
+    },
     "europe": {
       "bbox": [
         -25,
@@ -194,17 +362,101 @@
       ],
       "max_cities": 20
     },
+    "finland": {
+      "bbox": [
+        19.0,
+        59.7,
+        31.6,
+        70.2
+      ],
+      "countries": [
+        "FI"
+      ],
+      "max_cities": 15
+    },
     "france": {
       "bbox": [
         -5.2,
-        42.3,
-        8.3,
-        51.1
+        41.3,
+        9.7,
+        51.2
       ],
       "countries": [
         "FR"
       ],
       "max_cities": 100
+    },
+    "georgia": {
+      "bbox": [
+        39.9,
+        41.0,
+        46.8,
+        43.6
+      ],
+      "countries": [
+        "GE"
+      ],
+      "max_cities": 4
+    },
+    "germany": {
+      "bbox": [
+        5.8,
+        47.2,
+        15.1,
+        55.1
+      ],
+      "countries": [
+        "DE"
+      ],
+      "max_cities": 150
+    },
+    "greece": {
+      "bbox": [
+        19.3,
+        34.7,
+        29.7,
+        41.8
+      ],
+      "countries": [
+        "GR"
+      ],
+      "max_cities": 35
+    },
+    "hungary": {
+      "bbox": [
+        16.1,
+        45.7,
+        22.9,
+        48.6
+      ],
+      "countries": [
+        "HU"
+      ],
+      "max_cities": 15
+    },
+    "iceland": {
+      "bbox": [
+        -24.6,
+        63.2,
+        -13.4,
+        66.7
+      ],
+      "countries": [
+        "IS"
+      ],
+      "max_cities": 2
+    },
+    "ireland": {
+      "bbox": [
+        -10.8,
+        51.3,
+        -5.9,
+        55.5
+      ],
+      "countries": [
+        "IE"
+      ],
+      "max_cities": 5
     },
     "italy": {
       "bbox": [
@@ -216,18 +468,281 @@
       "countries": [
         "IT"
       ],
-      "max_cities": 30
+      "max_cities": 100
+    },
+    "kazakhstan": {
+      "bbox": [
+        46.4,
+        40.5,
+        87.4,
+        55.5
+      ],
+      "countries": [
+        "KZ"
+      ],
+      "max_cities": 25
+    },
+    "kosovo": {
+      "bbox": [
+        20.0,
+        41.8,
+        21.8,
+        43.3
+      ],
+      "countries": [
+        "XK"
+      ],
+      "max_cities": 7
+    },
+    "latvia": {
+      "bbox": [
+        20.9,
+        55.6,
+        28.3,
+        58.1
+      ],
+      "countries": [
+        "LV"
+      ],
+      "max_cities": 4
+    },
+    "liechtenstein": {
+      "bbox": [
+        9.4,
+        47.0,
+        9.7,
+        47.3
+      ],
+      "countries": [
+        "LI"
+      ],
+      "max_cities": 2
+    },
+    "lithuania": {
+      "bbox": [
+        20.9,
+        53.8,
+        26.9,
+        56.5
+      ],
+      "countries": [
+        "LT"
+      ],
+      "max_cities": 4
+    },
+    "luxembourg": {
+      "bbox": [
+        5.7,
+        49.4,
+        6.6,
+        50.2
+      ],
+      "countries": [
+        "LU"
+      ],
+      "max_cities": 2
+    },
+    "malta": {
+      "bbox": [
+        14.1,
+        35.7,
+        14.6,
+        36.1
+      ],
+      "countries": [
+        "MT"
+      ],
+      "max_cities": 2
+    },
+    "moldova": {
+      "bbox": [
+        26.6,
+        45.4,
+        30.2,
+        48.5
+      ],
+      "countries": [
+        "MD"
+      ],
+      "max_cities": 4
+    },
+    "monaco": {
+      "bbox": [
+        7.4,
+        43.7,
+        7.5,
+        43.8
+      ],
+      "countries": [
+        "MC"
+      ],
+      "max_cities": 2
+    },
+    "montenegro": {
+      "bbox": [
+        18.4,
+        41.8,
+        20.4,
+        43.6
+      ],
+      "countries": [
+        "ME"
+      ],
+      "max_cities": 2
     },
     "netherlands": {
       "bbox": [
-        2.5,
-        49.4,
-        7.5,
-        53.7
+        3.3,
+        50.7,
+        7.3,
+        53.6
       ],
       "countries": [
-        "NL",
-        "BE"
+        "NL"
+      ],
+      "max_cities": 45
+    },
+    "north_macedonia": {
+      "bbox": [
+        20.4,
+        40.8,
+        23.1,
+        42.4
+      ],
+      "countries": [
+        "MK"
+      ],
+      "max_cities": 7
+    },
+    "norway": {
+      "bbox": [
+        4.5,
+        57.9,
+        31.2,
+        71.3
+      ],
+      "countries": [
+        "NO"
+      ],
+      "max_cities": 10
+    },
+    "poland": {
+      "bbox": [
+        14.1,
+        49.0,
+        24.2,
+        54.9
+      ],
+      "countries": [
+        "PL"
+      ],
+      "max_cities": 80
+    },
+    "portugal": {
+      "bbox": [
+        -31.4,
+        30.1,
+        -6.1,
+        42.2
+      ],
+      "countries": [
+        "PT"
+      ],
+      "max_cities": 15
+    },
+    "romania": {
+      "bbox": [
+        20.2,
+        43.6,
+        29.8,
+        48.3
+      ],
+      "countries": [
+        "RO"
+      ],
+      "max_cities": 30
+    },
+    "russia": {
+      "bbox": [
+        19.5,
+        41.1,
+        180.0,
+        81.9
+      ],
+      "countries": [
+        "RU"
+      ],
+      "max_cities": 265
+    },
+    "san_marino": {
+      "bbox": [
+        12.4,
+        43.8,
+        12.6,
+        44.0
+      ],
+      "countries": [
+        "SM"
+      ],
+      "max_cities": 2
+    },
+    "serbia": {
+      "bbox": [
+        18.8,
+        42.2,
+        23.1,
+        46.2
+      ],
+      "countries": [
+        "RS"
+      ],
+      "max_cities": 15
+    },
+    "slovakia": {
+      "bbox": [
+        16.8,
+        47.7,
+        22.6,
+        49.7
+      ],
+      "countries": [
+        "SK"
+      ],
+      "max_cities": 8
+    },
+    "slovenia": {
+      "bbox": [
+        13.3,
+        45.4,
+        16.7,
+        46.9
+      ],
+      "countries": [
+        "SI"
+      ],
+      "max_cities": 2
+    },
+    "spain": {
+      "bbox": [
+        -9.4,
+        36.0,
+        3.4,
+        43.9
+      ],
+      "countries": [
+        "ES"
+      ],
+      "max_cities": 115
+    },
+    "sweden": {
+      "bbox": [
+        10.9,
+        55.3,
+        24.2,
+        69.1
+      ],
+      "countries": [
+        "SE"
       ],
       "max_cities": 20
     },
@@ -236,12 +751,24 @@
         5.9,
         45.8,
         10.5,
-        47.8
+        47.9
       ],
       "countries": [
         "CH"
       ],
-      "max_cities": 20
+      "max_cities": 8
+    },
+    "turkey": {
+      "bbox": [
+        25.6,
+        35.8,
+        44.9,
+        42.2
+      ],
+      "countries": [
+        "TR"
+      ],
+      "max_cities": 135
     },
     "uk": {
       "bbox": [
@@ -253,7 +780,31 @@
       "countries": [
         "GB"
       ],
-      "max_cities": 20
+      "max_cities": 185
+    },
+    "ukraine": {
+      "bbox": [
+        22.1,
+        44.3,
+        40.3,
+        52.4
+      ],
+      "countries": [
+        "UA"
+      ],
+      "max_cities": 70
+    },
+    "vatican_city": {
+      "bbox": [
+        12.44,
+        41.89,
+        12.46,
+        41.91
+      ],
+      "countries": [
+        "VA"
+      ],
+      "max_cities": 2
     }
   }
 }

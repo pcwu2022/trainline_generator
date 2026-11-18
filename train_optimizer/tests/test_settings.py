@@ -14,7 +14,6 @@ class SettingsTests(unittest.TestCase):
         defaults, profiles = read_configuration()
         self.assertEqual(set(defaults), {f.name for f in fields(Config)})
         self.assertEqual(asdict(Config()), defaults)
-        self.assertEqual(set(profiles), {'europe', 'exploratory', 'france', 'italy', 'netherlands', 'switzerland', 'uk'})
         for name, overrides in profiles.items():
             with self.subTest(profile=name):
                 config = load_config(profile=name)
@@ -36,13 +35,13 @@ class SettingsTests(unittest.TestCase):
             external = Path(folder)/'external.json'
             external.write_text(json.dumps({'solver_time_limit': 123, 'ticket_per_km': .5}))
             config = load_config(external, 'italy')
-            self.assertEqual(config.solver_time_limit, 600)
+            self.assertEqual(config.solver_time_limit, 123)
             self.assertEqual(config.ticket_per_km, .5)
             export = Path(folder)/'export.json'
             main(['--config', str(external), '--profile', 'italy', '--solver', 'milp',
                   '--write-default-config', str(export)])
             values = json.loads(export.read_text())
-            self.assertEqual(values['solver_time_limit'], 600)
+            self.assertEqual(values['solver_time_limit'], 123)
             self.assertEqual(values['solver_method'], 'milp')
             self.assertEqual(values['train_types'], ['CR', 'HSR'])
             self.assertEqual(asdict(load_config(export)), values)

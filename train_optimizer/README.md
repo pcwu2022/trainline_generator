@@ -58,7 +58,9 @@ checkpoint behavior, and limitations. Existing run outputs are not modified.
 `config.json` is the single source of configuration: `defaults` contains every
 setting, and `profiles` contains named scenario overrides. Select a scenario with
 `--profile europe`, `--profile france`, `--profile italy`, `--profile netherlands`,
-`--profile switzerland`, `--profile uk`, or `--profile exploratory`. All profiles inherit CR/HSR choices
+`--profile switzerland`, `--profile uk`, or `--profile exploratory`. Both optimizers also provide
+[51 single-country profiles](../docs/COUNTRY_PROFILES.md), including separate `netherlands`
+and `belgium` profiles. All profiles inherit CR/HSR choices
 and their scaling ratios from `defaults`. Python contains only the schema and
 validation, with no separate default values. Optional external JSON overrides
 (`--config PATH`) apply over defaults; a selected profile then applies over those
@@ -128,8 +130,7 @@ Set the shared-track budget to zero to disable this additional pool. Hubs must
 be existing candidate station sites; geometric track crossings alone do not
 create junctions or shared infrastructure.
 
-The Netherlands/Belgium profile sets `maximum_extra_lines=120` (the generic
-default remains 40). With the 40-pattern pool, the Jette–Delft–Amstelveen
+The historical Netherlands/Belgium scenario used `maximum_extra_lines=120`. With the 40-pattern pool, the Jette–Delft–Amstelveen
 through service was excluded even though its route is only about 2.8% longer
 than the direct Jette–Amstelveen corridor. Increasing the pool admits this
 shared-track option without changing fares, construction prices, objective

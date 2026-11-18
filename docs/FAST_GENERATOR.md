@@ -23,6 +23,8 @@ Use an empty output directory. `--overwrite` deletes existing contents.
 ## Configuration
 
 [rail_gen/config.json](../rail_gen/config.json) contains defaults and named profiles.
+See [Country profiles](COUNTRY_PROFILES.md) for all 51 country names, scope, and data limitations.
+The `netherlands` profile selects only the Netherlands; Belgium uses `belgium`.
 External `--config` overrides defaults, the selected profile applies next, and CLI
 arguments apply last. `run_config.json` records effective settings for each run.
 The legacy [config.json](../train_optimizer/config.json) belongs to the separate legacy optimizer.

@@ -100,7 +100,7 @@ def main(argv=None):
         epilog='Fast generator options (including --iterations and --population): '
                'use optimize.py --solver pareto --help or python -m rail_gen run --help.')
     parser.add_argument('--config', default=str(DEFAULT_CONFIG_PATH), help='Optional external JSON overrides')
-    parser.add_argument('--profile', help='Named profile from config.json (europe, exploratory, france, italy, netherlands, switzerland, uk)')
+    parser.add_argument('--profile', help='Named country or regional profile from config.json')
     parser.add_argument('--output', help='Output directory (default: runs/<profile>, or runs/netherlands without a profile)')
     parser.add_argument('--solver', choices=['annealing', 'heuristic', 'milp', 'pareto', 'incremental', 'nsga2', 'nsga3'],
                         help='Override solver_method; pareto selects the fast incremental generator')
