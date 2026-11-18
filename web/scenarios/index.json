@@ -1,0 +1,35 @@
+{
+  "default_profile": "france",
+  "profiles": [
+    {
+      "id": "france",
+      "label": "France",
+      "path": "france"
+    },
+    {
+      "id": "germany",
+      "label": "Germany",
+      "path": "germany"
+    },
+    {
+      "id": "japan",
+      "label": "Japan",
+      "path": "japan"
+    },
+    {
+      "id": "taiwan",
+      "label": "Taiwan",
+      "path": "taiwan"
+    },
+    {
+      "id": "uk",
+      "label": "United Kingdom",
+      "path": "uk"
+    },
+    {
+      "id": "usa",
+      "label": "United States",
+      "path": "usa"
+    }
+  ]
+}

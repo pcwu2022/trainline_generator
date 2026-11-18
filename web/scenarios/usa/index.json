@@ -1,0 +1,23 @@
+{
+  "profile": "usa",
+  "label": "United States",
+  "default_city_count": 8,
+  "scenarios": [
+    {
+      "city_count": 4,
+      "path": "cities-4"
+    },
+    {
+      "city_count": 8,
+      "path": "cities-8"
+    },
+    {
+      "city_count": 12,
+      "path": "cities-12"
+    },
+    {
+      "city_count": 20,
+      "path": "cities-20"
+    }
+  ]
+}

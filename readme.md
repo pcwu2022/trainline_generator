@@ -243,3 +243,12 @@ and does not jump across water or excluded cells. City labels retain the origina
 city coordinates; station markers, density-derived catchments, captured population
 and access times use station coordinates. Geography caches rebuild automatically
 for this change; existing running processes must be restarted to use it.
+
+## Web execution (GitHub Pages)
+
+Open [`web/`](web/) for an editable browser interface that executes the existing
+Python incremental optimizer through Pyodide WebAssembly. A compact prepared
+scenario includes population catchments, terrain-priced routes, and a map image;
+visitors do not download the original elevation raster. See
+[`web/README.md`](web/README.md) for offline scenario generation, editable settings,
+local preview, and GitHub Pages setup.
