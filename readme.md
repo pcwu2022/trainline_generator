@@ -60,6 +60,24 @@ saves a snapshot every iteration and uses 100 ms GIF frames:
 .venv/bin/python -m rail_gen run --profile usa --output runs/usa-live
 ```
 
+Additional profiles work with the same CLI: `spain`, `italy`, `poland`,
+`benelux` (Belgium, Netherlands and Luxembourg), `switzerland`, `india`,
+`scandinavia` (Denmark, Norway and Sweden), and `usa_northeast` (the Census
+Bureau's nine Northeast states). India uses the Asia population data; the
+Northeast uses state-clipped US cities and population, with provenance in
+[`data/usa_northeast/README.md`](data/usa_northeast/README.md).
+
+```sh
+.venv/bin/python -m rail_gen run --profile benelux --output runs/benelux-live
+.venv/bin/python -m rail_gen run --profile india --max-cities 100 --output runs/india-live
+.venv/bin/python -m rail_gen run --profile usa_northeast --output runs/usa-northeast-live
+```
+
+The web interface offers city limits of 4, 8, 12, 20, 50 and 100 for each prepared
+profile. Limits can exceed the number of eligible cities; the selector shows
+how many are actually available. Python accepts `--max-cities 50` or `--max-cities 100` for `run`, `precompute`,
+and `benchmark`, overriding the profile’s `prep.max_cities` setting.
+
 Incremental search uses the original 150-proposal neighborhood, complete demand
 connection packages, capacity repair, integration and validated batching. Candidate
 ranking now uses normalized `w1*(annual_cost-revenue) - w2*passengers - w3*population`.

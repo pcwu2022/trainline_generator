@@ -1,0 +1,18 @@
+{
+  "bbox": [
+    68.0,
+    6.5,
+    97.5,
+    37.2
+  ],
+  "countries": [
+    "IN"
+  ],
+  "population_file": "data/asia.geojson",
+  "prep": {
+    "max_cities": 100
+  },
+  "search": {
+    "batch_accept_limit": 5
+  }
+}

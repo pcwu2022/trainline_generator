@@ -1,0 +1,20 @@
+{
+  "source": "https://www2.census.gov/geo/tiger/GENZ2024/kml/cb_2024_us_state_500k.zip",
+  "sha256": "70c21b67144e5005254dac6784236d2f5cb3a5f4e769234c4d4e79647f37f639",
+  "states": [
+    "CT",
+    "MA",
+    "ME",
+    "NH",
+    "NJ",
+    "NY",
+    "PA",
+    "RI",
+    "VT"
+  ],
+  "city_source": "data/cities50000.json",
+  "population_source": "data/north-america.geojson",
+  "cities": 124,
+  "population_cells": 4858,
+  "selection": "City coordinates and population-cell centroids covered by state polygons"
+}

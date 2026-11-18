@@ -7,7 +7,7 @@ the railway algorithm. Python executes in a worker, keeping the interface respon
 
 ## Parameter help
 
-Question-mark links beside the profile, city count and common settings open
+Question-mark links beside Demand multiplier (k) and Distance decay (beta) open
 [`guide.html`](guide.html) in a separate tab at the parameter’s explanation.
 The guide covers the incremental search, population catchments, gravity demand,
 journey-time elasticities, fares, capacity and finance formulas. It works without
@@ -18,19 +18,19 @@ JavaScript or external math-rendering packages and leaves the running lab open.
 From the repository root, using the normal Python environment and input data:
 
 ```sh
-python -m tools.export_web --profile france --city-counts 4 8 12 20 --output web/scenarios/france
+python -m tools.export_web --profile france --city-counts 4 8 12 20 50 100 --output web/scenarios/france
 ```
 
 To rebuild all bundled profiles:
 
 ```sh
-python -m tools.export_web --profiles france taiwan usa uk japan germany --city-counts 4 8 12 20
+python -m tools.export_web --profiles france taiwan usa uk japan germany spain italy poland benelux switzerland india scandinavia usa_northeast --city-counts 4 8 12 20 50 100
 ```
 
-To add any other existing Python profile, for example Italy:
+To add any other existing Python profile, for example Portugal:
 
 ```sh
-python -m tools.export_web --profile italy --city-counts 4 8 12 20
+python -m tools.export_web --profile portugal --city-counts 4 8 12 20 50 100
 ```
 
 The exporter writes to `web/scenarios/<profile>/` by default and automatically
@@ -40,14 +40,26 @@ profiles with prepared bundles are offered. `--output` selects a profile folder
 for `--profile`, or a parent folder for `--profiles`.
 
 The profile selector offers France, Taiwan, United States (`usa` in the Python
-configs), United Kingdom, Japan and Germany. Each offers 4, 8, 12, or 20 cities, with 12 km routing cells and the actual ETOPO
-raster. Each count has a separate graph with its own population catchments and candidate routes.
+configs), United Kingdom, Japan, Germany, Spain, Italy, Poland, Benelux,
+Switzerland, India, Scandinavia and the northeastern United States. Each offers
+city limits of 4, 8, 12, 20, 50 and 100, with 12 km routing cells and the actual ETOPO
+raster. These are upper limits: population filtering and metropolitan catchment
+screening can retain fewer cities. The selector shows the available count when
+it is below the requested limit; it never duplicates cities to fill a quota.
+For example, the current Switzerland input retains 10 eligible cities at a limit of 100.
+
+Benelux combines Belgium, Netherlands and Luxembourg. Scandinavia combines
+Denmark, Norway and Sweden. India uses `data/asia.geojson`. `usa_northeast` uses
+the Census Bureau's nine Northeast states: CT, ME, MA, NH, RI, VT, NJ, NY and PA.
+See [`data/usa_northeast/README.md`](../data/usa_northeast/README.md) for boundary
+provenance, clipping rules and regeneration. Each count has a separate graph with its own population catchments and candidate routes.
 Common search, finance, demand, operating hours, load factor and fare settings have
 form controls; edits stay synchronized with the full JSON configuration. Switching
 city counts preserves these settings and clears results from the previous scenario.
 Switching profiles loads the selected profile’s defaults and clears previous results.
 Only the selected region and city-count bundle are downloaded. Use `--max-cities`, `--cell-km`, `--config`, and `--cache-dir` to prepare
-another resolution or input configuration. The exporter uses the existing
+another resolution or input configuration. Unchanged bundles are reused only when
+the configuration and input fingerprint match; use `--force` to re-render them. The exporter uses the existing
 `cached_graph` pipeline, including population catchments, terrain routing,
 water crossings and construction costs. It writes an `index.json` scenario catalog plus a folder per city count containing:
 

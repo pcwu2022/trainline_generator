@@ -5,19 +5,33 @@
   "scenarios": [
     {
       "city_count": 4,
+      "actual_city_count": 4,
       "path": "cities-4"
     },
     {
       "city_count": 8,
+      "actual_city_count": 8,
       "path": "cities-8"
     },
     {
       "city_count": 12,
+      "actual_city_count": 12,
       "path": "cities-12"
     },
     {
       "city_count": 20,
+      "actual_city_count": 20,
       "path": "cities-20"
+    },
+    {
+      "city_count": 50,
+      "actual_city_count": 50,
+      "path": "cities-50"
+    },
+    {
+      "city_count": 100,
+      "actual_city_count": 76,
+      "path": "cities-100"
     }
   ]
 }

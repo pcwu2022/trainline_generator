@@ -8,10 +8,13 @@ for(const section of [...new Set(fields.map(f=>f.section))]) {
   const container=document.createElement('div');container.className='config-field';
   const row=document.createElement('div');row.className='config-label-row';
   const label=document.createElement('label');label.htmlFor=field.id;label.textContent=field.label;
-  const help=document.createElement('a');help.className='help-button';help.textContent='?';
-  help.setAttribute('href',`guide.html#${field.id}`);help.setAttribute('target','_blank');help.setAttribute('rel','noopener');
-  help.setAttribute('aria-label',`Help for ${field.label} (opens in a new tab)`);help.setAttribute('title','Explain this parameter (opens in a new tab)');
-  row.append(label,help);
+  row.append(label);
+  if(field.help){
+    const help=document.createElement('a');help.className='help-button';help.textContent='?';
+    help.setAttribute('href',`guide.html#${field.id}`);help.setAttribute('target','_blank');help.setAttribute('rel','noopener');
+    help.setAttribute('aria-label',`Help for ${field.label} (opens in a new tab)`);help.setAttribute('title','Explain this parameter (opens in a new tab)');
+    row.append(help);
+  }
   const input=document.createElement('input');Object.assign(input,{id:field.id,type:'number',min:field.min,step:field.step});if(field.max!==undefined)input.max=field.max;
   container.append(row,input);group.append(container);
  }
@@ -64,12 +67,12 @@ async function loadScenario(choice, {preserve=false, profile=activeProfile, prof
   if(edits){edits.prep.max_cities=next.config.prep.max_cities;config=edits;}else config=structuredClone(next.config);
   scenario=next;scenarioPath=path;activeProfile=profile;choices=profileChoices;
   $('profile').value=profile.id;$('cities').replaceChildren();
-  for(const choice of choices){const option=document.createElement('option');option.value=choice.city_count;option.textContent=choice.city_count+' cities';$('cities').append(option);}
+  for(const choice of choices){const option=document.createElement('option');option.value=choice.city_count;option.textContent=choice.actual_city_count<choice.city_count?`${choice.city_count} city limit (${choice.actual_city_count} available)`:`${choice.city_count} cities`;$('cities').append(option);}
   $('cities').value=choice.city_count;
   $('config').value=JSON.stringify(config,null,2);apply();latest=null;completed=null;
   $('download').disabled=true;$('metrics').textContent='Run the optimizer to see network metrics.';
   $('log').textContent='';$('iteration').textContent='Ready to explore';draw();
-  $('scenario-description').textContent=`${profile.label} · ${scenario.cities.length} cities · prepared terrain routes`;
+  $('scenario-description').textContent=`${profile.label} · ${scenario.cities.length} cities${scenario.cities.length<choice.city_count?` (limit ${choice.city_count})`:''} · prepared terrain routes`;
   status(`Ready · ${profile.label} · ${scenario.cities.length} cities · ${scenario.terrain} terrain prepared offline.`);
   $('export-config').disabled=false;
  } finally {loading=false;controls();}

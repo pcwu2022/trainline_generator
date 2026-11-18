@@ -45,6 +45,8 @@ def parser():
         sub.add_argument('--fit', nargs='+', choices=['k', 'a', 'beta', 't0_hours'], default=['k'],
                          help='Demand parameters to fit against backtest data (default: k)')
         if name != 'calibrate':
+            sub.add_argument('--max-cities', type=int,
+                             help='Maximum retained cities (at least 2); overrides the profile, e.g. 50 or 100')
             sub.add_argument('--cache-dir', type=Path, default=Path('runs/railgen-cache'),
                              help='Reusable geography/alignment cache (default: runs/railgen-cache)')
         if name in ('run', 'calibrate'):
@@ -78,6 +80,8 @@ def main(argv=None):
     args = p.parse_args(argv)
     try:
         overrides = {}
+        if getattr(args, 'max_cities', None) is not None:
+            overrides['prep'] = {'max_cities': args.max_cities}
         if args.command == 'run':
             overrides['search'] = {key: getattr(args, key) for key in ('population', 'batch_accept_limit', 'generations', 'seed', 'workers') if getattr(args, key) is not None}
             if args.sensitivity:

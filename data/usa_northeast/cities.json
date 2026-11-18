@@ -1,0 +1,870 @@
+[
+  {
+    "name": "New York City",
+    "country": "US",
+    "lat": "40.7142700",
+    "lon": "-74.0059700",
+    "pop": 8804190
+  },
+  {
+    "name": "Brooklyn",
+    "country": "US",
+    "lat": "40.6501000",
+    "lon": "-73.9495800",
+    "pop": 2736074
+  },
+  {
+    "name": "Queens",
+    "country": "US",
+    "lat": "40.6814900",
+    "lon": "-73.8365200",
+    "pop": 2316841
+  },
+  {
+    "name": "Philadelphia",
+    "country": "US",
+    "lat": "39.9523800",
+    "lon": "-75.1636200",
+    "pop": 1573916
+  },
+  {
+    "name": "Manhattan",
+    "country": "US",
+    "lat": "40.7834300",
+    "lon": "-73.9662500",
+    "pop": 1487536
+  },
+  {
+    "name": "The Bronx",
+    "country": "US",
+    "lat": "40.8498500",
+    "lon": "-73.8664100",
+    "pop": 1385108
+  },
+  {
+    "name": "Boston",
+    "country": "US",
+    "lat": "42.3584300",
+    "lon": "-71.0597700",
+    "pop": 653833
+  },
+  {
+    "name": "Staten Island",
+    "country": "US",
+    "lat": "40.5623300",
+    "lon": "-74.1398600",
+    "pop": 468730
+  },
+  {
+    "name": "Pittsburgh",
+    "country": "US",
+    "lat": "40.4406200",
+    "lon": "-79.9958900",
+    "pop": 304391
+  },
+  {
+    "name": "Newark",
+    "country": "US",
+    "lat": "40.7356600",
+    "lon": "-74.1723700",
+    "pop": 281944
+  },
+  {
+    "name": "Jersey City",
+    "country": "US",
+    "lat": "40.7281600",
+    "lon": "-74.0776400",
+    "pop": 264290
+  },
+  {
+    "name": "Buffalo",
+    "country": "US",
+    "lat": "42.8864500",
+    "lon": "-78.8783700",
+    "pop": 258071
+  },
+  {
+    "name": "Rochester",
+    "country": "US",
+    "lat": "43.1547800",
+    "lon": "-77.6155600",
+    "pop": 209802
+  },
+  {
+    "name": "Worcester",
+    "country": "US",
+    "lat": "42.2625900",
+    "lon": "-71.8022900",
+    "pop": 206518
+  },
+  {
+    "name": "Yonkers",
+    "country": "US",
+    "lat": "40.9304000",
+    "lon": "-73.8978900",
+    "pop": 201116
+  },
+  {
+    "name": "Providence",
+    "country": "US",
+    "lat": "41.8239900",
+    "lon": "-71.4128300",
+    "pop": 190934
+  },
+  {
+    "name": "Springfield",
+    "country": "US",
+    "lat": "42.1014800",
+    "lon": "-72.5898100",
+    "pop": 154341
+  },
+  {
+    "name": "Paterson",
+    "country": "US",
+    "lat": "40.9167700",
+    "lon": "-74.1718100",
+    "pop": 147754
+  },
+  {
+    "name": "Bridgeport",
+    "country": "US",
+    "lat": "41.1792300",
+    "lon": "-73.1894500",
+    "pop": 147629
+  },
+  {
+    "name": "Syracuse",
+    "country": "US",
+    "lat": "43.0481200",
+    "lon": "-76.1474200",
+    "pop": 144142
+  },
+  {
+    "name": "New Haven",
+    "country": "US",
+    "lat": "41.3081500",
+    "lon": "-72.9281600",
+    "pop": 130322
+  },
+  {
+    "name": "Elizabeth",
+    "country": "US",
+    "lat": "40.6639900",
+    "lon": "-74.2107000",
+    "pop": 129007
+  },
+  {
+    "name": "Stamford",
+    "country": "US",
+    "lat": "41.0534300",
+    "lon": "-73.5387300",
+    "pop": 128874
+  },
+  {
+    "name": "Amherst",
+    "country": "US",
+    "lat": "42.9783900",
+    "lon": "-78.7997600",
+    "pop": 122366
+  },
+  {
+    "name": "North Stamford",
+    "country": "US",
+    "lat": "41.1381500",
+    "lon": "-73.5434600",
+    "pop": 121230
+  },
+  {
+    "name": "Hartford",
+    "country": "US",
+    "lat": "41.7637100",
+    "lon": "-72.6850900",
+    "pop": 121054
+  },
+  {
+    "name": "Allentown",
+    "country": "US",
+    "lat": "40.6084300",
+    "lon": "-75.4901800",
+    "pop": 120207
+  },
+  {
+    "name": "Lowell",
+    "country": "US",
+    "lat": "42.6334200",
+    "lon": "-71.3161700",
+    "pop": 110699
+  },
+  {
+    "name": "Cambridge",
+    "country": "US",
+    "lat": "42.3751000",
+    "lon": "-71.1056100",
+    "pop": 110402
+  },
+  {
+    "name": "Manchester",
+    "country": "US",
+    "lat": "42.9956400",
+    "lon": "-71.4547900",
+    "pop": 110229
+  },
+  {
+    "name": "Waterbury",
+    "country": "US",
+    "lat": "41.5581500",
+    "lon": "-73.0515000",
+    "pop": 108802
+  },
+  {
+    "name": "Edison",
+    "country": "US",
+    "lat": "40.5187200",
+    "lon": "-74.4121000",
+    "pop": 102548
+  },
+  {
+    "name": "Albany",
+    "country": "US",
+    "lat": "42.6525800",
+    "lon": "-73.7562300",
+    "pop": 101228
+  },
+  {
+    "name": "New Bedford",
+    "country": "US",
+    "lat": "41.6352600",
+    "lon": "-70.9270100",
+    "pop": 101079
+  },
+  {
+    "name": "Erie",
+    "country": "US",
+    "lat": "42.1292200",
+    "lon": "-80.0850600",
+    "pop": 99475
+  },
+  {
+    "name": "Dorchester",
+    "country": "US",
+    "lat": "42.2973200",
+    "lon": "-71.0745000",
+    "pop": 97826
+  },
+  {
+    "name": "Brockton",
+    "country": "US",
+    "lat": "42.0834300",
+    "lon": "-71.0183800",
+    "pop": 95314
+  },
+  {
+    "name": "Fall River",
+    "country": "US",
+    "lat": "41.7014900",
+    "lon": "-71.1550500",
+    "pop": 94000
+  },
+  {
+    "name": "West Albany",
+    "country": "US",
+    "lat": "42.6831300",
+    "lon": "-73.7784500",
+    "pop": 93794
+  },
+  {
+    "name": "Quincy",
+    "country": "US",
+    "lat": "42.2528800",
+    "lon": "-71.0022700",
+    "pop": 93618
+  },
+  {
+    "name": "Lynn",
+    "country": "US",
+    "lat": "42.4667600",
+    "lon": "-70.9494900",
+    "pop": 92457
+  },
+  {
+    "name": "Trenton",
+    "country": "US",
+    "lat": "40.2170500",
+    "lon": "-74.7429400",
+    "pop": 89620
+  },
+  {
+    "name": "Newton",
+    "country": "US",
+    "lat": "42.3370400",
+    "lon": "-71.2092200",
+    "pop": 88817
+  },
+  {
+    "name": "Toms River",
+    "country": "US",
+    "lat": "39.9537300",
+    "lon": "-74.1979200",
+    "pop": 88791
+  },
+  {
+    "name": "Norwalk",
+    "country": "US",
+    "lat": "41.1176000",
+    "lon": "-73.4079000",
+    "pop": 88485
+  },
+  {
+    "name": "Nashua",
+    "country": "US",
+    "lat": "42.7653700",
+    "lon": "-71.4675700",
+    "pop": 87970
+  },
+  {
+    "name": "Reading",
+    "country": "US",
+    "lat": "40.3356500",
+    "lon": "-75.9268700",
+    "pop": 87879
+  },
+  {
+    "name": "Greenburgh",
+    "country": "US",
+    "lat": "41.0328700",
+    "lon": "-73.8429100",
+    "pop": 86764
+  },
+  {
+    "name": "Clifton",
+    "country": "US",
+    "lat": "40.8584300",
+    "lon": "-74.1637600",
+    "pop": 86334
+  },
+  {
+    "name": "Danbury",
+    "country": "US",
+    "lat": "41.3948200",
+    "lon": "-73.4540100",
+    "pop": 84657
+  },
+  {
+    "name": "East Norwalk",
+    "country": "US",
+    "lat": "41.1056500",
+    "lon": "-73.3984500",
+    "pop": 84530
+  },
+  {
+    "name": "Warwick",
+    "country": "US",
+    "lat": "41.7001000",
+    "lon": "-71.4161700",
+    "pop": 81699
+  },
+  {
+    "name": "Cranston",
+    "country": "US",
+    "lat": "41.7798200",
+    "lon": "-71.4372800",
+    "pop": 81073
+  },
+  {
+    "name": "Somerville",
+    "country": "US",
+    "lat": "42.3876000",
+    "lon": "-71.0995000",
+    "pop": 80318
+  },
+  {
+    "name": "Lawrence",
+    "country": "US",
+    "lat": "42.7070400",
+    "lon": "-71.1631100",
+    "pop": 80231
+  },
+  {
+    "name": "New Rochelle",
+    "country": "US",
+    "lat": "40.9114900",
+    "lon": "-73.7823500",
+    "pop": 79846
+  },
+  {
+    "name": "Scranton",
+    "country": "US",
+    "lat": "41.4091600",
+    "lon": "-75.6649000",
+    "pop": 77118
+  },
+  {
+    "name": "Camden",
+    "country": "US",
+    "lat": "39.9259500",
+    "lon": "-75.1196200",
+    "pop": 76119
+  },
+  {
+    "name": "Brick",
+    "country": "US",
+    "lat": "40.0592800",
+    "lon": "-74.1370800",
+    "pop": 76021
+  },
+  {
+    "name": "Cheektowaga",
+    "country": "US",
+    "lat": "42.9033900",
+    "lon": "-78.7547500",
+    "pop": 75178
+  },
+  {
+    "name": "Bethlehem",
+    "country": "US",
+    "lat": "40.6259300",
+    "lon": "-75.3704600",
+    "pop": 74892
+  },
+  {
+    "name": "New Britain",
+    "country": "US",
+    "lat": "41.6612100",
+    "lon": "-72.7795400",
+    "pop": 72808
+  },
+  {
+    "name": "Pawtucket",
+    "country": "US",
+    "lat": "41.8787100",
+    "lon": "-71.3825600",
+    "pop": 71591
+  },
+  {
+    "name": "Passaic",
+    "country": "US",
+    "lat": "40.8567700",
+    "lon": "-74.1284800",
+    "pop": 71085
+  },
+  {
+    "name": "Cherry Hill",
+    "country": "US",
+    "lat": "39.9348400",
+    "lon": "-75.0307300",
+    "pop": 70475
+  },
+  {
+    "name": "Union City",
+    "country": "US",
+    "lat": "40.7795500",
+    "lon": "-74.0237500",
+    "pop": 69156
+  },
+  {
+    "name": "Mount Vernon",
+    "country": "US",
+    "lat": "40.9126000",
+    "lon": "-73.8370800",
+    "pop": 68628
+  },
+  {
+    "name": "Framingham",
+    "country": "US",
+    "lat": "42.2792600",
+    "lon": "-71.4161700",
+    "pop": 68318
+  },
+  {
+    "name": "Portland",
+    "country": "US",
+    "lat": "43.6573700",
+    "lon": "-70.2589000",
+    "pop": 66881
+  },
+  {
+    "name": "Bayonne",
+    "country": "US",
+    "lat": "40.6687100",
+    "lon": "-74.1143100",
+    "pop": 66311
+  },
+  {
+    "name": "Middletown",
+    "country": "US",
+    "lat": "40.3942800",
+    "lon": "-74.1170900",
+    "pop": 65490
+  },
+  {
+    "name": "Framingham Center",
+    "country": "US",
+    "lat": "42.2973200",
+    "lon": "-71.4370100",
+    "pop": 65413
+  },
+  {
+    "name": "Schenectady",
+    "country": "US",
+    "lat": "42.8142400",
+    "lon": "-73.9395700",
+    "pop": 65305
+  },
+  {
+    "name": "East Orange",
+    "country": "US",
+    "lat": "40.7673200",
+    "lon": "-74.2048700",
+    "pop": 64949
+  },
+  {
+    "name": "North Bergen",
+    "country": "US",
+    "lat": "40.8042700",
+    "lon": "-74.0120800",
+    "pop": 63484
+  },
+  {
+    "name": "Waltham",
+    "country": "US",
+    "lat": "42.3764900",
+    "lon": "-71.2356100",
+    "pop": 63378
+  },
+  {
+    "name": "West Hartford",
+    "country": "US",
+    "lat": "41.7620400",
+    "lon": "-72.7420400",
+    "pop": 63268
+  },
+  {
+    "name": "Haverhill",
+    "country": "US",
+    "lat": "42.7762000",
+    "lon": "-71.0772800",
+    "pop": 62765
+  },
+  {
+    "name": "Irvington",
+    "country": "US",
+    "lat": "40.7323200",
+    "lon": "-74.2348700",
+    "pop": 61323
+  },
+  {
+    "name": "Utica",
+    "country": "US",
+    "lat": "43.1009000",
+    "lon": "-75.2326600",
+    "pop": 61100
+  },
+  {
+    "name": "Malden",
+    "country": "US",
+    "lat": "42.4251000",
+    "lon": "-71.0661600",
+    "pop": 61068
+  },
+  {
+    "name": "Vineland",
+    "country": "US",
+    "lat": "39.4862300",
+    "lon": "-75.0257300",
+    "pop": 60818
+  },
+  {
+    "name": "Brentwood",
+    "country": "US",
+    "lat": "40.7812100",
+    "lon": "-73.2462300",
+    "pop": 60664
+  },
+  {
+    "name": "Bristol",
+    "country": "US",
+    "lat": "41.6717600",
+    "lon": "-72.9492700",
+    "pop": 60452
+  },
+  {
+    "name": "Bensalem",
+    "country": "US",
+    "lat": "40.1045500",
+    "lon": "-74.9512800",
+    "pop": 60427
+  },
+  {
+    "name": "Meriden",
+    "country": "US",
+    "lat": "41.5381500",
+    "lon": "-72.8070400",
+    "pop": 59988
+  },
+  {
+    "name": "Hamden",
+    "country": "US",
+    "lat": "41.3959300",
+    "lon": "-72.8967700",
+    "pop": 59847
+  },
+  {
+    "name": "Lancaster",
+    "country": "US",
+    "lat": "40.0378800",
+    "lon": "-76.3055100",
+    "pop": 59339
+  },
+  {
+    "name": "Fairfield",
+    "country": "US",
+    "lat": "41.1412100",
+    "lon": "-73.2637300",
+    "pop": 59052
+  },
+  {
+    "name": "Brookline",
+    "country": "US",
+    "lat": "42.3317600",
+    "lon": "-71.1211600",
+    "pop": 58732
+  },
+  {
+    "name": "White Plains",
+    "country": "US",
+    "lat": "41.0339900",
+    "lon": "-73.7629100",
+    "pop": 58459
+  },
+  {
+    "name": "Clay",
+    "country": "US",
+    "lat": "43.1859000",
+    "lon": "-76.1724300",
+    "pop": 58206
+  },
+  {
+    "name": "South Vineland",
+    "country": "US",
+    "lat": "39.4459500",
+    "lon": "-75.0287900",
+    "pop": 58122
+  },
+  {
+    "name": "Wayne",
+    "country": "US",
+    "lat": "40.9253800",
+    "lon": "-74.2765400",
+    "pop": 57915
+  },
+  {
+    "name": "Medford",
+    "country": "US",
+    "lat": "42.4184300",
+    "lon": "-71.1061600",
+    "pop": 57403
+  },
+  {
+    "name": "New Brunswick",
+    "country": "US",
+    "lat": "40.4862200",
+    "lon": "-74.4518200",
+    "pop": 57035
+  },
+  {
+    "name": "Taunton",
+    "country": "US",
+    "lat": "41.9001000",
+    "lon": "-71.0897700",
+    "pop": 56789
+  },
+  {
+    "name": "Union",
+    "country": "US",
+    "lat": "40.6976000",
+    "lon": "-74.2632000",
+    "pop": 56771
+  },
+  {
+    "name": "Chicopee",
+    "country": "US",
+    "lat": "42.1487000",
+    "lon": "-72.6078700",
+    "pop": 56741
+  },
+  {
+    "name": "Piscataway",
+    "country": "US",
+    "lat": "40.4992700",
+    "lon": "-74.3990400",
+    "pop": 56044
+  },
+  {
+    "name": "Hempstead",
+    "country": "US",
+    "lat": "40.7062100",
+    "lon": "-73.6187400",
+    "pop": 55547
+  },
+  {
+    "name": "Abington",
+    "country": "US",
+    "lat": "40.1206700",
+    "lon": "-75.1179500",
+    "pop": 55310
+  },
+  {
+    "name": "North Chicopee",
+    "country": "US",
+    "lat": "42.1834300",
+    "lon": "-72.5995300",
+    "pop": 55179
+  },
+  {
+    "name": "West Haven",
+    "country": "US",
+    "lat": "41.2706500",
+    "lon": "-72.9470500",
+    "pop": 54927
+  },
+  {
+    "name": "Jackson",
+    "country": "US",
+    "lat": "39.7765000",
+    "lon": "-74.8623800",
+    "pop": 54856
+  },
+  {
+    "name": "Weymouth",
+    "country": "US",
+    "lat": "42.2209300",
+    "lon": "-70.9397700",
+    "pop": 54395
+  },
+  {
+    "name": "Lakewood",
+    "country": "US",
+    "lat": "40.0978900",
+    "lon": "-74.2176400",
+    "pop": 53805
+  },
+  {
+    "name": "Hoboken",
+    "country": "US",
+    "lat": "40.7439900",
+    "lon": "-74.0323600",
+    "pop": 53635
+  },
+  {
+    "name": "Revere",
+    "country": "US",
+    "lat": "42.4084300",
+    "lon": "-71.0119900",
+    "pop": 53422
+  },
+  {
+    "name": "West New York",
+    "country": "US",
+    "lat": "40.7878800",
+    "lon": "-74.0143100",
+    "pop": 53366
+  },
+  {
+    "name": "Levittown",
+    "country": "US",
+    "lat": "40.1551100",
+    "lon": "-74.8287700",
+    "pop": 52983
+  },
+  {
+    "name": "Milford",
+    "country": "US",
+    "lat": "41.2223200",
+    "lon": "-73.0565000",
+    "pop": 52759
+  },
+  {
+    "name": "Perth Amboy",
+    "country": "US",
+    "lat": "40.5067700",
+    "lon": "-74.2654200",
+    "pop": 52682
+  },
+  {
+    "name": "Peabody",
+    "country": "US",
+    "lat": "42.5278700",
+    "lon": "-70.9286600",
+    "pop": 52504
+  },
+  {
+    "name": "Methuen",
+    "country": "US",
+    "lat": "42.7262000",
+    "lon": "-71.1908900",
+    "pop": 52044
+  },
+  {
+    "name": "Levittown",
+    "country": "US",
+    "lat": "40.7259300",
+    "lon": "-73.5142900",
+    "pop": 51881
+  },
+  {
+    "name": "Irondequoit",
+    "country": "US",
+    "lat": "43.2134000",
+    "lon": "-77.5797200",
+    "pop": 51692
+  },
+  {
+    "name": "Stratford",
+    "country": "US",
+    "lat": "41.1845400",
+    "lon": "-73.1331700",
+    "pop": 51384
+  },
+  {
+    "name": "City of Milford (balance)",
+    "country": "US",
+    "lat": "41.2237400",
+    "lon": "-73.0616400",
+    "pop": 51271
+  },
+  {
+    "name": "East Hartford",
+    "country": "US",
+    "lat": "41.7823200",
+    "lon": "-72.6120300",
+    "pop": 51252
+  },
+  {
+    "name": "Plainfield",
+    "country": "US",
+    "lat": "40.6337100",
+    "lon": "-74.4073700",
+    "pop": 51217
+  },
+  {
+    "name": "Parsippany",
+    "country": "US",
+    "lat": "40.8578800",
+    "lon": "-74.4259900",
+    "pop": 51144
+  },
+  {
+    "name": "South Peabody",
+    "country": "US",
+    "lat": "42.5098200",
+    "lon": "-70.9494900",
+    "pop": 50293
+  },
+  {
+    "name": "Harrisburg",
+    "country": "US",
+    "lat": "40.2737000",
+    "lon": "-76.8844200",
+    "pop": 50183
+  }
+]

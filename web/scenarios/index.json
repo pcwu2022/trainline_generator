@@ -2,6 +2,11 @@
   "default_profile": "france",
   "profiles": [
     {
+      "id": "benelux",
+      "label": "Benelux",
+      "path": "benelux"
+    },
+    {
       "id": "france",
       "label": "France",
       "path": "france"
@@ -12,9 +17,39 @@
       "path": "germany"
     },
     {
+      "id": "india",
+      "label": "India",
+      "path": "india"
+    },
+    {
+      "id": "italy",
+      "label": "Italy",
+      "path": "italy"
+    },
+    {
       "id": "japan",
       "label": "Japan",
       "path": "japan"
+    },
+    {
+      "id": "poland",
+      "label": "Poland",
+      "path": "poland"
+    },
+    {
+      "id": "scandinavia",
+      "label": "Scandinavia",
+      "path": "scandinavia"
+    },
+    {
+      "id": "spain",
+      "label": "Spain",
+      "path": "spain"
+    },
+    {
+      "id": "switzerland",
+      "label": "Switzerland",
+      "path": "switzerland"
     },
     {
       "id": "taiwan",
@@ -30,6 +65,11 @@
       "id": "usa",
       "label": "United States",
       "path": "usa"
+    },
+    {
+      "id": "usa_northeast",
+      "label": "United States \u2014 Northeast",
+      "path": "usa_northeast"
     }
   ]
 }

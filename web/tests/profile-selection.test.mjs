@@ -26,11 +26,12 @@ test('profiles load regional defaults, cities preserve edits, and failed loads k
  try {
   await import('../app.js?profile-selection-test');
   assert.equal($('profile').value,'france');assert.equal($('cities').value,8);
-  assert.ok($('profile').children.length>=6);
+  assert.ok($('profile').children.length>=14);
   const descendants=element=>[element,...element.children.flatMap(descendants)];
   const helpLinks=descendants($('common-configs')).filter(el=>el.tag==='a');
   const guide=readFileSync(new URL('../guide.html',import.meta.url),'utf8');
-  assert.equal(helpLinks.length,14);
+  assert.deepEqual(helpLinks.map(link=>link.attributes.href),['guide.html#demand-k','guide.html#demand-beta']);
+  assert.ok(!html.includes('class="help-button"'));
   for(const help of helpLinks){
    assert.equal(help.textContent,'?');assert.equal(help.attributes.target,'_blank');
    assert.equal(help.attributes.rel,'noopener');
@@ -42,15 +43,24 @@ test('profiles load regional defaults, cities preserve edits, and failed loads k
   $('cities').value='12';await $('cities').listeners.change();
   assert.equal($('budget').value,250);
   assert.equal(JSON.parse($('config').value).prep.max_cities,12);
-  for(const [profile,country] of [['taiwan','TW'],['usa','US'],['uk','GB'],['japan','JP'],['germany','DE']]){
+  for(const [profile,country] of [['taiwan',['TW']],['usa',['US']],['uk',['GB']],['japan',['JP']],['spain',['ES']],['italy',['IT']],['poland',['PL']],['benelux',['BE','NL','LU']],['switzerland',['CH']],['india',['IN']],['scandinavia',['DK','NO','SE']],['usa_northeast',['US']],['germany',['DE']]]){
    $('profile').value=profile;await $('profile').listeners.change();
    assert.equal($('profile').value,profile);assert.equal($('budget').value,0);
-   assert.deepEqual(JSON.parse($('config').value).countries,[country]);
+   assert.deepEqual(JSON.parse($('config').value).countries,country);
    assert.equal($('map').children[0].attributes.href,`scenarios/${profile}/cities-12/background.png`);
    $('run').onclick();
    assert.equal(calls.at(-1).scenarioPath,`scenarios/${profile}/cities-12/`);
-   assert.deepEqual(calls.at(-1).config.countries,[country]);
+   assert.deepEqual(calls.at(-1).config.countries,country);
   }
+  $('profile').value='switzerland';await $('profile').listeners.change();
+  assert.deepEqual($('cities').children.map(option=>Number(option.value)),[4,8,12,20,50,100]);
+  assert.match($('cities').children.find(option=>Number(option.value)===100).textContent,/10 available/);
+  $('budget').value='300';$('budget').listeners.input();
+  $('cities').value='100';await $('cities').listeners.change();
+  assert.equal($('budget').value,300);assert.equal(JSON.parse($('config').value).prep.max_cities,100);
+  assert.match($('scenario-description').textContent,/10 cities \(limit 100\)/);
+  $('run').onclick();assert.equal(calls.at(-1).scenarioPath,'scenarios/switzerland/cities-100/');
+  $('profile').value='germany';await $('profile').listeners.change();
   const previous=$('map').children[0].attributes.href;
   failProfile='taiwan';$('profile').value='taiwan';await $('profile').listeners.change();
   assert.equal($('profile').value,'germany');assert.equal($('map').children[0].attributes.href,previous);

@@ -25,6 +25,19 @@ class RailgenCliTests(unittest.TestCase):
                     with self.assertRaisesRegex(RuntimeError, 'stop before preparation'):
                         entry([*prefix, '--output', str(output), '--overwrite'])
 
+    def test_city_limit_overrides_profile_before_graph_preparation(self):
+        with tempfile.TemporaryDirectory() as folder:
+            for command in ('precompute', 'run', 'benchmark'):
+                for count in (50, 100):
+                    with self.subTest(command=command, count=count):
+                        args=[command, '--profile', 'india', '--max-cities', str(count)]
+                        if command=='run':
+                            args.extend(['--output', str(Path(folder)/'output')])
+                        with patch('rail_gen.alignment.cached_graph', side_effect=RuntimeError('preparation reached')) as prepare:
+                            with self.assertRaisesRegex(RuntimeError,'preparation reached'):
+                                main(args)
+                            self.assertEqual(prepare.call_args.args[0]['prep']['max_cities'],count)
+
     def test_rejected_options_preserve_output(self):
         with tempfile.TemporaryDirectory() as folder:
             output = Path(folder) / 'run'
@@ -36,6 +49,7 @@ class RailgenCliTests(unittest.TestCase):
             for options in [
                 ['--output', str(output)],
                 ['--output', str(output), '--overwrite', '--snapshot-every', '0'],
+                ['--output', str(output), '--overwrite', '--max-cities', '1'],
                 ['--output', str(link), '--overwrite'],
                 ['--output', str(marker), '--overwrite'],
                 ['--output', '.', '--overwrite'],

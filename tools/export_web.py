@@ -11,10 +11,18 @@ import zipfile
 import numpy as np
 from scipy import sparse
 from rail_gen.config import load_config
-from rail_gen.alignment import cached_graph
+from rail_gen.alignment import cached_graph, fingerprint
 
 
-def export(config, output, cache_dir):
+def export(config, output, cache_dir, reuse=True):
+    if reuse and all((output/name).is_file() for name in ('scenario.json','graph.zip','background.png')):
+        previous=json.loads((output/'scenario.json').read_text())
+        if previous['config']==config:
+            with zipfile.ZipFile(output/'graph.zip') as archive:
+                old=json.loads(archive.read('graph.json'))
+            if old['metadata'].get('fingerprint')==fingerprint(config):
+                print(f'Reusing prepared scenario: {output}',flush=True)
+                return len(old['cities'])
     from rail_gen.maps import MapBackground
     from rail_gen.map_style import population_collection
     import matplotlib
@@ -52,13 +60,17 @@ def export(config, output, cache_dir):
             data=io.BytesIO(); sparse.save_npz(data,matrix); archive.writestr(f'matrix{i}.npz',data.getvalue())
     (output/'scenario.json').write_text(json.dumps(dict(config=config, viewport=list(background.viewport),
         nodes=background.node_xy.tolist(), cities=[c.name for c in graph.cities],
-        paths=descriptor['paths'], terrain=config['terrain_kind']),indent=2)+'\n')
-    print(f'Browser scenario saved to {output}')
+        paths=descriptor['paths'], terrain=config['terrain_kind'], actual_city_count=len(graph.cities)),indent=2)+'\n')
+    print(f'Browser scenario saved to {output}',flush=True)
+    return len(graph.cities)
 
 
 PROFILE_LABELS = {
     'france': 'France', 'taiwan': 'Taiwan', 'usa': 'United States',
     'uk': 'United Kingdom', 'japan': 'Japan', 'germany': 'Germany',
+    'spain': 'Spain', 'italy': 'Italy', 'poland': 'Poland', 'benelux': 'Benelux',
+    'switzerland': 'Switzerland', 'india': 'India', 'scandinavia': 'Scandinavia',
+    'usa_northeast': 'United States — Northeast',
 }
 
 
@@ -68,8 +80,8 @@ def export_profile(profile, output, args):
         config=load_config(args.config,profile,{'prep':{'max_cities':count},
             'alignment':{'cell_km':args.cell_km}, 'search':{'population':8,'generations':8,'workers':1}})
         folder = output / f'cities-{count}' if args.city_counts else output
-        export(config,folder,args.cache_dir)
-        choices.append(dict(city_count=count, path=f'cities-{count}' if args.city_counts else '.'))
+        actual=export(config,folder,args.cache_dir,reuse=not args.force)
+        choices.append(dict(city_count=count, actual_city_count=actual, path=f'cities-{count}' if args.city_counts else '.'))
     index=dict(profile=profile, label=PROFILE_LABELS.get(profile,profile.replace('_',' ').title()),
         default_city_count=8 if any(c['city_count']==8 for c in choices) else choices[0]['city_count'], scenarios=choices)
     (output/'index.json').write_text(json.dumps(index,indent=2)+'\n')
@@ -92,9 +104,10 @@ def main():
     p.add_argument('--config',type=Path)
     p.add_argument('--output',type=Path,help='Profile directory, or parent directory when using --profiles')
     p.add_argument('--cache-dir',type=Path,default=Path('runs/railgen-cache'))
-    p.add_argument('--city-counts',type=int,nargs='+',help='Export selectable city counts, e.g. 4 8 12 20')
+    p.add_argument('--city-counts',type=int,nargs='+',help='Export selectable city limits, e.g. 4 8 12 20 50 100')
     p.add_argument('--max-cities',type=int,default=8)
     p.add_argument('--cell-km',type=float,default=12)
+    p.add_argument('--force',action='store_true',help='Re-render unchanged prepared bundles')
     args=p.parse_args()
     if args.profiles:
         for profile in args.profiles:

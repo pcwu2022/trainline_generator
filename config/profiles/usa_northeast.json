@@ -1,0 +1,19 @@
+{
+  "bbox": [
+    -80.6,
+    38.8,
+    -66.8,
+    47.6
+  ],
+  "countries": [
+    "US"
+  ],
+  "cities_file": "data/usa_northeast/cities.json",
+  "population_file": "data/usa_northeast/population.geojson",
+  "prep": {
+    "max_cities": 100
+  },
+  "search": {
+    "batch_accept_limit": 5
+  }
+}
