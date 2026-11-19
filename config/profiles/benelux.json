@@ -12,5 +12,11 @@
   ],
   "prep": {
     "max_cities": 100
+  },
+  "reporting": {
+    "currency_code": "EUR",
+    "currency_symbol": "€",
+    "eur_to_local": 1.0,
+    "region_name": "Benelux"
   }
 }

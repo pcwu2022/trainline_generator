@@ -15,7 +15,7 @@ from test_railgen import config, graph_fixture
 from rail_gen.config import load_config
 from rail_gen.evaluator import Evaluator
 from rail_gen.incremental import consolidation_choice, integration_choice, topology
-from rail_gen.live import LiveReporter
+from rail_gen.live import LiveReporter, snapshot_stats
 from rail_gen.search import search
 
 
@@ -24,7 +24,7 @@ def incremental_config():
     c['search'].update(algorithm='incremental', generations=12)
     c['boundaries_file'] = ''
     c['reporting']['snapshot_every'] = 2
-    c['reporting']['gif_frame_ms'] = 300
+    c['reporting']['snapshot_hold_ms'] = 300
     return c
 
 
@@ -175,7 +175,19 @@ class IncrementalSearchTests(unittest.TestCase):
 
 
 class LiveOutputTests(unittest.TestCase):
-    def test_live_map_gif_cadence_and_final_snapshot_match_current_network(self):
+    def test_snapshot_stats_include_ridership_and_local_currency(self):
+        c, g = incremental_config(), graph_fixture()
+        result = Evaluator(g, c).evaluate([1, 2, 0])
+        c['reporting'].update(eur_to_local=2.0, currency_symbol='$')
+        text = snapshot_stats(result, c, len(g.cities), 'Network iteration', 6, 'capacity_expansion')
+        lines = text.splitlines()
+        self.assertEqual(lines[:2], ['Network iteration: 6', 'Capacity expansion'])
+        self.assertEqual(lines[2], f'Ridership: {result.metrics["passengers"]/1e6:,.2f}M trips/year')
+        self.assertEqual(lines[3], f'Need satisfaction: {result.metrics["need_satisfaction_ratio"]:.1%}')
+        self.assertEqual(lines[4], 'Cities served: 3/3')
+        self.assertEqual(lines[5], f'Net profit: {result.metrics["net_eur"]*2/1e6:,.1f}M $/year')
+
+    def test_live_map_video_cadence_and_final_snapshot_match_current_network(self):
         c, g = incremental_config(), graph_fixture()
         c['search']['generations'] = 5
         with tempfile.TemporaryDirectory() as temporary:
@@ -188,8 +200,8 @@ class LiveOutputTests(unittest.TestCase):
                     data = json.loads((directory / 'latest.json').read_text())
                     self.assertEqual(data['iteration'], update.iteration)
                     np.testing.assert_array_equal(data['genome'], update.result.genome)
-                    with Image.open(directory / 'progress.gif') as animation:
-                        self.assertEqual(animation.n_frames, data['animation_frames'])
+                    state = json.loads((directory / 'progress.json').read_text())
+                    self.assertEqual(state['snapshots'], data['animation_frames'])
                     snapshots.append(update.iteration)
             run = search(g, c, progress=None, observer=observe)
             reporter.finish(run)
@@ -206,13 +218,22 @@ class LiveOutputTests(unittest.TestCase):
             self.assertAlmostEqual(sum(r['annual_cost_eur'] for r in analysis['corridors']) / 1e6,
                                    latest['metrics']['annual_cost_eur'] / 1e6)
             self.assertGreater(expected.metrics['passengers'], 0)
-            with Image.open(directory / 'progress.gif') as animation:
-                self.assertEqual(animation.n_frames, 4)
-                self.assertEqual(animation.info['loop'], 0)
-                self.assertEqual(animation.info['duration'], 300)
-                first = animation.convert('RGB').copy()
-                animation.seek(animation.n_frames - 1)
-                self.assertNotEqual(first.tobytes(), animation.convert('RGB').tobytes())
+            import imageio_ffmpeg
+            reader = imageio_ffmpeg.read_frames(str(directory / 'progress.mp4'), pix_fmt='rgb24')
+            metadata = next(reader)
+            self.assertEqual(metadata['fps'], 30)
+            self.assertEqual(metadata['size'][0], metadata['size'][1])
+            frames = list(reader)
+            self.assertEqual(len(frames), 4 * 9)  # 300 ms at 30 fps per snapshot
+            first = np.frombuffer(frames[0], dtype=np.uint8).astype(float)
+            held = np.frombuffer(frames[8], dtype=np.uint8).astype(float)
+            self.assertLess(np.abs(first - held).mean(), 1.)
+            self.assertNotEqual(frames[0], frames[-1])
+            from rail_gen.map_utils import ProgressVideo
+            resumed = ProgressVideo(directory / 'progress.mp4', 300)
+            self.assertEqual(resumed.frames, 4)
+            resumed.append(directory / 'latest.png')
+            self.assertEqual(resumed.frames, 5)
             self.assertEqual({p.name for p in directory.glob('*.png')}, {'latest.png', 'progress.png', 'latest_revenue_cost.png', 'analysis.png'})
             self.assertEqual(list(directory.glob('*.tmp*')), [])
             self.assertEqual(list(directory.glob('.*.tmp*')), [])
@@ -235,8 +256,8 @@ class LiveOutputTests(unittest.TestCase):
 
     def test_invalid_reporting_parameters_are_rejected(self):
         for override in [{'reporting': {'snapshot_every': 0}},
-                         {'reporting': {'gif_frame_ms': 17}},
-                         {'reporting': {'gif_frame_ms': 0}},
+                         {'reporting': {'snapshot_hold_ms': 17}},
+                         {'reporting': {'snapshot_hold_ms': 0}},
                          {'search': {'growth_fraction': 0}},
                          {'search': {'retained_ridership': 1.1}}]:
             with self.assertRaises(ValueError):

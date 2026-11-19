@@ -10,5 +10,11 @@
   ],
   "prep": {
     "max_cities": 7
+  },
+  "reporting": {
+    "currency_code": "MKD",
+    "currency_symbol": "den",
+    "eur_to_local": 61.5,
+    "region_name": "North Macedonia"
   }
 }

@@ -10,5 +10,11 @@
   ],
   "prep": {
     "max_cities": 25
+  },
+  "reporting": {
+    "currency_code": "KZT",
+    "currency_symbol": "₸",
+    "eur_to_local": 488.0,
+    "region_name": "Kazakhstan"
   }
 }

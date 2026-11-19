@@ -10,5 +10,11 @@
   ],
   "prep": {
     "max_cities": 135
+  },
+  "reporting": {
+    "currency_code": "TRY",
+    "currency_symbol": "₺",
+    "eur_to_local": 55.4,
+    "region_name": "Turkey"
   }
 }

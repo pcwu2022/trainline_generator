@@ -10,5 +10,11 @@
   ],
   "prep": {
     "max_cities": 4
+  },
+  "reporting": {
+    "currency_code": "MDL",
+    "currency_symbol": "L",
+    "eur_to_local": 20.1,
+    "region_name": "Moldova"
   }
 }

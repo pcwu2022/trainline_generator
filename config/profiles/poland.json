@@ -10,5 +10,11 @@
   ],
   "prep": {
     "max_cities": 80
+  },
+  "reporting": {
+    "currency_code": "PLN",
+    "currency_symbol": "zł",
+    "eur_to_local": 4.41,
+    "region_name": "Poland"
   }
 }

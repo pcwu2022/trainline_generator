@@ -7,15 +7,17 @@ from types import SimpleNamespace
 import h3
 import numpy as np
 from matplotlib.cm import ScalarMappable
-from matplotlib.patches import Circle
+from matplotlib.patches import Circle, FancyBboxPatch
+from matplotlib.lines import Line2D
+from matplotlib import patheffects
 from shapely.geometry import Point, shape
 from shapely.ops import unary_union
 from shapely.prepared import prep
 
 from rail_gen.map_style import (CITY_STYLE, STATION_STYLE, CATCHMENT_STYLE,
-    population_collection, satisfaction_scale, track_style, add_track_reference)
+    population_collection, satisfaction_scale, track_style)
 from rail_gen.map_utils import city_label_indices, map_figure_size, map_projector
-from rail_gen.map_terrain import fast_terrain, add_terrain
+from rail_gen.map_elevation import elevation_hexagons, add_elevation
 from .alignment import TRACKS
 from .track_layout import track_type
 from .evaluator import Evaluator
@@ -27,7 +29,7 @@ class MapBackground:
         self.graph, self.config = graph, config
         self.project = map_projector(SimpleNamespace(bbox=config['bbox']))
         self.evaluator = Evaluator(graph, config)
-        self.terrain = fast_terrain(config)
+        self.elevation = elevation_hexagons(config, self.project)
         west, south, east, north = config['bbox']
         self.country_lines = []
         region = None
@@ -97,9 +99,21 @@ class MapBackground:
         radii = np.asarray([city.radius_km for city in graph.cities])[:, None]
         lower = np.minimum(lower, (self.station_xy - radii).min(axis=0))
         upper = np.maximum(upper, (self.station_xy + radii).max(axis=0))
-        margin = max(5, float((upper - lower).max()) * .03)
-        self.viewport = (float(lower[0] - margin), float(upper[0] + margin),
-                         float(lower[1] - margin), float(upper[1] + margin))
+        # Reserve extra horizontal space only to the east for the overlays. A square
+        # projected extent fills the canvas without stretching the geography.
+        span = upper - lower
+        side = max(float(span[0]) / .75, float(span[1]) / .88, 10.)
+        left = float(lower[0])
+        if config['countries'] == ['TW']:
+            # Taiwan's tall shape leaves spare horizontal space on a square
+            # canvas. Center the island in the area west of the legend rather
+            # than anchoring it to the western edge of the sampling bounds.
+            island = np.vstack([*self.polygons, *self.edge_xy.values(),
+                                self.station_xy - radii, self.station_xy + radii])
+            island_center = float((island[:, 0].min() + island[:, 0].max()) / 2)
+            left = island_center - side * .375
+        bottom = float((lower[1] + upper[1] - side) / 2)
+        self.viewport = (left, left + side, bottom, bottom + side)
         self.figure_size = map_figure_size(self.viewport)
         self.labelled_cities = city_label_indices(
             [dict(population=city.population) for city in graph.cities])
@@ -125,32 +139,49 @@ class MapBackground:
         import matplotlib
         matplotlib.use('Agg')
         import matplotlib.pyplot as plt
-        # Use the original fixed axes positions: colorbars cannot shift the map
-        # when the network changes or a local matplotlibrc enables tight layout.
         figure = plt.figure(figsize=self.figure_size, layout='none')
-        ax = figure.add_axes([.09, .16, .72, .72])
-        density_axis = figure.add_axes([.85, .28, .025, .46])
-        ratio_axis = figure.add_axes([.85, .08, .025, .13])
+        figure.set_facecolor('#eef2f5')
+        ax = figure.add_axes([0, 0, 1, 1])
+        # All map keys share one floating panel in the reserved eastern strip.
+        panel = FancyBboxPatch((.765, .16), .22, .385, transform=figure.transFigure,
+            boxstyle='round,pad=0.006', facecolor='white', edgecolor='#bac3c8',
+            alpha=.94, linewidth=.7, zorder=8)
+        figure.add_artist(panel)
+        density_axis = figure.add_axes([.785, .485, .177, .012], zorder=9)
+        ratio_axis = figure.add_axes([.785, .415, .177, .012], zorder=9)
         try:
             ax.set_facecolor('#eef2f5')
             for coordinates in self.country_lines:
                 ax.plot(coordinates[:, 0], coordinates[:, 1], color='#c2c8c5', linewidth=.6, zorder=0)
             collection = population_collection(self.polygons, self.densities)
             ax.add_collection(collection)
-            figure.colorbar(collection, cax=density_axis,
-                            label='Population density (people/km², log scale)')
-            add_terrain(ax, figure, self.terrain, self.project)
+            figure.text(.785, .51, 'Population / km²', fontsize=8, zorder=10)
+            figure.colorbar(collection, cax=density_axis, orientation='horizontal')
+            density_axis.tick_params(labelsize=7, length=2)
+            density_axis.minorticks_off()
+            figure.text(.785, .44, 'Revenue / cost' if financial else 'Demand fulfillment',
+                        fontsize=8, zorder=10)
+            elevation = add_elevation(ax, self.elevation)
+            if elevation is not None:
+                elevation_axis = figure.add_axes([.785, .345, .177, .012], zorder=9)
+                figure.text(.785, .37, 'Elevation (m)', fontsize=7, zorder=10)
+                figure.colorbar(elevation, cax=elevation_axis, orientation='horizontal',
+                                ticks=[0, 1000, 2000, 3000, 4000], extend='both')
+                elevation_axis.tick_params(labelsize=7, length=2)
             if financial:
                 from matplotlib.colors import LinearSegmentedColormap, Normalize
                 cmap = LinearSegmentedColormap.from_list('cost_recovery', ['#ad3035', '#edca79', '#124625'])
                 norm = Normalize(0, 2, clip=True)
                 colorbar = figure.colorbar(ScalarMappable(norm=norm, cmap=cmap), cax=ratio_axis,
-                    label='Annual revenue / cost', ticks=[0, 1, 2], extend='max')
-                colorbar.ax.set_yticklabels(['0', '1', '≥2'])
+                    orientation='horizontal', ticks=[0, 1, 2], extend='max')
+                colorbar.ax.set_xticklabels(['0', '1', '≥2'])
             else:
                 cmap, norm = satisfaction_scale()
                 figure.colorbar(ScalarMappable(norm=norm, cmap=cmap), cax=ratio_axis,
-                                label='Rail demand fulfillment')
+                                orientation='horizontal', ticks=[0, .5, 1])
+                from matplotlib.ticker import PercentFormatter
+                ratio_axis.xaxis.set_major_formatter(PercentFormatter(xmax=1, decimals=0))
+            ratio_axis.tick_params(labelsize=7, length=2)
             for i, city in enumerate(self.graph.cities):
                 xy = self.node_xy[i]
                 ax.plot(*xy, **CITY_STYLE)
@@ -176,27 +207,46 @@ class MapBackground:
                 ax.add_patch(Circle(xy, self.graph.cities[i].radius_km, **CATCHMENT_STYLE))
                 ax.plot(*xy, **STATION_STYLE)
             xmin, xmax, ymin, ymax = self.viewport
-            ax.set(xlim=(xmin, xmax), ylim=(ymin, ymax),
-                   xlabel='East of regional center (km)', ylabel='North of regional center (km)')
+            ax.set(xlim=(xmin, xmax), ylim=(ymin, ymax))
             ax.set_aspect('equal')
-            ax.grid(alpha=.15)
-            heading = 'Rail network optimization · revenue / cost' if financial else 'Rail network optimization'
-            ax.set_title(heading + '\n' + title, fontsize=11)
-            add_track_reference(figure)
-            ax.text(.01, .01, 'Symbols: infrastructure · Dots: HSR on CR (violet), CR on HSR (orange)',
-                    transform=ax.transAxes, fontsize=7, va='bottom', bbox=dict(facecolor='white', alpha=.8, edgecolor='none'))
+            ax.set_axis_off()
+            ax.text(.5, .5, '@maps.az', transform=ax.transAxes,
+                    ha='center', va='center', fontsize=32, fontweight='bold',
+                    color='#c4c4c4', alpha=.2, zorder=7)
+            ax.text(.025, .975,
+                    f'{self.config["reporting"]["region_name"]} Rail Network Generation',
+                    transform=ax.transAxes, fontsize=14, fontweight='bold',
+                    color='#16334a', va='top', linespacing=1.3, zorder=10,
+                    path_effects=[patheffects.withStroke(linewidth=3, foreground='white')])
+            ax.text(.975, .975, title, transform=ax.transAxes, fontsize=10,
+                    ha='right', va='top', multialignment='left', linespacing=1.5, zorder=10,
+                    bbox=dict(boxstyle='round,pad=.5', facecolor='white', alpha=.9,
+                              edgecolor='#bac3c8', linewidth=.7))
+            handles = [Line2D([], [], label=f'Every {60 / frequency:g} mins',
+                       **track_style(frequency, 'CR', 1)) for frequency in (1, 2, 4, 8)]
+            handles += [Line2D([], [], label='High Speed Rail', **track_style(4, 'HSR', 1)),
+                Line2D([], [], color='#7936ac', linestyle=':', label='Hybrid'),
+                Line2D([], [], label='Station', linestyle='none', **STATION_STYLE)]
+            legend = figure.legend(handles=handles, loc='upper left',
+                bbox_to_anchor=(.775, .30 if elevation is not None else .38), fontsize=7, frameon=False,
+                handlelength=2.5, labelspacing=.7, borderaxespad=0)
+            legend.set_zorder(10)
+            # Text sizes are in points while the canvas varies by region.
+            # Measure the legend so its last row always has panel padding.
+            figure.canvas.draw()
+            legend_bottom = legend.get_window_extent(
+                figure.canvas.get_renderer()).transformed(figure.transFigure.inverted()).y0
+            panel_bottom = min(.16, legend_bottom - .012)
+            panel.set_bounds(.765, panel_bottom, .22, .545 - panel_bottom)
             # Overlay train types only where they differ from infrastructure.
             for service in result.services:
                 for edge_id in service['edge_ids']:
                     infrastructure = track_type(result.genome[edge_id])
-                    if service['train_type'] != infrastructure:
+                    if service['train_type'] == 'HSR' and infrastructure == 'CR':
                         coordinates = self.edge_xy[edge_id, infrastructure]
-                        color = '#7936ac' if service['train_type'] == 'HSR' else '#e48319'
+                        color = '#7936ac'
                         ax.plot(coordinates[:, 0], coordinates[:, 1], color=color,
                                 linestyle=':', linewidth=1.1, zorder=4.5)
-            color_label = ('Color: annual revenue / allocated annual cost · Red: below break-even · Green: surplus · Gray: undefined.'
-                           if financial else 'Color: carried passengers / fixed capturable OD market using each segment (including transfers).')
-            figure.supxlabel(color_label + '\nWhite-dashed: HSR · Solid: CR · White dots: stations · Dashed green: catchments', fontsize=8, y=.005)
             with matplotlib.rc_context({'savefig.bbox': None}):
                 figure.savefig(path, dpi=130)
         finally:

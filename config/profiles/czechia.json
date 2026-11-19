@@ -10,5 +10,11 @@
   ],
   "prep": {
     "max_cities": 15
+  },
+  "reporting": {
+    "currency_code": "CZK",
+    "currency_symbol": "Kč",
+    "eur_to_local": 24.4,
+    "region_name": "Czechia"
   }
 }

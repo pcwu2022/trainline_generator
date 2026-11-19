@@ -10,5 +10,11 @@
   ],
   "prep": {
     "max_cities": 30
+  },
+  "reporting": {
+    "currency_code": "RON",
+    "currency_symbol": "lei",
+    "eur_to_local": 5.35,
+    "region_name": "Romania"
   }
 }

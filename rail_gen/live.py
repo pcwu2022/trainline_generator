@@ -1,4 +1,4 @@
-"""Iteration-triggered live map, charts, accounting and bounded-memory GIF."""
+"""Iteration-triggered live map, charts, accounting and bounded-memory MP4."""
 from datetime import datetime, timezone
 import json
 from pathlib import Path
@@ -10,6 +10,18 @@ from .track_layout import track_type, MODEL_VERSION
 from .evaluator import Evaluator
 from .report import _plotting, geojson, plot_map
 from .search import SearchUpdate
+
+
+def snapshot_stats(result, config, city_count, unit, iteration, phase):
+    """Display annual network metrics; financial evaluation remains in euros."""
+    m, reporting = result.metrics, config['reporting']
+    profit = m['net_eur'] * reporting['eur_to_local'] / 1e6
+    return (f'{unit}: {iteration}\n'
+            f'{phase.replace("_", " ").capitalize()}\n'
+            f'Ridership: {m["passengers"]/1e6:,.2f}M trips/year\n'
+            f'Need satisfaction: {m["need_satisfaction_ratio"]:.1%}\n'
+            f'Cities served: {m["active_stations"]}/{city_count}\n'
+            f'Net profit: {profit:,.1f}M {reporting["currency_symbol"]}/year')
 
 
 def atomic_text(path, content):
@@ -89,16 +101,14 @@ def cost_log(graph, result, iteration, phase):
 
 class LiveReporter:
     def __init__(self, graph, config, output, calibration=None, resume=False):
-        # Reuse the original optimizer's streaming GIF encoder, which appends
-        # compressed frames atomically without retaining historical image buffers.
-        from rail_gen.map_utils import ProgressGif
+        from rail_gen.map_utils import ProgressVideo
         self.graph, self.config, self.output = graph, config, Path(output)
         self.output.mkdir(parents=True, exist_ok=True)
         self.evaluator = Evaluator(graph, config)
         from .maps import MapBackground
         self.background = MapBackground(graph, config)
         self.every = config['reporting']['snapshot_every']
-        self.animation = ProgressGif(self.output / 'progress.gif', config['reporting']['gif_frame_ms'])
+        self.animation = ProgressVideo(self.output / 'progress.mp4', config['reporting']['snapshot_hold_ms'])
         self.history = []
         if resume and (self.output / 'history.jsonl').exists():
             self.history = [json.loads(line) for line in (self.output / 'history.jsonl').read_text().splitlines() if line.strip()]
@@ -111,7 +121,7 @@ class LiveReporter:
         atomic_json(self.output / 'backtest.json', self.calibration)
         atomic_json(self.output / 'alignment_manifest.json', graph.metadata)
         self.manifest = dict(model_version=MODEL_VERSION, algorithm=config['search']['algorithm'], iteration_unit=self.unit,
-            snapshot_every=self.every, gif_frame_ms=config['reporting']['gif_frame_ms'],
+            snapshot_every=self.every, snapshot_hold_ms=config['reporting']['snapshot_hold_ms'],
             graph=graph.metadata, calibration=self.calibration['status'],
             current_network='latest.geojson', alternatives='pareto/report.md', status='running')
         atomic_json(self.output / 'manifest.json', self.manifest)
@@ -139,10 +149,8 @@ class LiveReporter:
     def render(self, update):
         # Search updates already contain complete assignments and allocations.
         result = update.result
-        phase = update.phase.replace('_', ' ')
-        title = (f'{self.unit} {update.iteration}: {phase} · '
-            f'{result.metrics["passengers"]/1e6:.2f}M trips/year · '
-            f'net EUR {result.metrics["net_eur"]/1e6:.1f}M/year')
+        title = snapshot_stats(result, self.config, len(self.graph.cities),
+                               self.unit, update.iteration, update.phase)
         map_temp = self.output / '.latest.tmp.png'
         chart_temp = self.output / '.progress.tmp.png'
         try:
@@ -196,7 +204,7 @@ class LiveReporter:
             ('(carried / eligible annual trips: candidate potential for connected pairs, reference rail trips for unreachable pairs).'
              if self.config['demand']['model'] == 'reference_elasticity' else
              '(carried trips / fixed two-way annual capturable gravity demand across all candidate OD pairs).'), '',
-            '[Animated evolution](progress.gif) · [Current GeoJSON](latest.geojson) · [Current metrics](latest.json) · [Cost breakdown](cost_breakdown.log)', '',
+            '[Animated evolution](progress.mp4) · [Current GeoJSON](latest.geojson) · [Current metrics](latest.json) · [Cost breakdown](cost_breakdown.log)', '',
             '![Revenue / annual cost map](latest_revenue_cost.png)', '',
             '![Station and corridor rankings](analysis.png)', '',
             '[Full station and corridor metrics](analysis.json)', '',

@@ -30,7 +30,7 @@ def parser():
             sub.epilog = (                'Unspecified search and reporting options use the selected configuration/profile.\n'
                 'Incremental search evaluates up to 150 sampled proposals plus demand packages per update.\n'
                 'Objective weights change at 30% and 60% demand satisfaction.\n\n'
-                'Outputs: latest.png/json/geojson, progress.gif, progress.png, report.md,\n'
+                'Outputs: latest.png/json/geojson, progress.mp4, progress.png, report.md,\n'
                 'cost_breakdown.log and pareto/ alternatives. Use an empty output directory\n'
                 'or --overwrite.\n\n'
                 'Example: python -m rail_gen run --profile france --iterations 200\n'
@@ -67,8 +67,8 @@ def parser():
             sub.add_argument('--algorithm', choices=['incremental', 'nsga2', 'nsga3'],
                              help='Persistent network edits or NSGA population evolution (bundled default: incremental)')
             sub.add_argument('--time-limit', type=float, help='Positive search time limit in seconds, excluding geography preparation')
-            sub.add_argument('--snapshot-every', type=int, help='Positive number of updates/generations between live map/GIF snapshots; final state always saved')
-            sub.add_argument('--gif-frame-ms', type=int, help='GIF frame duration: 10..655350 milliseconds, in multiples of 10')
+            sub.add_argument('--snapshot-every', type=int, help='Positive number of updates/generations between live map/video snapshots; final state always saved')
+            sub.add_argument('--snapshot-hold-ms', '--gif-frame-ms', dest='snapshot_hold_ms', type=int, help='Snapshot hold duration in milliseconds (34..655350); video runs at 30 fps')
         if name == 'benchmark':
             sub.add_argument('--evaluations', type=int, default=200,
                              help='Timed random designs, excluding 5 warmup evaluations (default: 200)')
@@ -93,7 +93,7 @@ def main(argv=None):
                     raise ValueError('--time-limit must be positive')
                 overrides['search']['time_limit_seconds'] = args.time_limit
             overrides['reporting'] = {key: value for key, value in
-                [('snapshot_every', args.snapshot_every), ('gif_frame_ms', args.gif_frame_ms)]
+                [('snapshot_every', args.snapshot_every), ('snapshot_hold_ms', args.snapshot_hold_ms)]
                 if value is not None}
             if args.output is None:
                 args.output = Path('runs') / f'{args.profile}-pareto'
@@ -192,7 +192,7 @@ def main(argv=None):
                   if run.status == 'neighbourhood_exhausted' else '')
         print(f'Search status: {run.status}' + (f' — {reason}' if reason else ''), flush=True)
         print(f'Current map: {args.output / "latest.png"}\n'
-              f'Animation: {args.output / "progress.gif"}\n'
+              f'Animation: {args.output / "progress.mp4"}\n'
               f'Progress charts: {args.output / "progress.png"}\n'
               f'Report: {args.output / "report.md"}\n'
               f'Pareto alternatives: {len(rows)} designs in {args.output / "pareto"}', flush=True)

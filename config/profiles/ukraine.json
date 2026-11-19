@@ -10,5 +10,11 @@
   ],
   "prep": {
     "max_cities": 70
+  },
+  "reporting": {
+    "currency_code": "UAH",
+    "currency_symbol": "₴",
+    "eur_to_local": 49.7,
+    "region_name": "Ukraine"
   }
 }

@@ -81,7 +81,17 @@ class PopulationMapTests(unittest.TestCase):
             def capture(figure, path, **kwargs):
                 original_save(figure, path, **kwargs)
                 axis = figure.axes[0]
+                renderer = figure.canvas.get_renderer()
+                panel = figure.artists[0].get_window_extent(renderer)
+                legend = figure.legends[0].get_window_extent(renderer)
+                self.assertGreater(legend.y0, panel.y0)
+                self.assertLess(legend.y1, panel.y1)
+                for scale in figure.axes[1:]:
+                    bounds = scale.get_tightbbox(renderer)
+                    self.assertGreater(bounds.y0, panel.y0)
+                    self.assertLess(bounds.y1, panel.y1)
                 captured.append(dict(position=axis.get_position().bounds, xlim=axis.get_xlim(), ylim=axis.get_ylim(),
+                    axis_on=axis.axison, title=axis.get_title(),
                     tracks=[(line.get_color(), line.get_linewidth(), line.get_linestyle()) for line in axis.lines if line.get_zorder() == 4],
                     radii=[patch.radius for patch in axis.patches if hasattr(patch, 'radius')],
                     palette=axis.collections[0].cmap.name, values=axis.collections[0].get_array().copy(),
@@ -92,6 +102,10 @@ class PopulationMapTests(unittest.TestCase):
                     background.draw(e.evaluate([0, 0, 0]), Path(temporary) / 'empty.png', 'Empty')
                     background.draw(result, Path(temporary) / 'financial.png', 'Financial', color_by='revenue_cost')
             populated, empty, financial = captured
+            self.assertFalse(populated['axis_on'])
+            self.assertEqual(populated['title'], '')
+            np.testing.assert_allclose(populated['position'], (0, 0, 1, 1))
+            self.assertAlmostEqual(np.ptp(populated['xlim']), np.ptp(populated['ylim']))
             self.assertEqual(populated['radii'], [4, 8, 12])
             self.assertEqual(financial['radii'], [4, 8, 12])
             self.assertEqual(populated['palette'], 'YlOrRd')

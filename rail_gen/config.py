@@ -30,7 +30,7 @@ def validate(c):
         'operations.assignment_iterations', 'operations.maximum_train_units',
         'search.batch_accept_limit', 'search.capacity_repair_steps', 'search.capacity_repair_candidates', 'search.population', 'search.generations',
         'search.seed', 'search.workers', 'search.representatives', 'search.stagnation_generations',
-        'reporting.snapshot_every', 'reporting.gif_frame_ms',
+        'reporting.snapshot_every', 'reporting.snapshot_hold_ms',
         'services.max_through_routes', 'services.max_route_edges', 'services.plan_trials'}
     def check(values, defaults, prefix=''):
         for key, value in values.items():
@@ -50,6 +50,11 @@ def validate(c):
             elif not isinstance(value, type(expected)):
                 raise ValueError(f'Invalid type for {name}')
     check(c, schema)
+    currency = c['reporting']
+    if len(currency['currency_code']) != 3 or not currency['currency_code'].isalpha() or not currency['currency_code'].isupper():
+        raise ValueError('reporting.currency_code must be a three-letter uppercase currency code')
+    if not currency['currency_symbol'].strip():
+        raise ValueError('reporting.currency_symbol must not be empty')
     crossing_ids = set()
     for item in c['alignment']['water_crossings']:
         if not isinstance(item, dict) or not {'id', 'geometry'} <= set(item) or set(item) - {'id', 'geometry', 'water_type'} or not isinstance(item['id'], str) or not item['id'] or item['id'] in crossing_ids:
@@ -104,7 +109,7 @@ def validate(c):
         'operations': ['maximum_train_units', 'hours_per_day', 'days_per_year', 'minimum_frequency', 'target_load_factor', 'maximum_load_factor', 'assignment_iterations', 'peak_factor'],
         'finance': ['track_life_years', 'station_life_years', 'fleet_life_years'],
         'search': ['batch_accept_limit', 'capacity_repair_candidates', 'population', 'generations', 'workers', 'representatives', 'stagnation_generations'],
-        'reporting': ['snapshot_every'],
+        'reporting': ['snapshot_every', 'eur_to_local'],
     }.items():
         if any(c[section][key] <= 0 for key in keys):
             raise ValueError(f'{section}: required positive parameter is zero')
@@ -130,9 +135,9 @@ def validate(c):
         raise ValueError('search.growth_fraction must be in (0, 1]')
     if not 0 < c['search']['retained_ridership'] <= 1:
         raise ValueError('search.retained_ridership must be in (0, 1]')
-    duration = c['reporting']['gif_frame_ms']
-    if not 10 <= duration <= 655350 or duration % 10:
-        raise ValueError('reporting.gif_frame_ms must be a multiple of 10 between 10 and 655350')
+    duration = c['reporting']['snapshot_hold_ms']
+    if not 34 <= duration <= 655350:
+        raise ValueError('reporting.snapshot_hold_ms must be between 34 and 655350')
     if c['operations']['target_load_factor'] > c['operations']['maximum_load_factor']:
         raise ValueError('Target load factor exceeds maximum')
     if c['operations']['initial_frequency'] <= 0:
@@ -157,6 +162,9 @@ def validate(c):
 def migrate_config(custom):
     """Move legacy rolling-stock keys out of tracks; explicit new keys win."""
     custom = deepcopy(custom)
+    reporting = custom.get('reporting', {})
+    if 'gif_frame_ms' in reporting:
+        reporting.setdefault('snapshot_hold_ms', reporting.pop('gif_frame_ms'))
     # Density-derived radii supersede fixed catchments in saved configs.
     custom.get('prep', {}).pop('catchment_km', None)
     for name, values in custom.get('tracks', {}).items():

@@ -182,6 +182,21 @@ class Evaluator:
                               np.maximum(counts, incumbent.track_counts), counts)
         if np.any((counts == 1) & (x == 2)):
             raise ValueError('HSR infrastructure is prohibited on single track')
+        additive = (incumbent is not None and
+                    np.all((incumbent.genome == 0) | (x >= incumbent.genome)))
+        old = ()
+        if additive and services is None:
+            retained = []
+            for service in incumbent.service_plan:
+                edges = [self.edge_lookup[tuple(sorted((a, b)))]
+                         for a, b in zip(service.route, service.route[1:])]
+                if service.train_type == 'CR' and np.any(x[edges] == 2):
+                    service = replace(service, train_type='HSR')
+                    # HSR stock needs double track throughout its through route.
+                    # Buy that capacity along with the infrastructure upgrade.
+                    counts[edges] = np.maximum(counts[edges], 2)
+                retained.append(service)
+            old = tuple(retained)
         infrastructure = self.infrastructure(x, counts)
         if services is not None:
             plan = tuple(Service.from_dict(s) if isinstance(s, dict) else s for s in services)
@@ -189,11 +204,8 @@ class Evaluator:
         networks = generate_plans(self, x, counts, infrastructure=infrastructure, return_networks=True)
         results = [self._evaluate_plan(x, counts, network.services, optimize=True, details=details,
                    infrastructure=infrastructure, network=network) for network in networks]
-        additive = (incumbent is not None and
-                    np.all((incumbent.genome == 0) | (x >= incumbent.genome)))
         if additive:
-            # Retaining the accepted plan is always an option on an expansion.
-            old = incumbent.service_plan
+            # Retain upgraded trains with their existing service decisions.
             results.append(self._evaluate_plan(x, counts, old, optimize=False,
                            details=details, infrastructure=infrastructure))
             for network in networks:

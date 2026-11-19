@@ -10,5 +10,11 @@
   ],
   "prep": {
     "max_cities": 4
+  },
+  "reporting": {
+    "currency_code": "GEL",
+    "currency_symbol": "₾",
+    "eur_to_local": 2.85,
+    "region_name": "Georgia"
   }
 }

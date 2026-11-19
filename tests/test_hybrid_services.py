@@ -51,9 +51,9 @@ class HybridServiceTests(unittest.TestCase):
         slower = self.e.evaluate([1, 1, 0], services=r.service_plan)
         self.assertGreater(slower.in_vehicle_hours[j], r.in_vehicle_hours[j])
         self.assertEqual(slower.transfers[j], 0)
-        # A conventional train cannot exploit the faster track's speed limit.
-        cr = self.e.evaluate([2, 1, 0], services=[Service((0, 1, 2), 'CR', 2)])
-        self.assertEqual(cr.services[0]['section_speeds_kmh'], [140, 140])
+        # Conventional trains cannot use high-speed infrastructure.
+        with self.assertRaisesRegex(ValueError, 'CR services are prohibited'):
+            self.e.evaluate([2, 1, 0], services=[Service((0, 1, 2), 'CR', 2)])
         # No HSR alignment is required on the conventional extension.
         g = deepcopy(self.g)
         del g.edges[1].alignments['HSR']
@@ -87,8 +87,9 @@ class HybridServiceTests(unittest.TestCase):
                     c = deepcopy(self.c)
                     c['operations']['additional_unit_cost_fraction'] = fraction
                     e = Evaluator(self.g, c)
-                    single = e.evaluate([2, 1, 0], services=[Service((0, 1, 2), train_type, 2, 1)])
-                    coupled = e.evaluate([2, 1, 0], services=[Service((0, 1, 2), train_type, 2, 2)])
+                    x = [1, 1, 0] if train_type == 'CR' else [2, 1, 0]
+                    single = e.evaluate(x, services=[Service((0, 1, 2), train_type, 2, 1)])
+                    coupled = e.evaluate(x, services=[Service((0, 1, 2), train_type, 2, 2)])
                     annual_km = 2 * 2 * 200 * 16 * 365
                     self.assertAlmostEqual(single.metrics['train_opex_eur'], annual_km * rate)
                     self.assertAlmostEqual(coupled.metrics['train_opex_eur'], annual_km * rate)
@@ -200,12 +201,58 @@ class HybridServiceTests(unittest.TestCase):
         conventional = self.e.evaluate([1, 1, 0])
         self.assertNotEqual(a.metrics['track_capital_eur'], conventional.metrics['track_capital_eur'])
         self.assertNotEqual(a.objectives[0], conventional.objectives[0])
-        # The economic selector may choose CR stock on either network; the
-        # mixed through candidate remains available for full-network comparison.
+        # The mixed through candidate uses HSR stock.
         self.c['services']['plan_trials'] = 1
         hybrid = Evaluator(self.g, self.c).evaluate(x)
         self.assertEqual(hybrid.services[0]['train_type'], 'HSR')
         self.assertEqual(hybrid.services[0]['route'], [0, 1, 2])
+
+    def test_generated_plans_prohibit_cr_on_hsr(self):
+        x = np.array([2, 1, 0])
+        for counts in (np.array([2, 2, 0]), np.array([2, 1, 0])):
+            for plan in generate_plans(self.e, x, counts):
+                network = ServiceNetwork(self.e, x, plan, counts)
+                self.assertEqual(set(edge for edges in network.edges for edge in edges), {0, 1})
+                for service, edges in zip(plan, network.edges):
+                    if service.train_type == 'CR':
+                        self.assertTrue(all(x[edge] == 1 for edge in edges))
+
+    def test_upgrade_converts_incumbent_services_to_hsr(self):
+        incumbent = self.e.evaluate([1, 1, 0], services=[
+            Service((0, 1, 2), 'CR', 2, 2), Service((1, 2), 'CR', 1)])
+        original_plan = incumbent.service_plan
+        for decision in ('cost', 'growth', 'profit'):
+            with self.subTest(decision=decision):
+                evaluated = []
+                evaluate_plan = self.e._evaluate_plan
+
+                def record_plan(x, counts, plan, *args, **kwargs):
+                    evaluated.append(plan)
+                    return evaluate_plan(x, counts, plan, *args, **kwargs)
+
+                from unittest.mock import patch
+                with patch.object(self.e, '_evaluate_plan', side_effect=record_plan):
+                    result = self.e.evaluate([2, 1, 0], incumbent=incumbent,
+                                             decision=decision)
+                self.assertTrue(evaluated)
+                upgraded = Service((0, 1, 2), 'HSR', 2, 2)
+                self.assertIn((upgraded, original_plan[1]), evaluated)
+                for plan in evaluated:
+                    self.assertNotIn(original_plan[0], plan)
+                    ServiceNetwork(self.e, result.genome, plan, result.track_counts)
+                self.assertTrue(any(original_plan[1] in plan for plan in evaluated))
+        self.assertEqual(incumbent.service_plan, original_plan)
+
+    def test_upgraded_through_service_buys_required_double_track(self):
+        incumbent = self.e.evaluate([1, 1, 0], track_counts=[2, 1, 0],
+                                    services=[Service((0, 1, 2), 'CR', 2, 2)])
+        result = self.e.evaluate([2, 1, 0], track_counts=[2, 1, 0],
+                                 incumbent=incumbent)
+        np.testing.assert_array_equal(result.track_counts, [2, 2, 0])
+        self.assertGreater(result.metrics['track_capital_eur'],
+                           incumbent.metrics['track_capital_eur'])
+        np.testing.assert_array_equal(incumbent.track_counts, [2, 1, 0])
+        ServiceNetwork(self.e, result.genome, result.service_plan, result.track_counts)
 
     def test_serialization_and_analysis_preserve_explicit_plan(self):
         r = self.e.evaluate([2, 1, 0], services=[Service((0, 1, 2), 'HSR', 2, 2)])

@@ -57,6 +57,8 @@ class ServiceNetwork:
                 edge = self.lookup.get(tuple(sorted((a, b))))
                 if edge is None or not x[edge]:
                     raise ValueError('Service route is disconnected or uses unbuilt infrastructure')
+                if x[edge] == 2 and service.train_type == 'CR':
+                    raise ValueError('CR services are prohibited on HSR infrastructure')
                 # The single-track policy prohibits HSR trains, even at reduced speed.
                 if track_counts[edge] == 1 and service.train_type == 'HSR':
                     raise ValueError('HSR services are prohibited on single track')
@@ -297,7 +299,7 @@ class ServiceNetwork:
 
 
 def generate_plans(e, x, track_counts, *, infrastructure=None, return_networks=False):
-    """At most three plans: hybrid through, edge feeders, conventional through.
+    """At most two plans: hybrid through and edge feeders.
 
     A bounded set of high-demand shortest paths is used as through routes, then
     uncovered sections get edge feeders. No route invents unbuilt track.
@@ -339,12 +341,21 @@ def generate_plans(e, x, track_counts, *, infrastructure=None, return_networks=F
     through = routes + [route for i, route in zip(active, edge_routes) if i not in covered]
     infrastructure = infrastructure if infrastructure is not None else e.infrastructure(x, track_counts)
     plans, networks, attempted = [], [], set()
-    for paths, conventional in [(through, False), (edge_routes, False), (through, True)]:
+    for paths in (through, edge_routes):
         services = []
         # Admit routes only if their minimum frequency fits all shared resources.
         for route in paths:
             edges = [lookup[tuple(sorted(ab))] for ab in zip(route, route[1:])]
-            train = 'HSR' if not conventional and any(x[i] == 2 for i in edges) and all(track_counts[i] != 1 for i in edges) else 'CR'
+            has_hsr = any(x[i] == 2 for i in edges)
+            if has_hsr and any(track_counts[i] == 1 for i in edges):
+                # Use legal feeders when neither train type can traverse the route.
+                for a, b, edge in zip(route, route[1:], edges):
+                    train = 'HSR' if x[edge] == 2 else 'CR'
+                    service = Service((a, b), train, e.config['operations']['minimum_frequency'])
+                    if service not in services:
+                        services.append(service)
+                continue
+            train = 'HSR' if has_hsr else 'CR'
             services.append(Service(tuple(route), train, e.config['operations']['minimum_frequency']))
         # Resource admission is deterministic. It can leave built sections without
         # service when the bounds are impossible; construction is still charged.

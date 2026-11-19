@@ -10,5 +10,11 @@
   ],
   "prep": {
     "max_cities": 20
+  },
+  "reporting": {
+    "currency_code": "SEK",
+    "currency_symbol": "kr",
+    "eur_to_local": 11.2,
+    "region_name": "Sweden"
   }
 }

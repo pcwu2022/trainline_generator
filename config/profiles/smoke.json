@@ -9,5 +9,11 @@
     "population": 24,
     "generations": 8,
     "representatives": 5
+  },
+  "reporting": {
+    "currency_code": "EUR",
+    "currency_symbol": "€",
+    "eur_to_local": 1.0,
+    "region_name": "France"
   }
 }

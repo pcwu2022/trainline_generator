@@ -20,7 +20,7 @@ def population_collection(polygons, densities):
 
 
 def satisfaction_scale():
-    return (LinearSegmentedColormap.from_list('rail_satisfaction', ['#b2f2a5', '#124625']),
+    return (LinearSegmentedColormap.from_list('rail_satisfaction', ['#c6e5fa', '#084594']),
             Normalize(0, 1))
 
 

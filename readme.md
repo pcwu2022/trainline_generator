@@ -47,14 +47,14 @@ continues using the code it loaded at startup.
 ```sh
 .venv/bin/python -m pip install -r requirements.txt
 .venv/bin/python -m rail_gen run --profile france \
-  --output runs/france-live --iterations 200 --snapshot-every 5 --gif-frame-ms 500
+  --output runs/france-live --iterations 200 --snapshot-every 5 --snapshot-hold-ms 500
 ```
 
 Use `--profile usa` for the contiguous United States (the lower 48, including
 Washington, DC; excluding Alaska, Hawaii and overseas territories). This profile
 uses `data/north-america.geojson` for population and selects up to 100 cities.
 Like the recent France production run, it accepts batches of up to 5 updates,
-saves a snapshot every iteration and uses 100 ms GIF frames:
+saves a snapshot every iteration and uses 100 ms snapshot holds:
 
 ```sh
 .venv/bin/python -m rail_gen run --profile usa --output runs/usa-live
@@ -88,7 +88,10 @@ The `--profit` and `--restarts` options are removed: each invocation grows one n
 with the original iteration/exhaustion stopping rules and no ten-failure cutoff.
 
 Watch `latest.png` for the evolving network, `progress.png` for its metrics, and
-`progress.gif` for the animation. Maps use the original population-density
+`progress.mp4` for the 30 fps H.264 animation. `--snapshot-hold-ms` (or
+`reporting.snapshot_hold_ms`) sets how long each snapshot stays on screen, rounded
+to the nearest video frame. `--snapshot-every` controls simulation sampling.
+Legacy `gif_frame_ms` configuration keys are migrated automatically. Maps use the original population-density
 background, green demand-satisfaction colors and frequency-scaled widths.
 Infrastructure symbols distinguish CR and HSR track; dotted overlays identify
 train types operating across infrastructure boundaries. `latest.json`, `latest.geojson` and

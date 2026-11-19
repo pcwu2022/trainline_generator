@@ -18,7 +18,7 @@ from .alignment import load_graph
 from .config import load_config
 from .maps import MapBackground
 from rail_gen.map_style import CITY_STYLE, population_collection
-from rail_gen.map_terrain import add_terrain
+from rail_gen.map_elevation import add_elevation
 
 
 def main():
@@ -60,7 +60,7 @@ def main():
         ax.add_collection(collection)
         figure.colorbar(collection, cax=density_axis,
                         label='Population density (people/km², log scale)')
-        add_terrain(ax, figure, background.terrain, background.project)
+        add_elevation(ax, background.elevation)
         # Exact linear width scaling, with no offset, clipping or log transform.
         width_scale = 6 / demand.max()
         segments = np.stack([background.node_xy[origins], background.node_xy[destinations]], axis=1)

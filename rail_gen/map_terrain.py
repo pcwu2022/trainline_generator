@@ -38,5 +38,3 @@ def add_terrain(ax, figure, terrain, project):
         cmap=cmap, norm=Normalize(threshold, max(maximum, max(costs))),
         edgecolors='none', zorder=1.5)
     ax.add_collection(collection)
-    axis = figure.add_axes([.85, .81, .025, .10])
-    figure.colorbar(collection, cax=axis, label='Conventional terrain (M€/km)')

@@ -10,5 +10,11 @@
   ],
   "prep": {
     "max_cities": 10
+  },
+  "reporting": {
+    "currency_code": "AZN",
+    "currency_symbol": "₼",
+    "eur_to_local": 1.87,
+    "region_name": "Azerbaijan"
   }
 }

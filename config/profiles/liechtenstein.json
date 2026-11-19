@@ -10,5 +10,11 @@
   ],
   "prep": {
     "max_cities": 2
+  },
+  "reporting": {
+    "currency_code": "CHF",
+    "currency_symbol": "CHF",
+    "eur_to_local": 0.925,
+    "region_name": "Liechtenstein"
   }
 }

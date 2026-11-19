@@ -26,8 +26,7 @@ speed is `min(infrastructure.speed_kmh, rolling_stock.speed_kmh)`. Defaults reta
 the previous illustrative 140/230 km/h speed meanings, applied to both layers;
 there is no new claim about acceleration, engineering design speed or signalling.
 An HSR train on conventional track runs at 140 km/h but retains HSR seats,
-purchase price, operating cost and fare yield. CR stock on HSR track remains
-limited to its 140 km/h capability.
+purchase price, operating cost and fare yield. CR stock is prohibited on HSR track.
 
 Track count is independent of the three-state genome. `infrastructure_layout`
 sets the run-wide search layout (`single`, `double`, or `four`; default `double`).
@@ -196,13 +195,13 @@ at most `services.max_through_routes` simple through paths, each with at most
 1. Through routes with HSR stock where a route includes HSR infrastructure,
    alongside CR feeder services where appropriate.
 2. Section-by-section services, permitting different trains at a junction.
-3. The through-route plan with conventional rolling stock.
 
-Duplicate plans are skipped. No more than `max_through_routes + built_edges`
-services occur in a plan. A route is admitted only if its minimum frequency fits
+Routes combining HSR infrastructure and single track use legal section feeders.
+Duplicate plans are skipped. A route is admitted only if its minimum frequency fits
 all shared resources, in deterministic order. Admission may leave a built section
 unserved when configured capacity is insufficient; that section is still charged.
-The default bounds are 16 through routes, 12 sections/route, and 3 plans.
+The default bounds are 16 through routes and 12 sections/route. At most two
+distinct plans are generated, subject to `services.plan_trials`.
 
 Frequency sizing runs at most `operations.assignment_iterations` rounds (default
 3). It requests discrete headways to target load factor, then proportionally
@@ -219,9 +218,8 @@ not an exhaustive service Pareto optimization; the outer search still retains it
 infrastructure Pareto archive and growth/consolidation rules. Incremental search
 can retain spill-only infeasible live networks for capacity expansion and
 calibration, while the archive remains restricted to fully feasible alternatives.
-Budget and other non-spill constraints remain hard. In
-particular, it may choose CR stock even on HSR infrastructure if HSR operating
-costs are not justified. HSR-only stock on an entirely conventional route can be
+Budget and other non-spill constraints remain hard. CR stock is only allowed
+on conventional infrastructure. HSR-only stock on an entirely conventional route can be
 evaluated explicitly, but is not generated automatically. There is no randomness
 inside service generation, so fixed-seed searches and threaded evaluation are
 reproducible. No external solver or raster routing is used inside an evaluation.
@@ -273,8 +271,7 @@ formations and fleet cycles. GeoJSON preserves infrastructure `track_type` and
 adds `infrastructure_type`, `track_count`, `service_ids`, `service_types` and a
 top-level service list. Corridor `frequency` is aggregate movement frequency;
 legacy `train_units` is the maximum formation on the corridor, not a new decision.
-Map symbols denote infrastructure; violet dots show HSR trains on CR track and
-orange dots show CR trains on HSR track. Analysis preserves the actual service plan.
+Map symbols denote infrastructure; violet dots show HSR trains on CR track. Analysis preserves the actual service plan.
 
 Geometry cache schema remains version 3 because cached alignments are unchanged.
 Rolling-stock/service settings do not enter geometry fingerprints or geometry
@@ -312,6 +309,10 @@ connected and produced the live and Pareto artifacts.
 Incremental growth preserves purchased track counts and evaluates the accepted
 service plan on expanded infrastructure as a fallback. Additional service plans
 reserve incumbent frequencies and formations before allocating spare train paths.
+When a conventional section is upgraded to HSR, every incumbent CR service using
+that section is converted to HSR stock, preserving its full route, frequency and
+formation in the retained-plan candidate. Any single-track sections elsewhere
+on those through routes are widened to double track and charged accordingly.
 Freshly generated plans are still alternatives; growth chooses among plans using
 carried passenger gain per additional annual cost, while profit mode chooses net
 annual benefit. Hard construction and movement constraints remain in force.

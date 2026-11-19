@@ -21,7 +21,11 @@
   },
   "reporting": {
     "snapshot_every": 1,
-    "gif_frame_ms": 100
+    "snapshot_hold_ms": 100,
+    "currency_code": "JPY",
+    "currency_symbol": "¥",
+    "eur_to_local": 175.0,
+    "region_name": "Japan"
   },
   "boundaries_file": "data/japan/japan_main_islands_boundaries.geojson"
 }

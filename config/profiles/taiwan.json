@@ -18,5 +18,11 @@
   },
   "alignment": {
     "cell_km": 3
+  },
+  "reporting": {
+    "currency_code": "TWD",
+    "currency_symbol": "NTD",
+    "eur_to_local": 36.2,
+    "region_name": "Taiwan"
   }
 }

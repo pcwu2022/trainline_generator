@@ -10,5 +10,11 @@
   ],
   "prep": {
     "max_cities": 10
+  },
+  "reporting": {
+    "currency_code": "DKK",
+    "currency_symbol": "kr",
+    "eur_to_local": 7.47,
+    "region_name": "Denmark"
   }
 }

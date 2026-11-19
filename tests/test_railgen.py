@@ -41,6 +41,22 @@ def graph_fixture(cities=None, edges=None):
 
 
 class ConfigTests(unittest.TestCase):
+    def test_profile_display_currencies(self):
+        locations = json.loads(Path('config/profile_locations.json').read_text())
+        for name, location in locations.items():
+            with self.subTest(profile=name):
+                raw = json.loads((Path('config') / location).read_text())['reporting']
+                reporting = load_config(profile=name)['reporting']
+                self.assertGreater(raw['eur_to_local'], 0)
+                self.assertTrue(reporting['currency_symbol'])
+                self.assertEqual(len(reporting['currency_code']), 3)
+        self.assertEqual(load_config(profile='uk')['reporting']['currency_symbol'], '£')
+        self.assertEqual(load_config(profile='taiwan')['reporting']['currency_code'], 'TWD')
+        for reporting in ({'eur_to_local': 0}, {'eur_to_local': -1},
+                          {'currency_symbol': ''}, {'currency_code': 'xx'}):
+            with self.assertRaises(ValueError):
+                load_config(overrides={'reporting': reporting})
+
     def test_nested_profiles_and_validation(self):
         c = load_config(profile='smoke', overrides={'search': {'seed': 11}})
         self.assertEqual(c['prep']['max_cities'], 12)

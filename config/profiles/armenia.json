@@ -10,5 +10,11 @@
   ],
   "prep": {
     "max_cities": 2
+  },
+  "reporting": {
+    "currency_code": "AMD",
+    "currency_symbol": "֏",
+    "eur_to_local": 396.0,
+    "region_name": "Armenia"
   }
 }

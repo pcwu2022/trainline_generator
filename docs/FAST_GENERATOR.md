@@ -189,7 +189,7 @@ History records `weight_phase`, `objective_weights`, `objective_scales` and
 ## Outputs and interpretation
 
 - `latest.json`, `latest.geojson`, `latest.png`: the current accepted network.
-- `history.jsonl`, `progress.png`, `progress.gif`: evolution over iterations.
+- `history.jsonl`, `progress.png`, `progress.mp4`: evolution over iterations.
 - `analysis.json`, `analysis.png`: station/corridor counts and OD demand components.
 - `latest_revenue_cost.png`, `cost_breakdown.log`, `report.md`: financial analysis.
 - `run_config.json`, manifests and `checkpoint.npz`: settings and saved state.

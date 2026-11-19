@@ -14,6 +14,31 @@ from rail_gen.config import load_config
 from rail_gen.alignment import cached_graph, fingerprint
 
 
+
+def render_background(config, graph, destination, viewport=None):
+    """Render population and mean-elevation hexagons without changing route costs."""
+    from rail_gen.maps import MapBackground
+    from rail_gen.map_style import population_collection
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+
+    from rail_gen.map_elevation import add_elevation
+    background = MapBackground(graph, config)
+    if viewport is not None:
+        background.viewport = viewport
+    xmin, xmax, ymin, ymax = background.viewport
+    fig = plt.figure(figsize=(12, 12 * (ymax-ymin)/(xmax-xmin)))
+    ax = fig.add_axes([0, 0, 1, 1])
+    add_elevation(ax, background.elevation)
+    ax.add_collection(population_collection(background.polygons, background.densities))
+    for xy in background.country_lines:
+        ax.plot(xy[:, 0], xy[:, 1], color='#9baeb3', linewidth=.7)
+    ax.set(xlim=(xmin,xmax), ylim=(ymin,ymax)); ax.set_axis_off()
+    fig.savefig(destination, dpi=120); plt.close(fig)
+    return background
+
+
 def export(config, output, cache_dir, reuse=True):
     if reuse and all((output/name).is_file() for name in ('scenario.json','graph.zip','background.png')):
         previous=json.loads((output/'scenario.json').read_text())
@@ -23,30 +48,9 @@ def export(config, output, cache_dir, reuse=True):
             if old['metadata'].get('fingerprint')==fingerprint(config):
                 print(f'Reusing prepared scenario: {output}',flush=True)
                 return len(old['cities'])
-    from rail_gen.maps import MapBackground
-    from rail_gen.map_style import population_collection
-    import matplotlib
-    matplotlib.use('Agg')
-    import matplotlib.pyplot as plt
-    from matplotlib.collections import PolyCollection
     graph = cached_graph(config, cache_dir)
     output.mkdir(parents=True, exist_ok=True)
-    background = MapBackground(graph, config)
-    xmin, xmax, ymin, ymax = background.viewport
-    fig = plt.figure(figsize=(12, 12 * (ymax-ymin)/(xmax-xmin)))
-    ax = fig.add_axes([0, 0, 1, 1])
-    ax.set_facecolor('#eef2f5')
-    for xy in background.country_lines:
-        ax.plot(xy[:, 0], xy[:, 1], color='#9baeb3', linewidth=.7)
-    ax.add_collection(population_collection(background.polygons, background.densities))
-    # Rasterize the already computed terrain polygons into the fixed map image.
-    if background.terrain and background.terrain[0]:
-        polygons, costs, low, high = background.terrain
-        from matplotlib.colors import Normalize
-        ax.add_collection(PolyCollection([background.project(p) for p in polygons],
-            array=np.asarray(costs), cmap='Greys', norm=Normalize(low, high), alpha=.4, linewidth=0))
-    ax.set(xlim=(xmin,xmax), ylim=(ymin,ymax)); ax.set_axis_off()
-    fig.savefig(output/'background.png', dpi=120); plt.close(fig)
+    background = render_background(config, graph, output/'background.png')
     descriptor = dict(version=1, config=config, metadata=graph.metadata,
         cities=[asdict(c) for c in graph.cities], edges=[asdict(e) for e in graph.edges],
         viewport=list(background.viewport),
@@ -108,7 +112,35 @@ def main():
     p.add_argument('--max-cities',type=int,default=8)
     p.add_argument('--cell-km',type=float,default=12)
     p.add_argument('--force',action='store_true',help='Re-render unchanged prepared bundles')
+    p.add_argument('--background-only', action='store_true', help='Refresh existing web images without changing prepared routes')
     args=p.parse_args()
+    if args.background_only:
+        root = args.output or Path('web/scenarios')
+        import tempfile
+        from rail_gen.alignment import Alignment, Edge, CandidateGraph
+        from rail_gen.prep import City
+        import shutil
+        groups = {}
+        for path in sorted(root.rglob('scenario.json')):
+            scenario = json.loads(path.read_text())
+            config = scenario['config']
+            key = json.dumps([scenario['viewport'], {k:v for k,v in config.items() if k not in ('prep', 'search', 'reporting')}], sort_keys=True)
+            if key in groups:
+                shutil.copyfile(groups[key], path.parent/'background.png')
+            else:
+                with tempfile.TemporaryDirectory() as directory:
+                    with zipfile.ZipFile(path.parent/'graph.zip') as archive:
+                        archive.extractall(directory)
+                    folder = Path(directory)
+                    descriptor = json.loads((folder/'graph.json').read_text())
+                    graph = CandidateGraph([City(**c) for c in descriptor['cities']],
+                        [Edge(e['a'], e['b'], {k: Alignment(**v) for k,v in e['alignments'].items()}) for e in descriptor['edges']],
+                        tuple(sparse.load_npz(folder/f'matrix{i}.npz') for i in range(2)),
+                        np.load(folder/'tile_costs.npy', allow_pickle=False), descriptor['metadata'])
+                    render_background(config, graph, path.parent/'background.png', scenario['viewport'])
+                groups[key] = path.parent/'background.png'
+            print(f'Refreshed {path.parent}', flush=True)
+        return
     if args.profiles:
         for profile in args.profiles:
             export_profile(profile,(args.output or Path('web/scenarios'))/profile,args)

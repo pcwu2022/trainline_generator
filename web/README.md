@@ -113,3 +113,13 @@ CPU time and memory in a browser.
 non-Python assets are omitted. The incremental optimizer uses pymoo's existing
 pure Python nondominated sorting implementation. Dependency versions are pinned
 in `worker.js`. Upstream: https://pypi.org/project/pymoo/0.6.1.3/.
+
+Web and local maps retain population colors and fill missing population hexagons
+with mean DEM elevation, using matching H3 cells clipped to land. The fixed
+elevation scale blends green lowlands through muted tan into brown around
+1,000 m, with darker browns up to 4,000 m. This display does not affect routing or construction costs.
+Refresh existing browser images without changing prepared routes:
+
+```sh
+python -m tools.export_web --background-only
+```

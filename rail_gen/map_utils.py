@@ -1,10 +1,9 @@
-"""Map projection, labels, framing and incremental GIF output."""
+"""Map projection, labels, framing and incremental MP4 output."""
 import math
-import shutil
 from pathlib import Path
 import numpy as np
 from .projection import regional_projection
-from PIL import GifImagePlugin, Image
+from PIL import Image
 
 def city_label_indices(cities):
     """Label the largest quarter of cities (rounded down), capped at fifty."""
@@ -35,55 +34,61 @@ def map_figure_size(viewport):
     return side, side
 
 
-class ProgressGif:
-    """Append full frames using Pillow's documented GIF block encoder.
+class ProgressVideo:
+    """Atomically append H.264 snapshot segments at a constant 30 fps.
 
-    Copy compressed bytes from the existing GIF, replace its trailer with the
-    new frame and trailer, and atomically replace the file. Only the new image
-    and small copy buffers are held in memory, not all historical frames. Local
-    palettes preserve each frame's colors. No individual frame files are kept.
+    Stream-copy prior segments so history is neither decoded nor held in RAM.
+    Each append leaves a playable MP4, including when a run is interrupted.
     """
+    fps = 30
+
     def __init__(self, path, duration_ms=500):
-        if type(duration_ms) is not int or not 10 <= duration_ms <= 655350 or duration_ms % 10:
-            raise ValueError('GIF frame duration must be a multiple of 10 ms between 10 and 655350')
+        import imageio_ffmpeg
+        if type(duration_ms) is not int or not 34 <= duration_ms <= 655350:
+            raise ValueError('Snapshot duration must be between 34 and 655350 ms')
         self.path, self.duration_ms = Path(path), duration_ms
+        self.ffmpeg = imageio_ffmpeg.get_ffmpeg_exe()
         self.frames, self.size = 0, None
+        self.repeat = max(1, round(duration_ms * self.fps / 1000))
+        self.state_path = self.path.with_suffix('.json')
         if self.path.exists():
-            with Image.open(self.path) as previous:
-                if previous.format != 'GIF':
-                    raise ValueError('progress.gif must be a valid GIF')
-                self.frames, self.size = previous.n_frames, previous.size
+            import json
+            state = json.loads(self.state_path.read_text())
+            self.frames, self.size = state['snapshots'], tuple(state['size'])
 
     def append(self, png_path):
+        import json
+        import subprocess
+        import tempfile
         with Image.open(png_path) as source:
-            rgb = source.convert('RGB')
-        if self.size and rgb.size != self.size:
-            rgb = rgb.resize(self.size, Image.Resampling.LANCZOS)
-        frame = rgb.quantize(colors=256, method=Image.Quantize.MEDIANCUT)
-        temporary = self.path.with_name(self.path.name+'.tmp')
-        try:
-            with temporary.open('wb') as stream:
-                if self.path.exists():
-                    with self.path.open('rb') as previous:
-                        previous.seek(-1, 2)
-                        if previous.read(1) != b';':
-                            raise ValueError('Cannot append to an incomplete progress GIF')
-                        previous.seek(0)
-                        shutil.copyfileobj(previous, stream, length=1024*1024)
-                    stream.seek(-1, 2)  # Overwrite the previous GIF trailer.
-                else:
-                    header, _ = GifImagePlugin.getheader(frame, info=dict(loop=0, optimize=False))
-                    for block in header:
-                        stream.write(block)
-                for block in GifImagePlugin.getdata(frame, duration=self.duration_ms, disposal=2,
-                                                   include_color_table=True):
-                    stream.write(block)
-                stream.write(b';')
-            temporary.replace(self.path)
-        finally:
-            temporary.unlink(missing_ok=True)
-            frame.close()
-            rgb.close()
+            width, height = self.size or source.size
+        # yuv420p requires even dimensions; retain the square canvas.
+        size = (width + width % 2, height + height % 2)
+        with tempfile.TemporaryDirectory(prefix='.video-', dir=self.path.parent) as directory:
+            directory = Path(directory)
+            segment, merged = directory / 'segment.mp4', directory / 'merged.mp4'
+            def run(arguments):
+                subprocess.run([self.ffmpeg, '-v', 'error', '-y', *arguments],
+                               check=True, capture_output=True)
+            run(['-loop', '1', '-framerate', str(self.fps), '-i', str(png_path),
+                 '-frames:v', str(self.repeat), '-vf', f'scale={size[0]}:{size[1]}',
+                 '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '18',
+                 '-pix_fmt', 'yuv420p', '-video_track_timescale', '15360',
+                 '-movflags', '+faststart', str(segment)])
+            if self.path.exists():
+                # Temporary hard link avoids escaping arbitrary user output paths
+                # in ffmpeg's concat-list syntax.
+                import os
+                os.link(self.path, directory / 'previous.mp4')
+                listing = directory / 'concat.txt'
+                listing.write_text("file 'previous.mp4'\nfile 'segment.mp4'\n")
+                run(['-f', 'concat', '-safe', '0', '-i', str(listing),
+                     '-c', 'copy', '-movflags', '+faststart', str(merged)])
+            else:
+                segment.rename(merged)
+            merged.replace(self.path)
         self.frames += 1
-        self.size = self.size or frame.size
-
+        self.size = size
+        temporary = self.state_path.with_suffix('.json.tmp')
+        temporary.write_text(json.dumps(dict(snapshots=self.frames, size=size)))
+        temporary.replace(self.state_path)

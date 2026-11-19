@@ -10,5 +10,11 @@
   ],
   "prep": {
     "max_cities": 5
+  },
+  "reporting": {
+    "currency_code": "BAM",
+    "currency_symbol": "KM",
+    "eur_to_local": 1.96,
+    "region_name": "Bosnia and Herzegovina"
   }
 }

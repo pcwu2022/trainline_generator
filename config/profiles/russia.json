@@ -10,5 +10,11 @@
   ],
   "prep": {
     "max_cities": 265
+  },
+  "reporting": {
+    "currency_code": "RUB",
+    "currency_symbol": "₽",
+    "eur_to_local": 90.4,
+    "region_name": "Russia"
   }
 }

@@ -10,5 +10,11 @@
   ],
   "prep": {
     "max_cities": 185
+  },
+  "reporting": {
+    "currency_code": "GBP",
+    "currency_symbol": "£",
+    "eur_to_local": 0.834,
+    "region_name": "United Kingdom"
   }
 }
