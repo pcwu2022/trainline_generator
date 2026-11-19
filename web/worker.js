@@ -12,7 +12,7 @@ function write(path, bytes) {
   runtime.FS.writeFile('/project/' + path, bytes);
 }
 async function boot() {
-  self.postMessage({type:'status', message:'Loading Python WebAssembly and scientific packages…'});
+  self.postMessage({type:'status', message:'Loading Python and scientific packages…'});
   runtime = await loadPyodide({indexURL:'https://cdn.jsdelivr.net/pyodide/v0.27.7/full/',
     stdout: text => self.postMessage({type:'log', text}),
     stderr: text => self.postMessage({type:'log', text})});
