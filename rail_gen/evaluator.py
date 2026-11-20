@@ -61,7 +61,6 @@ class Infrastructure:
     """Candidate-local resources shared by all service trials; never globally cached."""
     selected: object
     edge_caps: np.ndarray
-    tile_caps: np.ndarray
     edge_track: np.ndarray
     active: np.ndarray
     length: np.ndarray
@@ -127,19 +126,9 @@ class Evaluator:
             capacities[i] = min(limit, self.config['tracks'][track]['max_frequency'] * ratio)
         return capacities
 
-    def tile_capacities(self, x, counts):
-        matrix = self.selected_tiles(x).tocoo()
-        caps = np.zeros(self.graph.tile_costs.shape[1])
-        edge_caps = self.edge_capacities(x, counts)
-        np.maximum.at(caps, matrix.col, edge_caps[matrix.row])
-        return caps
-
     def infrastructure(self, x, counts):
         selected = self.selected_tiles(x)
         edge_caps = self.edge_capacities(x, counts)
-        matrix = selected.tocoo()
-        tile_caps = np.zeros(self.graph.tile_costs.shape[1])
-        np.maximum.at(tile_caps, matrix.col, edge_caps[matrix.row])
         edge_track = self.graph.track_allocation(x, self.config['track_layouts'], counts,
                                                 selected=selected) * 1e6
         active = np.flatnonzero(x)
@@ -153,7 +142,7 @@ class Evaluator:
         share = float(np.bincount(labels[served]).max() / served.sum()) if active.size else 0.0
         multipliers = np.array([self.config['track_layouts'][LAYOUT_BY_COUNT[int(count)]]['cost_multiplier']
                                 if count else 0 for count in counts])
-        return Infrastructure(selected, edge_caps, tile_caps, edge_track, active,
+        return Infrastructure(selected, edge_caps, edge_track, active,
             self.lengths[np.arange(self.m), x], degree, served, components, share, multipliers)
 
     def evaluate(self, genome, repair=False, details=False, services=None, track_counts=None,

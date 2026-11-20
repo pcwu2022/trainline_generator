@@ -107,10 +107,9 @@ Residual unserved market fractions retain their initial best-journey potential
 when calculating spill. This is a bounded assignment heuristic, not a queue or
 equilibrium simulation.
 
-All service frequencies using an edge are summed. Shared raster tiles also sum
-frequencies across services. A through service is counted once on a tile even if
-adjacent abstract edges share it; this avoids double-counting a common endpoint
-cell. The tile uses the largest constructed movement capacity among its owners.
+All service frequencies using an edge are summed against that edge's track
+capacity. Raster tiles share construction costs, but impose no movement capacity
+constraint: geographic overlap does not establish use of the same tracks.
 The model does not resolve spatial revisits, conflicting junction movements,
 mixed-speed headways, platforms, or signal blocks. Track overload is a separate
 fifth constraint, independent of passenger spill. Explicit services retain their

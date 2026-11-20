@@ -34,7 +34,7 @@ class EvaluationReuseTests(TestCase):
         # must update both waits and which service the passengers choose.
         x, counts = np.array([2, 1, 0]), np.array([2, 2, 0])
         services = [Service((0, 1, 2), 'HSR', 1),
-                    Service((0, 1), 'CR', 1), Service((1, 2), 'CR', 1)]
+                    Service((0, 1), 'HSR', 1), Service((1, 2), 'CR', 1)]
         network = ServiceNetwork(self.e, x, services, counts)
         first = network.assign(np.array([.3333333333333333, 6., 6.]))
         second = network.assign(np.array([6., .3333333333333333, .3333333333333333]))
@@ -48,7 +48,7 @@ class EvaluationReuseTests(TestCase):
 
     def test_rejected_services_leave_valid_network_resources(self):
         self.config['operations']['minimum_frequency'] = 4
-        self.config['track_layouts']['double']['max_frequency']['HSR'] = 6
+        self.config['tracks']['HSR']['max_frequency'] = 3
         x, counts = np.array([2, 1, 2]), np.full(3, 2)
         networks = generate_plans(self.e, x, counts, return_networks=True)
         self.assertEqual([n.services for n in networks], generate_plans(self.e, x, counts))
@@ -81,7 +81,7 @@ class EvaluationReuseTests(TestCase):
 
     def test_direct_segment_lookup_preserves_assignment(self):
         network = ServiceNetwork(self.e, np.array([2, 1, 2]),
-            [Service((2, 1, 0), 'HSR', 1), Service((0, 1), 'CR', 1),
+            [Service((2, 1, 0), 'HSR', 1), Service((0, 1), 'HSR', 1),
              Service((1, 2), 'CR', 1), Service((0, 2), 'HSR', 1)],
             np.full(3, 2))
         network._prepare_assignment()

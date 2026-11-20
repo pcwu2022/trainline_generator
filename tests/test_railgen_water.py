@@ -88,10 +88,14 @@ class CrossingTests(unittest.TestCase):
             [Service((0, 1), 'HSR', 6), Service((0, 2), 'HSR', 6)], np.array([2, 2]), infra)
         usage = network.resource_services.toarray()
         shared_rows = np.all(usage > 0, axis=1)
-        self.assertTrue(shared_rows.any())
-        np.testing.assert_allclose(network.resource_caps[shared_rows], 12)
-        self.assertTrue(np.all((usage @ np.array([8., 8.]))[shared_rows] > network.resource_caps[shared_rows]))
-        # Both edges consume the same crossing resource (not merely shared cost).
+        self.assertFalse(shared_rows.any())
+        np.testing.assert_allclose(network.fit_frequencies(np.array([12., 12.])), [12., 12.])
+        np.testing.assert_allclose(network.fit_frequencies(np.array([24., 24.])), [12., 12.])
+        # Services on the same edge still share its finite movement capacity.
+        same_edge = ServiceNetwork(evaluator, np.array([2, 2]),
+            [Service((0, 1), 'HSR', 6), Service((1, 0), 'HSR', 6)], np.array([2, 2]), infra)
+        np.testing.assert_allclose(same_edge.fit_frequencies(np.array([12., 12.])), [6., 6.])
+        # Crossing and geographic tile overlap continue to share construction cost.
         selected = graph.selected_tiles([2, 2]).toarray()
         self.assertTrue(np.any(np.all(selected > 0, axis=0)))
         self.assertAlmostEqual(infra.edge_track.sum(), total * 1e6)

@@ -79,15 +79,11 @@ class ServiceNetwork:
         ns = len(services)
         self.edge_services = sparse.csr_matrix((np.ones(len(self.segment_edges)),
             (self.segment_edges, self.segment_service)), shape=(e.m, ns))
-        # One traversal per physical tile per service, including where adjacent
-        # abstract edges overlap the same tile. This avoids duplicate movements.
+        # Services share capacity only when they use the same infrastructure edge.
+        # Geographic tile overlap shares construction costs, not train paths.
         infrastructure = infrastructure if infrastructure is not None else e.infrastructure(x, track_counts)
-        selected = infrastructure.selected
-        tile_services = selected.T @ self.edge_services
-        tile_services.data[:] = 1
-        tile_caps = infrastructure.tile_caps
-        self.resource_services = sparse.vstack([self.edge_services, tile_services], format='csr')
-        self.resource_caps = np.r_[infrastructure.edge_caps, tile_caps]
+        self.resource_services = self.edge_services
+        self.resource_caps = infrastructure.edge_caps
         self._resource_coo = self.resource_services.tocoo()
         # This map has one column per segment, independent of service frequency.
         self.segment_to_edge = sparse.csr_matrix((np.ones(len(self.segment_edges)),

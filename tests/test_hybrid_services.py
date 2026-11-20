@@ -135,11 +135,11 @@ class HybridServiceTests(unittest.TestCase):
         overloaded = e.evaluate([1, 0, 0], services=[Service((0, 1), 'CR', 1), Service((0, 1), 'HSR', 1)])
         self.assertFalse(overloaded.feasible)
         self.assertEqual(overloaded.constraints[4], 1)
-        # Different abstract edges sharing a physical tile share its movement cap.
+        # Different edges sharing a geographic tile retain independent capacities.
         e = Evaluator(fixture(shared=True), c)
         split = e.evaluate([1, 1, 0], services=[Service((0, 1), 'CR', .75), Service((1, 2), 'CR', .75)])
         through = e.evaluate([1, 1, 0], services=[Service((0, 1, 2), 'CR', .75)])
-        self.assertFalse(split.feasible)
+        self.assertTrue(split.feasible)
         self.assertTrue(through.feasible)
         self.assertEqual(through.metrics['track_capital_eur'], 600e6)
 

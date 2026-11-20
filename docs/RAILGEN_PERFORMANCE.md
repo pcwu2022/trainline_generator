@@ -1,7 +1,7 @@
 # Optimizer performance
 
 The evaluator shares candidate-local infrastructure data across its service-plan
-trials. This includes selected tiles, edge/tile movement capacities, allocated
+trials. This includes selected tiles, edge movement capacities, allocated
 track capital, station degrees, connectivity, and layout multipliers. A repaired
 genome gets a fresh context. Contexts are not retained in a global cache, so
 parallel candidate evaluation cannot mix resources from different designs.
@@ -70,7 +70,7 @@ are not directly comparable to the density groups above.
 ## Validation and remaining costs
 
 `tests/test_railgen_performance.py` covers frequency-dependent path switching,
-repeated assignments, rejected services, shared tile capacities, different track
+repeated assignments, rejected services, edge capacities, different track
 counts, concurrent evaluations, empty demand, and analysis result reuse. Existing
 service-model, search, map, CLI, and reporting tests also cover these paths.
 
