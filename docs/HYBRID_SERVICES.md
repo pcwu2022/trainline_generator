@@ -23,8 +23,8 @@ or passenger interchange unless routes share a station node.
 Compatible gauge, electrification and signalling are assumed across the newly
 built network. Both train types may use either infrastructure type. Section
 speed is `min(infrastructure.speed_kmh, rolling_stock.speed_kmh)`. Defaults retain
-the previous illustrative 140/230 km/h speed meanings, applied to both layers;
-there is no new claim about acceleration, engineering design speed or signalling.
+illustrative 140/230 km/h effective speed ceilings, applied to both layers.
+Stop-to-stop running times include acceleration and braking as described below.
 An HSR train on conventional track runs at 140 km/h but retains HSR seats,
 purchase price, operating cost and fare yield. CR stock is prohibited on HSR track.
 
@@ -328,3 +328,27 @@ Evaluation caches are invalidated after accepting a new incumbent because servic
 fallbacks and inherited capacity depend on that incumbent. The new model version
 separates these metrics from historical assignments; old snapshots require explicit
 re-evaluation, and existing running processes must restart to load the new code.
+
+### Acceleration-aware running times
+
+Each service stops at every route node. Between stops, running time uses a
+symmetric accelerate–cruise–brake profile. With distance `d` in metres, ceiling
+`v = min(track speed, train speed) / 3.6` in m/s, and effective acceleration `a`
+in m/s², running seconds are `2 * sqrt(d / a)` below `d = v² / a`, otherwise
+`d / v + v / a`. Existing dwell time is added separately once per section.
+
+`rolling_stock.<type>.effective_acceleration_mps2` must be positive and finite.
+Defaults are 0.7 for CR and 0.4 for HSR; these are tunable modeling assumptions,
+not calibrated train specifications. Speed settings now act as effective
+ceilings. Check long-distance timings when recalibrating existing profiles.
+Reported `section_speeds_kmh` retain these ceilings, not achieved averages.
+
+Running hours are cached per edge, infrastructure state, and train type when an
+evaluator is created. Changes to alignment, speed, or acceleration require a new
+evaluator (as created for each run). Frequency, formation, and service-route
+changes reuse the cache. Journey assignment, fleet cycles, and route proposal
+weights use the corrected times. Calibration CSV `speed_kmh` remains an observed
+average speed and is not given an additional acceleration penalty.
+
+The model version is `acceleration-running-time-v5`; earlier checkpoints must
+start a new run.

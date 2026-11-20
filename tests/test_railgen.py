@@ -176,7 +176,7 @@ class EvaluatorTests(unittest.TestCase):
         distance = self.e.distance[0, 1]
         p = self.c['demand']
         price = self.c['rolling_stock']['CR']['yield_eur_pkm'] * distance
-        gt = a.access_hours + b.access_hours + .5 / r.frequency[0] + self.g.edges[0].alignments['CR'].length_km / self.c['tracks']['CR']['speed_kmh'] + self.c['operations']['dwell_hours'] + price / p['value_of_time_eur']
+        gt = a.access_hours + b.access_hours + .5 / r.frequency[0] + (self.g.edges[0].alignments['CR'].length_km / self.c['tracks']['CR']['speed_kmh'] + (140 / 3.6) / .7 / 3600) + self.c['operations']['dwell_hours'] + price / p['value_of_time_eur']
         market = p['k'] * (a.population * a.kappa) ** p['a'] * (b.population * b.kappa) ** p['a'] / distance ** p['beta']
         ref_hours, ref_trips = reference_demand(market, distance, a.access_hours + b.access_hours, p)
         expected = float(elastic_demand(ref_trips, ref_hours, gt - price / p['value_of_time_eur'], p)[0])

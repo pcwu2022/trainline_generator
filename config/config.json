@@ -193,22 +193,38 @@
           "CR": 12,
           "HSR": 24
         }
+      },
+      "urban_double": {
+        "track_count": 2,
+        "cost_multiplier": 1.5,
+        "max_frequency": {
+          "CR": 20
+        }
+      },
+      "urban_four": {
+        "track_count": 4,
+        "cost_multiplier": 3,
+        "max_frequency": {
+          "CR": 40
+        }
       }
     },
     "rolling_stock": {
       "CR": {
-        "seats": 350,
+        "seats": 500,
         "train_meur": 10,
         "opex_eur_trainkm": 19.5,
         "yield_eur_pkm": 0.085,
-        "speed_kmh": 140
+        "speed_kmh": 150,
+        "effective_acceleration_mps2": 2.5
       },
       "HSR": {
-        "seats": 450,
+        "seats": 600,
         "train_meur": 30,
         "opex_eur_trainkm": 31,
         "yield_eur_pkm": 0.11,
-        "speed_kmh": 230
+        "speed_kmh": 250,
+        "effective_acceleration_mps2": 0.4
       }
     },
     "services": {

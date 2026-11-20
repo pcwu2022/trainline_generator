@@ -10,6 +10,21 @@ from scipy import sparse
 from scipy.sparse.csgraph import shortest_path
 
 
+def running_hours(distance_km, speed_kmh, acceleration_mps2):
+    """Rest-to-rest hours with equal effective acceleration and braking.
+
+    Supports arrays for precomputation. Dwell is added separately; speed is
+    an effective ceiling, rather than an achieved average.
+    """
+    distance = np.asarray(distance_km) * 1000
+    speed = speed_kmh / 3.6
+    threshold = speed * speed / acceleration_mps2
+    seconds = np.where(distance < threshold,
+                       2 * np.sqrt(distance / acceleration_mps2),
+                       distance / speed + speed / acceleration_mps2)
+    return seconds / 3600
+
+
 @dataclass(frozen=True)
 class Service:
     route: tuple
@@ -65,7 +80,7 @@ class ServiceNetwork:
                 edges.append(edge)
                 speed = min(e.config['tracks']['CR' if x[edge] == 1 else 'HSR']['speed_kmh'], stock['speed_kmh'])
                 self.speeds.append(speed)
-                self.times.append(e.lengths[edge, x[edge]] / speed + e.config['operations']['dwell_hours'])
+                self.times.append(e.running_times[service.train_type][edge, x[edge]] + e.config['operations']['dwell_hours'])
                 self.yields.append(stock['yield_eur_pkm'])
                 self.segment_edges.append(edge)
                 self.segment_service.append(sid)
@@ -303,8 +318,8 @@ def generate_plans(e, x, track_counts, *, infrastructure=None, return_networks=F
     active = np.flatnonzero(x)
     if not len(active):
         return [ServiceNetwork(e, x, (), track_counts, infrastructure)] if return_networks else [()]
-    travel_times = np.array([e.lengths[i, x[i]] /
-        e.config['tracks']['CR' if x[i] == 1 else 'HSR']['speed_kmh'] for i in active])
+    travel_times = np.array([e.running_times['CR' if x[i] == 1 else 'HSR'][i, x[i]]
+        + e.config['operations']['dwell_hours'] for i in active])
     adjacency = sparse.csr_matrix((np.r_[travel_times, travel_times],
         (np.r_[e.a[active], e.b[active]], np.r_[e.b[active], e.a[active]])),
         shape=(e.n, e.n))

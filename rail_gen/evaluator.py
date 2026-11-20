@@ -11,7 +11,7 @@ from .maintenance import length_matrices, maintenance
 from .track_layout import LAYOUT_BY_COUNT, MODEL_VERSION
 from .demand import gravity_matrix, reference_demand
 from .prep import distances
-from .services import Service, ServiceNetwork, generate_plans
+from .services import Service, ServiceNetwork, generate_plans, running_hours
 
 
 def capital_recovery_factor(rate, life):
@@ -105,6 +105,19 @@ class Evaluator:
                     self.allowed[i, state] = True
                 if track in edge.alignments:
                     self.lengths[i, state] = edge.alignments[track].length_km
+        # Fixed per evaluator: rebuilt for each run/config, never per proposal.
+        self.running_times = {}
+        for name, stock in config['rolling_stock'].items():
+            times = np.full((self.m, 3), np.inf)
+            for state, track in enumerate(TRACKS, 1):
+                if name == 'CR' and track == 'HSR':
+                    continue
+                speed = min(config['tracks'][track]['speed_kmh'], stock['speed_kmh'])
+                times[self.allowed[:, state], state] = running_hours(
+                    self.lengths[self.allowed[:, state], state], speed,
+                    stock['effective_acceleration_mps2'])
+            times.flags.writeable = False
+            self.running_times[name] = times
         self.station_capital = np.minimum(config['finance']['station_cap_meur'],
             config['finance']['station_base_meur'] + config['finance']['station_per_million_meur'] *
             np.array([c.population for c in graph.cities]) / 1e6) * 1e6

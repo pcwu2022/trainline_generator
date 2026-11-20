@@ -12,11 +12,13 @@ export const fields = [
   {id:'hours', label:'Operating hours per day', section:'Operations', path:['operations','hours_per_day'], min:.01, max:24, step:.5},
   {id:'load', label:'Target load factor (%)', section:'Operations', path:['operations','target_load_factor'], min:.01, max:100, step:1, scale:.01},
   {id:'max-load', label:'Maximum load factor (%)', section:'Operations', path:['operations','maximum_load_factor'], min:.01, max:100, step:1, scale:.01},
+  {id:'acceleration-cr', label:'Conventional effective acceleration/braking (m/s²)', section:'Operations', path:['rolling_stock','CR','effective_acceleration_mps2'], default:.7, min:.001, step:.05},
+  {id:'acceleration-hsr', label:'High-speed effective acceleration/braking (m/s²)', section:'Operations', path:['rolling_stock','HSR','effective_acceleration_mps2'], default:.4, min:.001, step:.05},
   {id:'fare-cr', label:'Conventional fare (€ / passenger-km)', section:'Operations', path:['rolling_stock','CR','yield_eur_pkm'], min:.001, step:.005},
   {id:'fare-hsr', label:'High-speed fare (€ / passenger-km)', section:'Operations', path:['rolling_stock','HSR','yield_eur_pkm'], min:.001, step:.005},
 ];
 export function getValue(config, field) {
-  return Number((field.path.reduce((value,key)=>value[key],config)/(field.scale ?? 1)).toPrecision(12));
+  return Number(((field.path.reduce((value,key)=>value[key],config) ?? field.default)/(field.scale ?? 1)).toPrecision(12));
 }
 export function setValue(config, field, raw) {
   const value=Number(raw);

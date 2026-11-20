@@ -47,7 +47,7 @@ class HybridServiceTests(unittest.TestCase):
         self.assertEqual(r.services[0]['section_speeds_kmh'], [230, 140])
         self.assertEqual(r.transfers[j], 0)
         self.assertAlmostEqual(r.waiting_hours[j], .25)
-        self.assertAlmostEqual(r.in_vehicle_hours[j], 100 / 230 + 100 / 140 + 2 * self.c['operations']['dwell_hours'])
+        self.assertAlmostEqual(r.in_vehicle_hours[j], (100 / 230 + (230 / 3.6) / .4 / 3600) + (100 / 140 + (140 / 3.6) / .4 / 3600) + 2 * self.c['operations']['dwell_hours'])
         slower = self.e.evaluate([1, 1, 0], services=r.service_plan)
         self.assertGreater(slower.in_vehicle_hours[j], r.in_vehicle_hours[j])
         self.assertEqual(slower.transfers[j], 0)
@@ -67,7 +67,7 @@ class HybridServiceTests(unittest.TestCase):
         r = self.e.evaluate([2, 1, 0], services=[Service((0, 1, 2), 'HSR', 2, 2)], details=True)
         o, stock = self.c['operations'], self.c['rolling_stock']['HSR']
         s = r.services[0]
-        cycle = 2 * (100 / 230 + 100 / 140 + 2 * o['dwell_hours']) * (1 + o['turnaround_overhead'])
+        cycle = 2 * ((100 / 230 + (230 / 3.6) / .4 / 3600) + (100 / 140 + (140 / 3.6) / .4 / 3600) + 2 * o['dwell_hours']) * (1 + o['turnaround_overhead'])
         fleet = math.ceil(math.ceil(cycle * 2) * 2 * (1 + o['spare_ratio']))
         self.assertAlmostEqual(s['cycle_hours'], cycle)
         self.assertEqual(s['fleet_units'], fleet)

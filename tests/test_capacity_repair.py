@@ -25,7 +25,7 @@ class CapacityRepairTests(unittest.TestCase):
                 a, b = e.graph.cities[:2]
                 distance = e.distance[0, 1]
                 expected_time = (a.access_hours + b.access_hours + .5 / frequency +
-                    e.lengths[0, 1] / c['tracks']['CR']['speed_kmh'] +
+                    e.running_times['CR'][0, 1] +
                     c['operations']['dwell_hours'] +
                     distance * c['rolling_stock']['CR']['yield_eur_pkm'] / c['demand']['value_of_time_eur'])
                 self.assertAlmostEqual(r.generalized_time[0], expected_time)

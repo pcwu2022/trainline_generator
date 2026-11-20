@@ -113,8 +113,13 @@ class MapBackground:
             island_center = float((island[:, 0].min() + island[:, 0].max()) / 2)
             left = island_center - side * .375
         bottom = float((lower[1] + upper[1] - side) / 2)
-        self.viewport = (left, left + side, bottom, bottom + side)
-        self.figure_size = map_figure_size(self.viewport)
+        # Japan's diagonal coastline leaves room to move the floating keys west.
+        # Trim the eastern strip while preserving map scale and overlay sizes.
+        self.right_trim = .15 if config['countries'] == ['JP'] else 0.
+        width = side * (1 - self.right_trim)
+        self.viewport = (left, left + width, bottom, bottom + side)
+        square_size = map_figure_size(self.viewport)[0]
+        self.figure_size = (square_size * (1 - self.right_trim), square_size)
         self.labelled_cities = city_label_indices(
             [dict(population=city.population) for city in graph.cities])
 
@@ -142,29 +147,33 @@ class MapBackground:
         figure = plt.figure(figsize=self.figure_size, layout='none')
         figure.set_facecolor('#eef2f5')
         ax = figure.add_axes([0, 0, 1, 1])
+        def panel_x(x):
+            return (x - self.right_trim) / (1 - self.right_trim)
+
+        panel_scale = 1 / (1 - self.right_trim)
         # All map keys share one floating panel in the reserved eastern strip.
-        panel = FancyBboxPatch((.765, .16), .22, .385, transform=figure.transFigure,
+        panel = FancyBboxPatch((panel_x(.765), .16), .22 * panel_scale, .385, transform=figure.transFigure,
             boxstyle='round,pad=0.006', facecolor='white', edgecolor='#bac3c8',
             alpha=.94, linewidth=.7, zorder=8)
         figure.add_artist(panel)
-        density_axis = figure.add_axes([.785, .485, .177, .012], zorder=9)
-        ratio_axis = figure.add_axes([.785, .415, .177, .012], zorder=9)
+        density_axis = figure.add_axes([panel_x(.785), .485, .177 * panel_scale, .012], zorder=9)
+        ratio_axis = figure.add_axes([panel_x(.785), .415, .177 * panel_scale, .012], zorder=9)
         try:
             ax.set_facecolor('#eef2f5')
             for coordinates in self.country_lines:
                 ax.plot(coordinates[:, 0], coordinates[:, 1], color='#c2c8c5', linewidth=.6, zorder=0)
             collection = population_collection(self.polygons, self.densities)
             ax.add_collection(collection)
-            figure.text(.785, .51, 'Population / km²', fontsize=8, zorder=10)
+            figure.text(panel_x(.785), .51, 'Population / km²', fontsize=8, zorder=10)
             figure.colorbar(collection, cax=density_axis, orientation='horizontal')
             density_axis.tick_params(labelsize=7, length=2)
             density_axis.minorticks_off()
-            figure.text(.785, .44, 'Revenue / cost' if financial else 'Demand fulfillment',
+            figure.text(panel_x(.785), .44, 'Revenue / cost' if financial else 'Demand fulfillment',
                         fontsize=8, zorder=10)
             elevation = add_elevation(ax, self.elevation)
             if elevation is not None:
-                elevation_axis = figure.add_axes([.785, .345, .177, .012], zorder=9)
-                figure.text(.785, .37, 'Elevation (m)', fontsize=7, zorder=10)
+                elevation_axis = figure.add_axes([panel_x(.785), .345, .177 * panel_scale, .012], zorder=9)
+                figure.text(panel_x(.785), .37, 'Elevation (m)', fontsize=7, zorder=10)
                 figure.colorbar(elevation, cax=elevation_axis, orientation='horizontal',
                                 ticks=[0, 1000, 2000, 3000, 4000], extend='both')
                 elevation_axis.tick_params(labelsize=7, length=2)
@@ -228,7 +237,7 @@ class MapBackground:
                 Line2D([], [], color='#7936ac', linestyle=':', label='Hybrid'),
                 Line2D([], [], label='Station', linestyle='none', **STATION_STYLE)]
             legend = figure.legend(handles=handles, loc='upper left',
-                bbox_to_anchor=(.775, .30 if elevation is not None else .38), fontsize=7, frameon=False,
+                bbox_to_anchor=(panel_x(.775), .30 if elevation is not None else .38), fontsize=7, frameon=False,
                 handlelength=2.5, labelspacing=.7, borderaxespad=0)
             legend.set_zorder(10)
             # Text sizes are in points while the canvas varies by region.
@@ -237,7 +246,7 @@ class MapBackground:
             legend_bottom = legend.get_window_extent(
                 figure.canvas.get_renderer()).transformed(figure.transFigure.inverted()).y0
             panel_bottom = min(.16, legend_bottom - .012)
-            panel.set_bounds(.765, panel_bottom, .22, .545 - panel_bottom)
+            panel.set_bounds(panel_x(.765), panel_bottom, .22 * panel_scale, .545 - panel_bottom)
             # Overlay train types only where they differ from infrastructure.
             for service in result.services:
                 for edge_id in service['edge_ids']:
