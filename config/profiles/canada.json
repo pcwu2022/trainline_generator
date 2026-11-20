@@ -1,0 +1,26 @@
+{
+  "bbox": [
+    -141.2,
+    41.5,
+    -52.4,
+    83.3
+  ],
+  "countries": [
+    "CA"
+  ],
+  "cities_file": "data/canada/cities.json",
+  "population_file": "data/canada/population.geojson",
+  "boundaries_file": "data/canada/boundaries.geojson",
+  "prep": {
+    "max_cities": 100
+  },
+  "search": {
+    "batch_accept_limit": 5
+  },
+  "reporting": {
+    "currency_code": "CAD",
+    "currency_symbol": "$",
+    "eur_to_local": 1.5,
+    "region_name": "Canada"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "bbox": [
+    97.2,
+    5.4,
+    105.9,
+    20.7
+  ],
+  "countries": [
+    "TH"
+  ],
+  "cities_file": "data/thailand/cities.json",
+  "population_file": "data/thailand/population.geojson",
+  "boundaries_file": "data/thailand/boundaries.geojson",
+  "prep": {
+    "max_cities": 100
+  },
+  "search": {
+    "batch_accept_limit": 5
+  },
+  "reporting": {
+    "currency_code": "THB",
+    "currency_symbol": "\u0e3f",
+    "eur_to_local": 38,
+    "region_name": "Thailand"
+  }
+}

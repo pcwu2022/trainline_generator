@@ -1,0 +1,1290 @@
+[
+  {
+    "name": "Los Angeles",
+    "country": "US",
+    "lat": "34.0522300",
+    "lon": "-118.2436800",
+    "pop": 3820914
+  },
+  {
+    "name": "San Diego",
+    "country": "US",
+    "lat": "32.7157100",
+    "lon": "-117.1647200",
+    "pop": 1404452
+  },
+  {
+    "name": "San Jose",
+    "country": "US",
+    "lat": "37.3393900",
+    "lon": "-121.8949600",
+    "pop": 997368
+  },
+  {
+    "name": "San Francisco",
+    "country": "US",
+    "lat": "37.7749300",
+    "lon": "-122.4194200",
+    "pop": 827526
+  },
+  {
+    "name": "Fresno",
+    "country": "US",
+    "lat": "36.7477300",
+    "lon": "-119.7723700",
+    "pop": 542107
+  },
+  {
+    "name": "Sacramento",
+    "country": "US",
+    "lat": "38.5815700",
+    "lon": "-121.4944000",
+    "pop": 524943
+  },
+  {
+    "name": "Long Beach",
+    "country": "US",
+    "lat": "33.7669600",
+    "lon": "-118.1892300",
+    "pop": 474140
+  },
+  {
+    "name": "Oakland",
+    "country": "US",
+    "lat": "37.8043700",
+    "lon": "-122.2708000",
+    "pop": 419267
+  },
+  {
+    "name": "Bakersfield",
+    "country": "US",
+    "lat": "35.3732900",
+    "lon": "-119.0187100",
+    "pop": 373640
+  },
+  {
+    "name": "Anaheim",
+    "country": "US",
+    "lat": "33.8352900",
+    "lon": "-117.9145000",
+    "pop": 350742
+  },
+  {
+    "name": "Riverside",
+    "country": "US",
+    "lat": "33.9533500",
+    "lon": "-117.3961600",
+    "pop": 317261
+  },
+  {
+    "name": "Santa Ana",
+    "country": "US",
+    "lat": "33.7455700",
+    "lon": "-117.8678300",
+    "pop": 310227
+  },
+  {
+    "name": "Stockton",
+    "country": "US",
+    "lat": "37.9577000",
+    "lon": "-121.2907800",
+    "pop": 305658
+  },
+  {
+    "name": "Chula Vista",
+    "country": "US",
+    "lat": "32.6400500",
+    "lon": "-117.0842000",
+    "pop": 265757
+  },
+  {
+    "name": "Irvine",
+    "country": "US",
+    "lat": "33.6694600",
+    "lon": "-117.8231100",
+    "pop": 256927
+  },
+  {
+    "name": "Fremont",
+    "country": "US",
+    "lat": "37.5482700",
+    "lon": "-121.9885700",
+    "pop": 232206
+  },
+  {
+    "name": "San Bernardino",
+    "country": "US",
+    "lat": "34.1083400",
+    "lon": "-117.2897700",
+    "pop": 216108
+  },
+  {
+    "name": "Fontana",
+    "country": "US",
+    "lat": "34.0922300",
+    "lon": "-117.4350500",
+    "pop": 212704
+  },
+  {
+    "name": "Modesto",
+    "country": "US",
+    "lat": "37.6391000",
+    "lon": "-120.9968800",
+    "pop": 211266
+  },
+  {
+    "name": "Oxnard",
+    "country": "US",
+    "lat": "34.1975000",
+    "lon": "-119.1770500",
+    "pop": 207254
+  },
+  {
+    "name": "Moreno Valley",
+    "country": "US",
+    "lat": "33.9375200",
+    "lon": "-117.2305900",
+    "pop": 204198
+  },
+  {
+    "name": "Huntington Beach",
+    "country": "US",
+    "lat": "33.6603000",
+    "lon": "-117.9992300",
+    "pop": 201899
+  },
+  {
+    "name": "Glendale",
+    "country": "US",
+    "lat": "34.1425100",
+    "lon": "-118.2550800",
+    "pop": 201020
+  },
+  {
+    "name": "Santa Clarita",
+    "country": "US",
+    "lat": "34.3916600",
+    "lon": "-118.5425900",
+    "pop": 182371
+  },
+  {
+    "name": "Santa Rosa",
+    "country": "US",
+    "lat": "38.4404700",
+    "lon": "-122.7144300",
+    "pop": 178127
+  },
+  {
+    "name": "Oceanside",
+    "country": "US",
+    "lat": "33.1958700",
+    "lon": "-117.3794800",
+    "pop": 175691
+  },
+  {
+    "name": "Garden Grove",
+    "country": "US",
+    "lat": "33.7739100",
+    "lon": "-117.9414500",
+    "pop": 175393
+  },
+  {
+    "name": "Rancho Cucamonga",
+    "country": "US",
+    "lat": "34.1064000",
+    "lon": "-117.5931100",
+    "pop": 175236
+  },
+  {
+    "name": "Ontario",
+    "country": "US",
+    "lat": "34.0633400",
+    "lon": "-117.6508900",
+    "pop": 171214
+  },
+  {
+    "name": "Elk Grove",
+    "country": "US",
+    "lat": "38.4088000",
+    "lon": "-121.3716200",
+    "pop": 166913
+  },
+  {
+    "name": "Corona",
+    "country": "US",
+    "lat": "33.8752900",
+    "lon": "-117.5664400",
+    "pop": 164226
+  },
+  {
+    "name": "Lancaster",
+    "country": "US",
+    "lat": "34.6980400",
+    "lon": "-118.1367400",
+    "pop": 161103
+  },
+  {
+    "name": "Palmdale",
+    "country": "US",
+    "lat": "34.5794300",
+    "lon": "-118.1164600",
+    "pop": 158351
+  },
+  {
+    "name": "Hayward",
+    "country": "US",
+    "lat": "37.6688200",
+    "lon": "-122.0808000",
+    "pop": 158289
+  },
+  {
+    "name": "Salinas",
+    "country": "US",
+    "lat": "36.6777400",
+    "lon": "-121.6555000",
+    "pop": 157380
+  },
+  {
+    "name": "Sunnyvale",
+    "country": "US",
+    "lat": "37.3688300",
+    "lon": "-122.0363500",
+    "pop": 155805
+  },
+  {
+    "name": "Pomona",
+    "country": "US",
+    "lat": "34.0552900",
+    "lon": "-117.7522800",
+    "pop": 153266
+  },
+  {
+    "name": "Escondido",
+    "country": "US",
+    "lat": "33.1192100",
+    "lon": "-117.0864200",
+    "pop": 151038
+  },
+  {
+    "name": "Valencia",
+    "country": "US",
+    "lat": "34.4436100",
+    "lon": "-118.6095300",
+    "pop": 148456
+  },
+  {
+    "name": "Torrance",
+    "country": "US",
+    "lat": "33.8358500",
+    "lon": "-118.3406300",
+    "pop": 143592
+  },
+  {
+    "name": "Pasadena",
+    "country": "US",
+    "lat": "34.1477800",
+    "lon": "-118.1445200",
+    "pop": 142250
+  },
+  {
+    "name": "Orange",
+    "country": "US",
+    "lat": "33.7877900",
+    "lon": "-117.8531100",
+    "pop": 140992
+  },
+  {
+    "name": "Fullerton",
+    "country": "US",
+    "lat": "33.8702900",
+    "lon": "-117.9253400",
+    "pop": 140847
+  },
+  {
+    "name": "Roseville",
+    "country": "US",
+    "lat": "38.7521200",
+    "lon": "-121.2880100",
+    "pop": 130269
+  },
+  {
+    "name": "Visalia",
+    "country": "US",
+    "lat": "36.3302300",
+    "lon": "-119.2920600",
+    "pop": 130104
+  },
+  {
+    "name": "Thousand Oaks",
+    "country": "US",
+    "lat": "34.1705600",
+    "lon": "-118.8375900",
+    "pop": 129339
+  },
+  {
+    "name": "Concord",
+    "country": "US",
+    "lat": "37.9779800",
+    "lon": "-122.0310700",
+    "pop": 128667
+  },
+  {
+    "name": "Simi Valley",
+    "country": "US",
+    "lat": "34.2694500",
+    "lon": "-118.7814800",
+    "pop": 126788
+  },
+  {
+    "name": "East Los Angeles",
+    "country": "US",
+    "lat": "34.0239000",
+    "lon": "-118.1720200",
+    "pop": 126496
+  },
+  {
+    "name": "Santa Clara",
+    "country": "US",
+    "lat": "37.3541100",
+    "lon": "-121.9552400",
+    "pop": 126215
+  },
+  {
+    "name": "Victorville",
+    "country": "US",
+    "lat": "34.5361100",
+    "lon": "-117.2911600",
+    "pop": 122225
+  },
+  {
+    "name": "Vallejo",
+    "country": "US",
+    "lat": "38.1040900",
+    "lon": "-122.2566400",
+    "pop": 121692
+  },
+  {
+    "name": "Chico",
+    "country": "US",
+    "lat": "39.7284900",
+    "lon": "-121.8374800",
+    "pop": 121345
+  },
+  {
+    "name": "Berkeley",
+    "country": "US",
+    "lat": "37.8715900",
+    "lon": "-122.2727500",
+    "pop": 120972
+  },
+  {
+    "name": "El Monte",
+    "country": "US",
+    "lat": "34.0686200",
+    "lon": "-118.0275700",
+    "pop": 116732
+  },
+  {
+    "name": "Carlsbad",
+    "country": "US",
+    "lat": "33.1580900",
+    "lon": "-117.3505900",
+    "pop": 114746
+  },
+  {
+    "name": "Downey",
+    "country": "US",
+    "lat": "33.9400100",
+    "lon": "-118.1325700",
+    "pop": 114219
+  },
+  {
+    "name": "Costa Mesa",
+    "country": "US",
+    "lat": "33.6411300",
+    "lon": "-117.9186700",
+    "pop": 113204
+  },
+  {
+    "name": "Fairfield",
+    "country": "US",
+    "lat": "38.2493600",
+    "lon": "-122.0399700",
+    "pop": 112970
+  },
+  {
+    "name": "Inglewood",
+    "country": "US",
+    "lat": "33.9616800",
+    "lon": "-118.3531300",
+    "pop": 111666
+  },
+  {
+    "name": "Antioch",
+    "country": "US",
+    "lat": "38.0049200",
+    "lon": "-121.8057900",
+    "pop": 110542
+  },
+  {
+    "name": "Temecula",
+    "country": "US",
+    "lat": "33.4936400",
+    "lon": "-117.1483600",
+    "pop": 110003
+  },
+  {
+    "name": "Murrieta",
+    "country": "US",
+    "lat": "33.5539100",
+    "lon": "-117.2139200",
+    "pop": 109830
+  },
+  {
+    "name": "Richmond",
+    "country": "US",
+    "lat": "37.9357600",
+    "lon": "-122.3477500",
+    "pop": 109708
+  },
+  {
+    "name": "West Covina",
+    "country": "US",
+    "lat": "34.0686200",
+    "lon": "-117.9389500",
+    "pop": 108484
+  },
+  {
+    "name": "Norwalk",
+    "country": "US",
+    "lat": "33.9022400",
+    "lon": "-118.0817300",
+    "pop": 107140
+  },
+  {
+    "name": "Daly City",
+    "country": "US",
+    "lat": "37.7057700",
+    "lon": "-122.4619200",
+    "pop": 106562
+  },
+  {
+    "name": "Burbank",
+    "country": "US",
+    "lat": "34.1808400",
+    "lon": "-118.3089700",
+    "pop": 105319
+  },
+  {
+    "name": "Santa Maria",
+    "country": "US",
+    "lat": "34.9530300",
+    "lon": "-120.4357200",
+    "pop": 105093
+  },
+  {
+    "name": "Clovis",
+    "country": "US",
+    "lat": "36.8252300",
+    "lon": "-119.7029200",
+    "pop": 104180
+  },
+  {
+    "name": "El Cajon",
+    "country": "US",
+    "lat": "32.7947700",
+    "lon": "-116.9625300",
+    "pop": 103679
+  },
+  {
+    "name": "San Mateo",
+    "country": "US",
+    "lat": "37.5629900",
+    "lon": "-122.3255300",
+    "pop": 103536
+  },
+  {
+    "name": "Rialto",
+    "country": "US",
+    "lat": "34.1064000",
+    "lon": "-117.3703200",
+    "pop": 103132
+  },
+  {
+    "name": "Vista",
+    "country": "US",
+    "lat": "33.2000400",
+    "lon": "-117.2425400",
+    "pop": 100890
+  },
+  {
+    "name": "Compton",
+    "country": "US",
+    "lat": "33.8958500",
+    "lon": "-118.2200700",
+    "pop": 98462
+  },
+  {
+    "name": "Mission Viejo",
+    "country": "US",
+    "lat": "33.6000200",
+    "lon": "-117.6720000",
+    "pop": 97156
+  },
+  {
+    "name": "Vacaville",
+    "country": "US",
+    "lat": "38.3565800",
+    "lon": "-121.9877400",
+    "pop": 96803
+  },
+  {
+    "name": "Ventura",
+    "country": "US",
+    "lat": "34.2783400",
+    "lon": "-119.2931700",
+    "pop": 96769
+  },
+  {
+    "name": "South Gate",
+    "country": "US",
+    "lat": "33.9547400",
+    "lon": "-118.2120200",
+    "pop": 96401
+  },
+  {
+    "name": "Hesperia",
+    "country": "US",
+    "lat": "34.4263900",
+    "lon": "-117.3008800",
+    "pop": 93295
+  },
+  {
+    "name": "Carson",
+    "country": "US",
+    "lat": "33.8314100",
+    "lon": "-118.2820200",
+    "pop": 93281
+  },
+  {
+    "name": "Santa Monica",
+    "country": "US",
+    "lat": "34.0194900",
+    "lon": "-118.4913800",
+    "pop": 93220
+  },
+  {
+    "name": "San Marcos",
+    "country": "US",
+    "lat": "33.1433700",
+    "lon": "-117.1661400",
+    "pop": 92931
+  },
+  {
+    "name": "Arden-Arcade",
+    "country": "US",
+    "lat": "38.6025000",
+    "lon": "-121.3785400",
+    "pop": 92186
+  },
+  {
+    "name": "Westminster",
+    "country": "US",
+    "lat": "33.7591800",
+    "lon": "-118.0067300",
+    "pop": 92114
+  },
+  {
+    "name": "Santa Barbara",
+    "country": "US",
+    "lat": "34.4208300",
+    "lon": "-119.6981900",
+    "pop": 91842
+  },
+  {
+    "name": "Redding",
+    "country": "US",
+    "lat": "40.5865400",
+    "lon": "-122.3916800",
+    "pop": 91582
+  },
+  {
+    "name": "San Leandro",
+    "country": "US",
+    "lat": "37.7249300",
+    "lon": "-122.1560800",
+    "pop": 90712
+  },
+  {
+    "name": "Hawthorne",
+    "country": "US",
+    "lat": "33.9164000",
+    "lon": "-118.3525700",
+    "pop": 88451
+  },
+  {
+    "name": "Livermore",
+    "country": "US",
+    "lat": "37.6818700",
+    "lon": "-121.7680100",
+    "pop": 88126
+  },
+  {
+    "name": "Indio",
+    "country": "US",
+    "lat": "33.7207000",
+    "lon": "-116.2167700",
+    "pop": 87533
+  },
+  {
+    "name": "Whittier",
+    "country": "US",
+    "lat": "33.9791800",
+    "lon": "-118.0328400",
+    "pop": 87438
+  },
+  {
+    "name": "Menifee",
+    "country": "US",
+    "lat": "33.7283500",
+    "lon": "-117.1464200",
+    "pop": 87174
+  },
+  {
+    "name": "Newport Beach",
+    "country": "US",
+    "lat": "33.6189100",
+    "lon": "-117.9289500",
+    "pop": 87127
+  },
+  {
+    "name": "Tracy",
+    "country": "US",
+    "lat": "37.7398700",
+    "lon": "-121.4261800",
+    "pop": 87075
+  },
+  {
+    "name": "Citrus Heights",
+    "country": "US",
+    "lat": "38.7071200",
+    "lon": "-121.2810600",
+    "pop": 87056
+  },
+  {
+    "name": "Chino",
+    "country": "US",
+    "lat": "34.0122300",
+    "lon": "-117.6889400",
+    "pop": 85595
+  },
+  {
+    "name": "Alhambra",
+    "country": "US",
+    "lat": "34.0952900",
+    "lon": "-118.1270100",
+    "pop": 85551
+  },
+  {
+    "name": "Redwood City",
+    "country": "US",
+    "lat": "37.4852200",
+    "lon": "-122.2363500",
+    "pop": 85288
+  },
+  {
+    "name": "Hemet",
+    "country": "US",
+    "lat": "33.7476100",
+    "lon": "-116.9730700",
+    "pop": 83861
+  },
+  {
+    "name": "Buena Park",
+    "country": "US",
+    "lat": "33.8675100",
+    "lon": "-117.9981200",
+    "pop": 83270
+  },
+  {
+    "name": "Lake Forest",
+    "country": "US",
+    "lat": "33.6469700",
+    "lon": "-117.6892200",
+    "pop": 82492
+  },
+  {
+    "name": "Merced",
+    "country": "US",
+    "lat": "37.3021600",
+    "lon": "-120.4829700",
+    "pop": 82436
+  },
+  {
+    "name": "Lakewood",
+    "country": "US",
+    "lat": "33.8536300",
+    "lon": "-118.1339600",
+    "pop": 81611
+  },
+  {
+    "name": "Tustin",
+    "country": "US",
+    "lat": "33.7458500",
+    "lon": "-117.8261700",
+    "pop": 80583
+  },
+  {
+    "name": "Mountain View",
+    "country": "US",
+    "lat": "37.3860500",
+    "lon": "-122.0838500",
+    "pop": 80435
+  },
+  {
+    "name": "Napa",
+    "country": "US",
+    "lat": "38.2971400",
+    "lon": "-122.2855300",
+    "pop": 80434
+  },
+  {
+    "name": "Pleasanton",
+    "country": "US",
+    "lat": "37.6624300",
+    "lon": "-121.8746800",
+    "pop": 79510
+  },
+  {
+    "name": "Alameda",
+    "country": "US",
+    "lat": "37.7709900",
+    "lon": "-122.2608700",
+    "pop": 78630
+  },
+  {
+    "name": "Bellflower",
+    "country": "US",
+    "lat": "33.8816800",
+    "lon": "-118.1170100",
+    "pop": 78441
+  },
+  {
+    "name": "Chino Hills",
+    "country": "US",
+    "lat": "33.9938000",
+    "lon": "-117.7588800",
+    "pop": 78309
+  },
+  {
+    "name": "Milpitas",
+    "country": "US",
+    "lat": "37.4282700",
+    "lon": "-121.9066200",
+    "pop": 77604
+  },
+  {
+    "name": "Baldwin Park",
+    "country": "US",
+    "lat": "34.0852900",
+    "lon": "-117.9609000",
+    "pop": 77071
+  },
+  {
+    "name": "Upland",
+    "country": "US",
+    "lat": "34.0975100",
+    "lon": "-117.6483900",
+    "pop": 76443
+  },
+  {
+    "name": "Folsom",
+    "country": "US",
+    "lat": "38.6779600",
+    "lon": "-121.1760600",
+    "pop": 76375
+  },
+  {
+    "name": "San Ramon",
+    "country": "US",
+    "lat": "37.7799300",
+    "lon": "-121.9780200",
+    "pop": 76134
+  },
+  {
+    "name": "Manteca",
+    "country": "US",
+    "lat": "37.7974300",
+    "lon": "-121.2160500",
+    "pop": 75448
+  },
+  {
+    "name": "Perris",
+    "country": "US",
+    "lat": "33.7825200",
+    "lon": "-117.2286500",
+    "pop": 74971
+  },
+  {
+    "name": "Union City",
+    "country": "US",
+    "lat": "37.5957700",
+    "lon": "-122.0191300",
+    "pop": 74494
+  },
+  {
+    "name": "Turlock",
+    "country": "US",
+    "lat": "37.4946600",
+    "lon": "-120.8465900",
+    "pop": 72292
+  },
+  {
+    "name": "Apple Valley",
+    "country": "US",
+    "lat": "34.5008300",
+    "lon": "-117.1858800",
+    "pop": 72174
+  },
+  {
+    "name": "Lynwood",
+    "country": "US",
+    "lat": "33.9302900",
+    "lon": "-118.2114600",
+    "pop": 71989
+  },
+  {
+    "name": "Redlands",
+    "country": "US",
+    "lat": "34.0555700",
+    "lon": "-117.1825400",
+    "pop": 71035
+  },
+  {
+    "name": "Rancho Cordova",
+    "country": "US",
+    "lat": "38.5890700",
+    "lon": "-121.3027300",
+    "pop": 71017
+  },
+  {
+    "name": "Pittsburg",
+    "country": "US",
+    "lat": "38.0279800",
+    "lon": "-121.8846800",
+    "pop": 69424
+  },
+  {
+    "name": "Walnut Creek",
+    "country": "US",
+    "lat": "37.9063100",
+    "lon": "-122.0649600",
+    "pop": 68910
+  },
+  {
+    "name": "Redondo Beach",
+    "country": "US",
+    "lat": "33.8491800",
+    "lon": "-118.3884100",
+    "pop": 68166
+  },
+  {
+    "name": "Yorba Linda",
+    "country": "US",
+    "lat": "33.8886300",
+    "lon": "-117.8131100",
+    "pop": 67973
+  },
+  {
+    "name": "Davis",
+    "country": "US",
+    "lat": "38.5449100",
+    "lon": "-121.7405200",
+    "pop": 67666
+  },
+  {
+    "name": "Camarillo",
+    "country": "US",
+    "lat": "34.2163900",
+    "lon": "-119.0376000",
+    "pop": 67608
+  },
+  {
+    "name": "South San Francisco",
+    "country": "US",
+    "lat": "37.6546600",
+    "lon": "-122.4077500",
+    "pop": 67271
+  },
+  {
+    "name": "Yuba City",
+    "country": "US",
+    "lat": "39.1404500",
+    "lon": "-121.6169100",
+    "pop": 66941
+  },
+  {
+    "name": "Palo Alto",
+    "country": "US",
+    "lat": "37.4418800",
+    "lon": "-122.1430200",
+    "pop": 66853
+  },
+  {
+    "name": "Laguna Niguel",
+    "country": "US",
+    "lat": "33.5225300",
+    "lon": "-117.7075500",
+    "pop": 65806
+  },
+  {
+    "name": "San Clemente",
+    "country": "US",
+    "lat": "33.4269700",
+    "lon": "-117.6119900",
+    "pop": 65526
+  },
+  {
+    "name": "Lodi",
+    "country": "US",
+    "lat": "38.1302000",
+    "lon": "-121.2724500",
+    "pop": 64596
+  },
+  {
+    "name": "Santa Cruz",
+    "country": "US",
+    "lat": "36.9741200",
+    "lon": "-122.0308000",
+    "pop": 64220
+  },
+  {
+    "name": "Pico Rivera",
+    "country": "US",
+    "lat": "33.9830700",
+    "lon": "-118.0967300",
+    "pop": 64218
+  },
+  {
+    "name": "Madera",
+    "country": "US",
+    "lat": "36.9613400",
+    "lon": "-120.0607200",
+    "pop": 64208
+  },
+  {
+    "name": "Montebello",
+    "country": "US",
+    "lat": "34.0094600",
+    "lon": "-118.1053500",
+    "pop": 63921
+  },
+  {
+    "name": "Florence-Graham",
+    "country": "US",
+    "lat": "33.9677200",
+    "lon": "-118.2443800",
+    "pop": 63387
+  },
+  {
+    "name": "Encinitas",
+    "country": "US",
+    "lat": "33.0369900",
+    "lon": "-117.2919800",
+    "pop": 62930
+  },
+  {
+    "name": "Tulare",
+    "country": "US",
+    "lat": "36.2077300",
+    "lon": "-119.3473400",
+    "pop": 62315
+  },
+  {
+    "name": "La Habra",
+    "country": "US",
+    "lat": "33.9319600",
+    "lon": "-117.9461700",
+    "pop": 62131
+  },
+  {
+    "name": "Lake Elsinore",
+    "country": "US",
+    "lat": "33.6680800",
+    "lon": "-117.3272600",
+    "pop": 61981
+  },
+  {
+    "name": "Carmichael",
+    "country": "US",
+    "lat": "38.6171300",
+    "lon": "-121.3282800",
+    "pop": 61762
+  },
+  {
+    "name": "Monterey Park",
+    "country": "US",
+    "lat": "34.0625100",
+    "lon": "-118.1228500",
+    "pop": 61468
+  },
+  {
+    "name": "Castro Valley",
+    "country": "US",
+    "lat": "37.6941000",
+    "lon": "-122.0863500",
+    "pop": 61388
+  },
+  {
+    "name": "Rocklin",
+    "country": "US",
+    "lat": "38.7907300",
+    "lon": "-121.2357800",
+    "pop": 61213
+  },
+  {
+    "name": "National City",
+    "country": "US",
+    "lat": "32.6781100",
+    "lon": "-117.0992000",
+    "pop": 61060
+  },
+  {
+    "name": "Cupertino",
+    "country": "US",
+    "lat": "37.3230000",
+    "lon": "-122.0321800",
+    "pop": 60572
+  },
+  {
+    "name": "Gardena",
+    "country": "US",
+    "lat": "33.8883500",
+    "lon": "-118.3089600",
+    "pop": 60447
+  },
+  {
+    "name": "Petaluma",
+    "country": "US",
+    "lat": "38.2324200",
+    "lon": "-122.6366500",
+    "pop": 60438
+  },
+  {
+    "name": "La Mesa",
+    "country": "US",
+    "lat": "32.7678300",
+    "lon": "-117.0230800",
+    "pop": 60089
+  },
+  {
+    "name": "Huntington Park",
+    "country": "US",
+    "lat": "33.9816800",
+    "lon": "-118.2250700",
+    "pop": 59430
+  },
+  {
+    "name": "San Rafael",
+    "country": "US",
+    "lat": "37.9735300",
+    "lon": "-122.5310900",
+    "pop": 59162
+  },
+  {
+    "name": "Eastvale",
+    "country": "US",
+    "lat": "33.9635800",
+    "lon": "-117.5641800",
+    "pop": 59039
+  },
+  {
+    "name": "Brentwood",
+    "country": "US",
+    "lat": "37.9318700",
+    "lon": "-121.6957900",
+    "pop": 58968
+  },
+  {
+    "name": "Woodland",
+    "country": "US",
+    "lat": "38.6785200",
+    "lon": "-121.7733000",
+    "pop": 58567
+  },
+  {
+    "name": "Arcadia",
+    "country": "US",
+    "lat": "34.1397300",
+    "lon": "-118.0353400",
+    "pop": 58408
+  },
+  {
+    "name": "Santee",
+    "country": "US",
+    "lat": "32.8383800",
+    "lon": "-116.9739200",
+    "pop": 57787
+  },
+  {
+    "name": "Dublin",
+    "country": "US",
+    "lat": "37.7021500",
+    "lon": "-121.9357900",
+    "pop": 57721
+  },
+  {
+    "name": "South Whittier",
+    "country": "US",
+    "lat": "33.9501500",
+    "lon": "-118.0391700",
+    "pop": 57156
+  },
+  {
+    "name": "Fountain Valley",
+    "country": "US",
+    "lat": "33.7091800",
+    "lon": "-117.9536700",
+    "pop": 56987
+  },
+  {
+    "name": "Diamond Bar",
+    "country": "US",
+    "lat": "34.0286200",
+    "lon": "-117.8103400",
+    "pop": 56897
+  },
+  {
+    "name": "Porterville",
+    "country": "US",
+    "lat": "36.0652300",
+    "lon": "-119.0167700",
+    "pop": 56058
+  },
+  {
+    "name": "Hanford",
+    "country": "US",
+    "lat": "36.3274500",
+    "lon": "-119.6456800",
+    "pop": 55659
+  },
+  {
+    "name": "Novato",
+    "country": "US",
+    "lat": "38.1074200",
+    "lon": "-122.5697000",
+    "pop": 55530
+  },
+  {
+    "name": "Paramount",
+    "country": "US",
+    "lat": "33.8894600",
+    "lon": "-118.1597900",
+    "pop": 55412
+  },
+  {
+    "name": "Rosemead",
+    "country": "US",
+    "lat": "34.0805700",
+    "lon": "-118.0728500",
+    "pop": 54908
+  },
+  {
+    "name": "Highland",
+    "country": "US",
+    "lat": "34.1283400",
+    "lon": "-117.2086500",
+    "pop": 54854
+  },
+  {
+    "name": "Colton",
+    "country": "US",
+    "lat": "34.0739000",
+    "lon": "-117.3136500",
+    "pop": 54621
+  },
+  {
+    "name": "Hacienda Heights",
+    "country": "US",
+    "lat": "33.9930700",
+    "lon": "-117.9686800",
+    "pop": 54038
+  },
+  {
+    "name": "Cathedral City",
+    "country": "US",
+    "lat": "33.7797400",
+    "lon": "-116.4652900",
+    "pop": 53826
+  },
+  {
+    "name": "Watsonville",
+    "country": "US",
+    "lat": "36.9102300",
+    "lon": "-121.7568900",
+    "pop": 53628
+  },
+  {
+    "name": "Yucaipa",
+    "country": "US",
+    "lat": "34.0336300",
+    "lon": "-117.0430900",
+    "pop": 53328
+  },
+  {
+    "name": "Gilroy",
+    "country": "US",
+    "lat": "37.0057800",
+    "lon": "-121.5682800",
+    "pop": 53231
+  },
+  {
+    "name": "Delano",
+    "country": "US",
+    "lat": "35.7688400",
+    "lon": "-119.2470500",
+    "pop": 52733
+  },
+  {
+    "name": "West Sacramento",
+    "country": "US",
+    "lat": "38.5804600",
+    "lon": "-121.5302300",
+    "pop": 52721
+  },
+  {
+    "name": "Placentia",
+    "country": "US",
+    "lat": "33.8722400",
+    "lon": "-117.8703400",
+    "pop": 52495
+  },
+  {
+    "name": "Glendora",
+    "country": "US",
+    "lat": "34.1361200",
+    "lon": "-117.8653400",
+    "pop": 52009
+  },
+  {
+    "name": "Palm Desert",
+    "country": "US",
+    "lat": "33.7225500",
+    "lon": "-116.3769700",
+    "pop": 51869
+  },
+  {
+    "name": "Aliso Viejo",
+    "country": "US",
+    "lat": "33.5650400",
+    "lon": "-117.7271200",
+    "pop": 50195
+  },
+  {
+    "name": "Poway",
+    "country": "US",
+    "lat": "32.9628200",
+    "lon": "-117.0358600",
+    "pop": 50157
+  }
+]

@@ -1,0 +1,26 @@
+{
+  "bbox": [
+    73.4,
+    18,
+    135,
+    53.8
+  ],
+  "countries": [
+    "CN"
+  ],
+  "cities_file": "data/china/cities.json",
+  "population_file": "data/china/population.geojson",
+  "boundaries_file": "data/china/boundaries.geojson",
+  "prep": {
+    "max_cities": 100
+  },
+  "search": {
+    "batch_accept_limit": 5
+  },
+  "reporting": {
+    "currency_code": "CNY",
+    "currency_symbol": "\u00a5",
+    "eur_to_local": 7.8,
+    "region_name": "China"
+  }
+}

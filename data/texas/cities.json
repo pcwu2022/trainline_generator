@@ -1,0 +1,485 @@
+[
+  {
+    "name": "Houston",
+    "country": "US",
+    "lat": "29.7632800",
+    "lon": "-95.3632700",
+    "pop": 2314157
+  },
+  {
+    "name": "San Antonio",
+    "country": "US",
+    "lat": "29.4241200",
+    "lon": "-98.4936300",
+    "pop": 1526656
+  },
+  {
+    "name": "Dallas",
+    "country": "US",
+    "lat": "32.7830600",
+    "lon": "-96.8066700",
+    "pop": 1326087
+  },
+  {
+    "name": "Fort Worth",
+    "country": "US",
+    "lat": "32.7254100",
+    "lon": "-97.3208500",
+    "pop": 1008106
+  },
+  {
+    "name": "Austin",
+    "country": "US",
+    "lat": "30.2671500",
+    "lon": "-97.7430600",
+    "pop": 974447
+  },
+  {
+    "name": "El Paso",
+    "country": "US",
+    "lat": "31.7587200",
+    "lon": "-106.4869300",
+    "pop": 678815
+  },
+  {
+    "name": "Arlington",
+    "country": "US",
+    "lat": "32.7356900",
+    "lon": "-97.1080700",
+    "pop": 388125
+  },
+  {
+    "name": "Corpus Christi",
+    "country": "US",
+    "lat": "27.8005800",
+    "lon": "-97.3963800",
+    "pop": 316239
+  },
+  {
+    "name": "Plano",
+    "country": "US",
+    "lat": "33.0198400",
+    "lon": "-96.6988900",
+    "pop": 283558
+  },
+  {
+    "name": "Laredo",
+    "country": "US",
+    "lat": "27.5064100",
+    "lon": "-99.5075400",
+    "pop": 256153
+  },
+  {
+    "name": "Lubbock",
+    "country": "US",
+    "lat": "33.5778600",
+    "lon": "-101.8551700",
+    "pop": 249042
+  },
+  {
+    "name": "Garland",
+    "country": "US",
+    "lat": "32.9126200",
+    "lon": "-96.6388800",
+    "pop": 236897
+  },
+  {
+    "name": "Irving",
+    "country": "US",
+    "lat": "32.8140200",
+    "lon": "-96.9488900",
+    "pop": 236607
+  },
+  {
+    "name": "Cypress",
+    "country": "US",
+    "lat": "29.9691100",
+    "lon": "-95.6971700",
+    "pop": 200839
+  },
+  {
+    "name": "Amarillo",
+    "country": "US",
+    "lat": "35.2220000",
+    "lon": "-101.8313000",
+    "pop": 198645
+  },
+  {
+    "name": "Grand Prairie",
+    "country": "US",
+    "lat": "32.7459600",
+    "lon": "-96.9977800",
+    "pop": 187809
+  },
+  {
+    "name": "Brownsville",
+    "country": "US",
+    "lat": "25.9017500",
+    "lon": "-97.4974800",
+    "pop": 186738
+  },
+  {
+    "name": "McKinney",
+    "country": "US",
+    "lat": "33.1976200",
+    "lon": "-96.6152700",
+    "pop": 162898
+  },
+  {
+    "name": "Frisco",
+    "country": "US",
+    "lat": "33.1506700",
+    "lon": "-96.8236100",
+    "pop": 154407
+  },
+  {
+    "name": "Pasadena",
+    "country": "US",
+    "lat": "29.6910600",
+    "lon": "-95.2091000",
+    "pop": 153784
+  },
+  {
+    "name": "Mesquite",
+    "country": "US",
+    "lat": "32.7668000",
+    "lon": "-96.5991600",
+    "pop": 144788
+  },
+  {
+    "name": "Killeen",
+    "country": "US",
+    "lat": "31.1171200",
+    "lon": "-97.7278000",
+    "pop": 140806
+  },
+  {
+    "name": "McAllen",
+    "country": "US",
+    "lat": "26.2034100",
+    "lon": "-98.2300100",
+    "pop": 140269
+  },
+  {
+    "name": "Carrollton",
+    "country": "US",
+    "lat": "32.9537300",
+    "lon": "-96.8902800",
+    "pop": 133168
+  },
+  {
+    "name": "Midland",
+    "country": "US",
+    "lat": "31.9973500",
+    "lon": "-102.0779100",
+    "pop": 132524
+  },
+  {
+    "name": "Waco",
+    "country": "US",
+    "lat": "31.5493300",
+    "lon": "-97.1466700",
+    "pop": 132356
+  },
+  {
+    "name": "Denton",
+    "country": "US",
+    "lat": "33.2148400",
+    "lon": "-97.1330700",
+    "pop": 131044
+  },
+  {
+    "name": "Abilene",
+    "country": "US",
+    "lat": "32.4487400",
+    "lon": "-99.7331400",
+    "pop": 125182
+  },
+  {
+    "name": "Round Rock",
+    "country": "US",
+    "lat": "30.5082600",
+    "lon": "-97.6789000",
+    "pop": 115997
+  },
+  {
+    "name": "Beaumont",
+    "country": "US",
+    "lat": "30.0860500",
+    "lon": "-94.1018500",
+    "pop": 115282
+  },
+  {
+    "name": "Odessa",
+    "country": "US",
+    "lat": "31.8456800",
+    "lon": "-102.3676400",
+    "pop": 114428
+  },
+  {
+    "name": "Richardson",
+    "country": "US",
+    "lat": "32.9481800",
+    "lon": "-96.7297200",
+    "pop": 110815
+  },
+  {
+    "name": "Pearland",
+    "country": "US",
+    "lat": "29.5635700",
+    "lon": "-95.2860500",
+    "pop": 108821
+  },
+  {
+    "name": "College Station",
+    "country": "US",
+    "lat": "30.6279800",
+    "lon": "-96.3344100",
+    "pop": 107889
+  },
+  {
+    "name": "Wichita Falls",
+    "country": "US",
+    "lat": "33.9137100",
+    "lon": "-98.4933900",
+    "pop": 104710
+  },
+  {
+    "name": "Lewisville",
+    "country": "US",
+    "lat": "33.0462300",
+    "lon": "-96.9941700",
+    "pop": 104039
+  },
+  {
+    "name": "Tyler",
+    "country": "US",
+    "lat": "32.3512600",
+    "lon": "-95.3010600",
+    "pop": 103700
+  },
+  {
+    "name": "San Angelo",
+    "country": "US",
+    "lat": "31.4637700",
+    "lon": "-100.4370400",
+    "pop": 99893
+  },
+  {
+    "name": "League City",
+    "country": "US",
+    "lat": "29.5074500",
+    "lon": "-95.0949300",
+    "pop": 98312
+  },
+  {
+    "name": "Allen",
+    "country": "US",
+    "lat": "33.1031700",
+    "lon": "-96.6705500",
+    "pop": 98143
+  },
+  {
+    "name": "The Woodlands",
+    "country": "US",
+    "lat": "30.1579900",
+    "lon": "-95.4893800",
+    "pop": 93847
+  },
+  {
+    "name": "Sugar Land",
+    "country": "US",
+    "lat": "29.6196800",
+    "lon": "-95.6349500",
+    "pop": 88156
+  },
+  {
+    "name": "Edinburg",
+    "country": "US",
+    "lat": "26.3017400",
+    "lon": "-98.1633400",
+    "pop": 84497
+  },
+  {
+    "name": "Mission",
+    "country": "US",
+    "lat": "26.2159100",
+    "lon": "-98.3252900",
+    "pop": 83298
+  },
+  {
+    "name": "Longview",
+    "country": "US",
+    "lat": "32.5007000",
+    "lon": "-94.7404900",
+    "pop": 82287
+  },
+  {
+    "name": "Bryan",
+    "country": "US",
+    "lat": "30.6743600",
+    "lon": "-96.3699600",
+    "pop": 82118
+  },
+  {
+    "name": "Pharr",
+    "country": "US",
+    "lat": "26.1948000",
+    "lon": "-98.1836200",
+    "pop": 76538
+  },
+  {
+    "name": "Baytown",
+    "country": "US",
+    "lat": "29.7355000",
+    "lon": "-94.9774300",
+    "pop": 76335
+  },
+  {
+    "name": "Missouri City",
+    "country": "US",
+    "lat": "29.6185700",
+    "lon": "-95.5377200",
+    "pop": 74139
+  },
+  {
+    "name": "Temple",
+    "country": "US",
+    "lat": "31.0982300",
+    "lon": "-97.3427800",
+    "pop": 72277
+  },
+  {
+    "name": "Flower Mound",
+    "country": "US",
+    "lat": "33.0145700",
+    "lon": "-97.0969600",
+    "pop": 71253
+  },
+  {
+    "name": "New Braunfels",
+    "country": "US",
+    "lat": "29.7030000",
+    "lon": "-98.1244500",
+    "pop": 70543
+  },
+  {
+    "name": "North Richland Hills",
+    "country": "US",
+    "lat": "32.8343000",
+    "lon": "-97.2289000",
+    "pop": 69204
+  },
+  {
+    "name": "Conroe",
+    "country": "US",
+    "lat": "30.3118800",
+    "lon": "-95.4560500",
+    "pop": 68602
+  },
+  {
+    "name": "Victoria",
+    "country": "US",
+    "lat": "28.8052700",
+    "lon": "-97.0036000",
+    "pop": 67574
+  },
+  {
+    "name": "Cedar Park",
+    "country": "US",
+    "lat": "30.5052000",
+    "lon": "-97.8202900",
+    "pop": 65945
+  },
+  {
+    "name": "Harlingen",
+    "country": "US",
+    "lat": "26.1906300",
+    "lon": "-97.6961000",
+    "pop": 65774
+  },
+  {
+    "name": "Mansfield",
+    "country": "US",
+    "lat": "32.5631900",
+    "lon": "-97.1416800",
+    "pop": 64274
+  },
+  {
+    "name": "Georgetown",
+    "country": "US",
+    "lat": "30.6326900",
+    "lon": "-97.6772300",
+    "pop": 63716
+  },
+  {
+    "name": "San Marcos",
+    "country": "US",
+    "lat": "29.8832700",
+    "lon": "-97.9413900",
+    "pop": 60684
+  },
+  {
+    "name": "Rowlett",
+    "country": "US",
+    "lat": "32.9029000",
+    "lon": "-96.5638800",
+    "pop": 60236
+  },
+  {
+    "name": "Leander",
+    "country": "US",
+    "lat": "30.5788100",
+    "lon": "-97.8530700",
+    "pop": 59202
+  },
+  {
+    "name": "Pflugerville",
+    "country": "US",
+    "lat": "30.4393700",
+    "lon": "-97.6200000",
+    "pop": 57122
+  },
+  {
+    "name": "Port Arthur",
+    "country": "US",
+    "lat": "29.8851900",
+    "lon": "-93.9423300",
+    "pop": 55340
+  },
+  {
+    "name": "Spring",
+    "country": "US",
+    "lat": "30.0799400",
+    "lon": "-95.4171600",
+    "pop": 54298
+  },
+  {
+    "name": "Euless",
+    "country": "US",
+    "lat": "32.8370700",
+    "lon": "-97.0819500",
+    "pop": 54219
+  },
+  {
+    "name": "DeSoto",
+    "country": "US",
+    "lat": "32.5898600",
+    "lon": "-96.8569500",
+    "pop": 52486
+  },
+  {
+    "name": "Grapevine",
+    "country": "US",
+    "lat": "32.9342900",
+    "lon": "-97.0780700",
+    "pop": 51404
+  },
+  {
+    "name": "Galveston",
+    "country": "US",
+    "lat": "29.3013500",
+    "lon": "-94.7977000",
+    "pop": 50180
+  }
+]

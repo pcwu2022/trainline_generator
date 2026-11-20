@@ -1,0 +1,146 @@
+[
+  {
+    "name": "Auckland",
+    "country": "NZ",
+    "lat": "-36.8485300",
+    "lon": "174.7634900",
+    "pop": 1530500,
+    "id": "299"
+  },
+  {
+    "name": "Christchurch",
+    "country": "NZ",
+    "lat": "-43.5333300",
+    "lon": "172.6333300",
+    "pop": 412000,
+    "id": "1344"
+  },
+  {
+    "name": "Wellington",
+    "country": "NZ",
+    "lat": "-41.2866400",
+    "lon": "174.7755700",
+    "pop": 381900,
+    "id": "1428"
+  },
+  {
+    "name": "Manukau City",
+    "country": "NZ",
+    "lat": "-36.9928200",
+    "lon": "174.8798600",
+    "pop": 362000,
+    "id": "1507"
+  },
+  {
+    "name": "Hamilton",
+    "country": "NZ",
+    "lat": "-37.7833300",
+    "lon": "175.2833300",
+    "pop": 189700,
+    "id": "2944"
+  },
+  {
+    "name": "Tauranga",
+    "country": "NZ",
+    "lat": "-37.6861100",
+    "lon": "176.1666700",
+    "pop": 155200,
+    "id": "3545"
+  },
+  {
+    "name": "Dunedin",
+    "country": "NZ",
+    "lat": "-45.8741600",
+    "lon": "170.5036100",
+    "pop": 131800,
+    "id": "4160"
+  },
+  {
+    "name": "Lower Hutt",
+    "country": "NZ",
+    "lat": "-41.2166700",
+    "lon": "174.9166700",
+    "pop": 113400,
+    "id": "4869"
+  },
+  {
+    "name": "Palmerston North",
+    "country": "NZ",
+    "lat": "-40.3563600",
+    "lon": "175.6111300",
+    "pop": 91300,
+    "id": "6072"
+  },
+  {
+    "name": "New Plymouth",
+    "country": "NZ",
+    "lat": "-39.0666700",
+    "lon": "174.0833300",
+    "pop": 90300,
+    "id": "6129"
+  },
+  {
+    "name": "Hastings",
+    "country": "NZ",
+    "lat": "-39.6381000",
+    "lon": "176.8491800",
+    "pop": 89200,
+    "id": "6204"
+  },
+  {
+    "name": "Napier",
+    "country": "NZ",
+    "lat": "-39.4926000",
+    "lon": "176.9123300",
+    "pop": 66800,
+    "id": "8334"
+  },
+  {
+    "name": "Rotorua",
+    "country": "NZ",
+    "lat": "-38.1387400",
+    "lon": "176.2451600",
+    "pop": 65901,
+    "id": "8459"
+  },
+  {
+    "name": "Porirua",
+    "country": "NZ",
+    "lat": "-41.1333300",
+    "lon": "174.8500000",
+    "pop": 61800,
+    "id": "9036"
+  },
+  {
+    "name": "Invercargill",
+    "country": "NZ",
+    "lat": "-46.4000000",
+    "lon": "168.3500000",
+    "pop": 57600,
+    "id": "9716"
+  },
+  {
+    "name": "Papatoetoe",
+    "country": "NZ",
+    "lat": "-36.9682000",
+    "lon": "174.8401900",
+    "pop": 54780,
+    "id": "10188"
+  },
+  {
+    "name": "Nelson",
+    "country": "NZ",
+    "lat": "-41.2707800",
+    "lon": "173.2840400",
+    "pop": 54400,
+    "id": "10248"
+  },
+  {
+    "name": "Whangarei",
+    "country": "NZ",
+    "lat": "-35.7316700",
+    "lon": "174.3239100",
+    "pop": 50900,
+    "id": "10924"
+  }
+]

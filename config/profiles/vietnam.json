@@ -1,0 +1,26 @@
+{
+  "bbox": [
+    101.9,
+    8.3,
+    109.7,
+    23.6
+  ],
+  "countries": [
+    "VN"
+  ],
+  "cities_file": "data/vietnam/cities.json",
+  "population_file": "data/vietnam/population.geojson",
+  "boundaries_file": "data/vietnam/boundaries.geojson",
+  "prep": {
+    "max_cities": 100
+  },
+  "search": {
+    "batch_accept_limit": 5
+  },
+  "reporting": {
+    "currency_code": "VND",
+    "currency_symbol": "\u20ab",
+    "eur_to_local": 28000,
+    "region_name": "Vietnam"
+  }
+}

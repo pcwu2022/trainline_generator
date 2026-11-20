@@ -1,0 +1,26 @@
+{
+  "bbox": [
+    112.7,
+    -44,
+    154,
+    -9.8
+  ],
+  "countries": [
+    "AU"
+  ],
+  "cities_file": "data/australia/cities.json",
+  "population_file": "data/australia/population.geojson",
+  "boundaries_file": "data/australia/boundaries.geojson",
+  "prep": {
+    "max_cities": 100
+  },
+  "search": {
+    "batch_accept_limit": 5
+  },
+  "reporting": {
+    "currency_code": "AUD",
+    "currency_symbol": "$",
+    "eur_to_local": 1.65,
+    "region_name": "Australia"
+  }
+}

@@ -43,7 +43,7 @@ test('profiles load regional defaults, cities preserve edits, and failed loads k
   $('cities').value='12';await $('cities').listeners.change();
   assert.equal($('budget').value,250);
   assert.equal(JSON.parse($('config').value).prep.max_cities,12);
-  for(const [profile,country] of [['taiwan',['TW']],['usa',['US']],['uk',['GB']],['japan',['JP']],['spain',['ES']],['italy',['IT']],['poland',['PL']],['benelux',['BE','NL','LU']],['switzerland',['CH']],['india',['IN']],['scandinavia',['DK','NO','SE']],['usa_northeast',['US']],['germany',['DE']]]){
+  for(const [profile,country] of [['taiwan',['TW']],['usa',['US']],['uk',['GB']],['japan',['JP']],['spain',['ES']],['italy',['IT']],['poland',['PL']],['benelux',['BE','NL','LU']],['switzerland',['CH']],['india',['IN']],['scandinavia',['DK','NO','SE']],['usa_northeast',['US']],['california',['US']],['texas',['US']],['south_korea',['KR']],['germany',['DE']],['mexico',['MX']],['canada',['CA']],['brazil',['BR']],['argentina',['AR']],['australia',['AU']],['new_zealand',['NZ']],['thailand',['TH']],['vietnam',['VN']],['philippines',['PH']],['indonesia',['ID']],['china',['CN']]]){
    $('profile').value=profile;await $('profile').listeners.change();
    assert.equal($('profile').value,profile);assert.equal($('budget').value,0);
    assert.deepEqual(JSON.parse($('config').value).countries,country);

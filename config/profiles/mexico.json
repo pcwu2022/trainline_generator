@@ -1,0 +1,26 @@
+{
+  "bbox": [
+    -118.6,
+    14.4,
+    -86.5,
+    32.9
+  ],
+  "countries": [
+    "MX"
+  ],
+  "cities_file": "data/mexico/cities.json",
+  "population_file": "data/mexico/population.geojson",
+  "boundaries_file": "data/mexico/boundaries.geojson",
+  "prep": {
+    "max_cities": 100
+  },
+  "search": {
+    "batch_accept_limit": 5
+  },
+  "reporting": {
+    "currency_code": "MXN",
+    "currency_symbol": "$",
+    "eur_to_local": 20,
+    "region_name": "Mexico"
+  }
+}

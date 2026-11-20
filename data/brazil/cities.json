@@ -1,0 +1,5234 @@
+[
+  {
+    "name": "S\u00e3o Paulo",
+    "country": "BR",
+    "lat": "-23.5475000",
+    "lon": "-46.6361100",
+    "pop": 12400232,
+    "id": "11"
+  },
+  {
+    "name": "Belo Horizonte",
+    "country": "BR",
+    "lat": "-19.9208300",
+    "lon": "-43.9377800",
+    "pop": 2721564,
+    "id": "135"
+  },
+  {
+    "name": "Fortaleza",
+    "country": "BR",
+    "lat": "-3.7172200",
+    "lon": "-38.5430600",
+    "pop": 2400000,
+    "id": "154"
+  },
+  {
+    "name": "Manaus",
+    "country": "BR",
+    "lat": "-3.1019400",
+    "lon": "-60.0250000",
+    "pop": 2219580,
+    "id": "170"
+  },
+  {
+    "name": "Bras\u00edlia",
+    "country": "BR",
+    "lat": "-15.7797200",
+    "lon": "-47.9297200",
+    "pop": 2207718,
+    "id": "172"
+  },
+  {
+    "name": "Curitiba",
+    "country": "BR",
+    "lat": "-25.4277800",
+    "lon": "-49.2730600",
+    "pop": 1948626,
+    "id": "203"
+  },
+  {
+    "name": "Recife",
+    "country": "BR",
+    "lat": "-8.0538900",
+    "lon": "-34.8811100",
+    "pop": 1653461,
+    "id": "263"
+  },
+  {
+    "name": "Goi\u00e2nia",
+    "country": "BR",
+    "lat": "-16.6786100",
+    "lon": "-49.2538900",
+    "pop": 1536097,
+    "id": "298"
+  },
+  {
+    "name": "Porto Alegre",
+    "country": "BR",
+    "lat": "-30.0328300",
+    "lon": "-51.2301900",
+    "pop": 1488252,
+    "id": "308"
+  },
+  {
+    "name": "Guarulhos",
+    "country": "BR",
+    "lat": "-23.4627800",
+    "lon": "-46.5333300",
+    "pop": 1169577,
+    "id": "441"
+  },
+  {
+    "name": "Macei\u00f3",
+    "country": "BR",
+    "lat": "-9.6658300",
+    "lon": "-35.7352800",
+    "pop": 1031597,
+    "id": "503"
+  },
+  {
+    "name": "Campinas",
+    "country": "BR",
+    "lat": "-22.9055600",
+    "lon": "-47.0608300",
+    "pop": 1031554,
+    "id": "504"
+  },
+  {
+    "name": "Campo Grande",
+    "country": "BR",
+    "lat": "-20.4427800",
+    "lon": "-54.6463900",
+    "pop": 906092,
+    "id": "591"
+  },
+  {
+    "name": "Natal",
+    "country": "BR",
+    "lat": "-5.7950000",
+    "lon": "-35.2094400",
+    "pop": 896708,
+    "id": "603"
+  },
+  {
+    "name": "Teresina",
+    "country": "BR",
+    "lat": "-5.0891700",
+    "lon": "-42.8019400",
+    "pop": 871126,
+    "id": "616"
+  },
+  {
+    "name": "Nova Igua\u00e7u",
+    "country": "BR",
+    "lat": "-22.7591700",
+    "lon": "-43.4511100",
+    "pop": 823302,
+    "id": "653"
+  },
+  {
+    "name": "Duque de Caxias",
+    "country": "BR",
+    "lat": "-22.7855600",
+    "lon": "-43.3116700",
+    "pop": 818329,
+    "id": "655"
+  },
+  {
+    "name": "Jo\u00e3o Pessoa",
+    "country": "BR",
+    "lat": "-7.1150000",
+    "lon": "-34.8630600",
+    "pop": 817511,
+    "id": "656"
+  },
+  {
+    "name": "S\u00e3o Bernardo do Campo",
+    "country": "BR",
+    "lat": "-23.6938900",
+    "lon": "-46.5650000",
+    "pop": 743372,
+    "id": "713"
+  },
+  {
+    "name": "S\u00e3o Jos\u00e9 dos Campos",
+    "country": "BR",
+    "lat": "-23.1794400",
+    "lon": "-45.8869400",
+    "pop": 729737,
+    "id": "731"
+  },
+  {
+    "name": "Osasco",
+    "country": "BR",
+    "lat": "-23.5325000",
+    "lon": "-46.7916700",
+    "pop": 728615,
+    "id": "733"
+  },
+  {
+    "name": "Ribeir\u00e3o Preto",
+    "country": "BR",
+    "lat": "-21.1775000",
+    "lon": "-47.8102800",
+    "pop": 711825,
+    "id": "750"
+  },
+  {
+    "name": "Jaboat\u00e3o",
+    "country": "BR",
+    "lat": "-8.1802800",
+    "lon": "-35.0013900",
+    "pop": 702621,
+    "id": "758"
+  },
+  {
+    "name": "Sorocaba",
+    "country": "BR",
+    "lat": "-23.5016700",
+    "lon": "-47.4580600",
+    "pop": 687357,
+    "id": "780"
+  },
+  {
+    "name": "Aracaju",
+    "country": "BR",
+    "lat": "-10.9111100",
+    "lon": "-37.0716700",
+    "pop": 664908,
+    "id": "802"
+  },
+  {
+    "name": "Santo Andr\u00e9",
+    "country": "BR",
+    "lat": "-23.6638900",
+    "lon": "-46.5383300",
+    "pop": 662373,
+    "id": "806"
+  },
+  {
+    "name": "Jaboat\u00e3o dos Guararapes",
+    "country": "BR",
+    "lat": "-8.1127800",
+    "lon": "-35.0147200",
+    "pop": 644037,
+    "id": "833"
+  },
+  {
+    "name": "Contagem",
+    "country": "BR",
+    "lat": "-19.9316700",
+    "lon": "-44.0536100",
+    "pop": 627123,
+    "id": "853"
+  },
+  {
+    "name": "Feira de Santana",
+    "country": "BR",
+    "lat": "-12.2666700",
+    "lon": "-38.9666700",
+    "pop": 619609,
+    "id": "864"
+  },
+  {
+    "name": "Cuiab\u00e1",
+    "country": "BR",
+    "lat": "-15.5961100",
+    "lon": "-56.0966700",
+    "pop": 618124,
+    "id": "869"
+  },
+  {
+    "name": "Londrina",
+    "country": "BR",
+    "lat": "-23.3102800",
+    "lon": "-51.1627800",
+    "pop": 588125,
+    "id": "917"
+  },
+  {
+    "name": "Juiz de Fora",
+    "country": "BR",
+    "lat": "-21.7641700",
+    "lon": "-43.3502800",
+    "pop": 573285,
+    "id": "936"
+  },
+  {
+    "name": "Uberl\u00e2ndia",
+    "country": "BR",
+    "lat": "-18.9186100",
+    "lon": "-48.2772200",
+    "pop": 563536,
+    "id": "954"
+  },
+  {
+    "name": "Porto Velho",
+    "country": "BR",
+    "lat": "-8.7619400",
+    "lon": "-63.9038900",
+    "pop": 548952,
+    "id": "984"
+  },
+  {
+    "name": "Serra",
+    "country": "BR",
+    "lat": "-20.1286100",
+    "lon": "-40.3077800",
+    "pop": 520653,
+    "id": "1048"
+  },
+  {
+    "name": "Macap\u00e1",
+    "country": "BR",
+    "lat": "0.0388900",
+    "lon": "-51.0663900",
+    "pop": 512902,
+    "id": "1066"
+  },
+  {
+    "name": "Campos dos Goytacazes",
+    "country": "BR",
+    "lat": "-21.7522700",
+    "lon": "-41.3304400",
+    "pop": 511168,
+    "id": "1070"
+  },
+  {
+    "name": "Aparecida de Goi\u00e2nia",
+    "country": "BR",
+    "lat": "-16.8233300",
+    "lon": "-49.2438900",
+    "pop": 510770,
+    "id": "1074"
+  },
+  {
+    "name": "S\u00e3o Jos\u00e9 do Rio Preto",
+    "country": "BR",
+    "lat": "-20.8197200",
+    "lon": "-49.3794400",
+    "pop": 480393,
+    "id": "1148"
+  },
+  {
+    "name": "Mau\u00e1",
+    "country": "BR",
+    "lat": "-23.6677800",
+    "lon": "-46.4613900",
+    "pop": 477552,
+    "id": "1157"
+  },
+  {
+    "name": "S\u00e3o Jo\u00e3o de Meriti",
+    "country": "BR",
+    "lat": "-22.8038900",
+    "lon": "-43.3722200",
+    "pop": 466536,
+    "id": "1185"
+  },
+  {
+    "name": "Belford Roxo",
+    "country": "BR",
+    "lat": "-22.7641700",
+    "lon": "-43.3994400",
+    "pop": 466096,
+    "id": "1187"
+  },
+  {
+    "name": "Joinville",
+    "country": "BR",
+    "lat": "-26.3044400",
+    "lon": "-48.8455600",
+    "pop": 461304,
+    "id": "1201"
+  },
+  {
+    "name": "Jundia\u00ed",
+    "country": "BR",
+    "lat": "-23.1863900",
+    "lon": "-46.8841700",
+    "pop": 443221,
+    "id": "1250"
+  },
+  {
+    "name": "Ananindeua",
+    "country": "BR",
+    "lat": "-1.3655600",
+    "lon": "-48.3722200",
+    "pop": 433956,
+    "id": "1272"
+  },
+  {
+    "name": "Santos",
+    "country": "BR",
+    "lat": "-23.9608300",
+    "lon": "-46.3336100",
+    "pop": 433656,
+    "id": "1274"
+  },
+  {
+    "name": "Boa Vista",
+    "country": "BR",
+    "lat": "2.8197200",
+    "lon": "-60.6733300",
+    "pop": 419652,
+    "id": "1316"
+  },
+  {
+    "name": "Rio Branco",
+    "country": "BR",
+    "lat": "-9.9747200",
+    "lon": "-67.8100000",
+    "pop": 419452,
+    "id": "1317"
+  },
+  {
+    "name": "Montes Claros",
+    "country": "BR",
+    "lat": "-16.7350000",
+    "lon": "-43.8616700",
+    "pop": 414240,
+    "id": "1334"
+  },
+  {
+    "name": "Piracicaba",
+    "country": "BR",
+    "lat": "-22.7252800",
+    "lon": "-47.6491700",
+    "pop": 407252,
+    "id": "1358"
+  },
+  {
+    "name": "Caruaru",
+    "country": "BR",
+    "lat": "-8.2833300",
+    "lon": "-35.9761100",
+    "pop": 402290,
+    "id": "1369"
+  },
+  {
+    "name": "Diadema",
+    "country": "BR",
+    "lat": "-23.6861100",
+    "lon": "-46.6227800",
+    "pop": 393237,
+    "id": "1395"
+  },
+  {
+    "name": "Carapicu\u00edba",
+    "country": "BR",
+    "lat": "-23.5227200",
+    "lon": "-46.8350000",
+    "pop": 386984,
+    "id": "1408"
+  },
+  {
+    "name": "Petrolina",
+    "country": "BR",
+    "lat": "-9.3986100",
+    "lon": "-40.5008300",
+    "pop": 386791,
+    "id": "1409"
+  },
+  {
+    "name": "Betim",
+    "country": "BR",
+    "lat": "-19.9677800",
+    "lon": "-44.1983300",
+    "pop": 384000,
+    "id": "1421"
+  },
+  {
+    "name": "Caxias do Sul",
+    "country": "BR",
+    "lat": "-29.1680600",
+    "lon": "-51.1794400",
+    "pop": 381270,
+    "id": "1430"
+  },
+  {
+    "name": "Bauru",
+    "country": "BR",
+    "lat": "-22.3147200",
+    "lon": "-49.0605600",
+    "pop": 379297,
+    "id": "1436"
+  },
+  {
+    "name": "Itaquaquecetuba",
+    "country": "BR",
+    "lat": "-23.4861100",
+    "lon": "-46.3483300",
+    "pop": 369275,
+    "id": "1474"
+  },
+  {
+    "name": "Olinda",
+    "country": "BR",
+    "lat": "-8.0088900",
+    "lon": "-34.8552800",
+    "pop": 366754,
+    "id": "1484"
+  },
+  {
+    "name": "Blumenau",
+    "country": "BR",
+    "lat": "-26.9194400",
+    "lon": "-49.0661100",
+    "pop": 361855,
+    "id": "1508"
+  },
+  {
+    "name": "Franca",
+    "country": "BR",
+    "lat": "-20.5386100",
+    "lon": "-47.4008300",
+    "pop": 358539,
+    "id": "1522"
+  },
+  {
+    "name": "Caucaia",
+    "country": "BR",
+    "lat": "-3.7361100",
+    "lon": "-38.6530600",
+    "pop": 355679,
+    "id": "1538"
+  },
+  {
+    "name": "Cariacica",
+    "country": "BR",
+    "lat": "-20.2638900",
+    "lon": "-40.4200000",
+    "pop": 353491,
+    "id": "1549"
+  },
+  {
+    "name": "Campina Grande",
+    "country": "BR",
+    "lat": "-7.2305600",
+    "lon": "-35.8811100",
+    "pop": 348936,
+    "id": "1572"
+  },
+  {
+    "name": "Paulista",
+    "country": "BR",
+    "lat": "-7.9408300",
+    "lon": "-34.8730600",
+    "pop": 342167,
+    "id": "1612"
+  },
+  {
+    "name": "Uberaba",
+    "country": "BR",
+    "lat": "-19.7483300",
+    "lon": "-47.9319400",
+    "pop": 337836,
+    "id": "1628"
+  },
+  {
+    "name": "S\u00e3o Vicente",
+    "country": "BR",
+    "lat": "-23.9630600",
+    "lon": "-46.3919400",
+    "pop": 329911,
+    "id": "1661"
+  },
+  {
+    "name": "Ribeir\u00e3o das Neves",
+    "country": "BR",
+    "lat": "-19.7669400",
+    "lon": "-44.0866700",
+    "pop": 329794,
+    "id": "1663"
+  },
+  {
+    "name": "S\u00e3o Jos\u00e9 dos Pinhais",
+    "country": "BR",
+    "lat": "-25.5302000",
+    "lon": "-49.2083600",
+    "pop": 329628,
+    "id": "1667"
+  },
+  {
+    "name": "Canoas",
+    "country": "BR",
+    "lat": "-29.9177800",
+    "lon": "-51.1836100",
+    "pop": 328291,
+    "id": "1672"
+  },
+  {
+    "name": "Mogi das Cruzes",
+    "country": "BR",
+    "lat": "-23.5227800",
+    "lon": "-46.1883300",
+    "pop": 325746,
+    "id": "1682"
+  },
+  {
+    "name": "Pelotas",
+    "country": "BR",
+    "lat": "-31.7699700",
+    "lon": "-52.3410100",
+    "pop": 320674,
+    "id": "1705"
+  },
+  {
+    "name": "An\u00e1polis",
+    "country": "BR",
+    "lat": "-16.3266700",
+    "lon": "-48.9527800",
+    "pop": 319587,
+    "id": "1709"
+  },
+  {
+    "name": "Taubat\u00e9",
+    "country": "BR",
+    "lat": "-23.0263900",
+    "lon": "-45.5552800",
+    "pop": 317915,
+    "id": "1727"
+  },
+  {
+    "name": "Barueri",
+    "country": "BR",
+    "lat": "-23.5105600",
+    "lon": "-46.8761100",
+    "pop": 316473,
+    "id": "1740"
+  },
+  {
+    "name": "V\u00e1rzea Grande",
+    "country": "BR",
+    "lat": "-15.6466700",
+    "lon": "-56.1325000",
+    "pop": 314627,
+    "id": "1748"
+  },
+  {
+    "name": "Vit\u00f3ria",
+    "country": "BR",
+    "lat": "-20.3194400",
+    "lon": "-40.3377800",
+    "pop": 312656,
+    "id": "1758"
+  },
+  {
+    "name": "Maring\u00e1",
+    "country": "BR",
+    "lat": "-23.4252800",
+    "lon": "-51.9386100",
+    "pop": 311724,
+    "id": "1762"
+  },
+  {
+    "name": "Suzano",
+    "country": "BR",
+    "lat": "-23.5425000",
+    "lon": "-46.3108300",
+    "pop": 307429,
+    "id": "1785"
+  },
+  {
+    "name": "Palmas",
+    "country": "BR",
+    "lat": "-10.1674500",
+    "lon": "-48.3276600",
+    "pop": 306296,
+    "id": "1792"
+  },
+  {
+    "name": "Ponta Grossa",
+    "country": "BR",
+    "lat": "-25.0950000",
+    "lon": "-50.1619400",
+    "pop": 292177,
+    "id": "1876"
+  },
+  {
+    "name": "Limeira",
+    "country": "BR",
+    "lat": "-22.5647200",
+    "lon": "-47.4016700",
+    "pop": 291869,
+    "id": "1878"
+  },
+  {
+    "name": "Ceil\u00e2ndia",
+    "country": "BR",
+    "lat": "-15.8091000",
+    "lon": "-48.1309600",
+    "pop": 287023,
+    "id": "1906"
+  },
+  {
+    "name": "Sumar\u00e9",
+    "country": "BR",
+    "lat": "-22.8219400",
+    "lon": "-47.2669400",
+    "pop": 286211,
+    "id": "1914"
+  },
+  {
+    "name": "Viam\u00e3o",
+    "country": "BR",
+    "lat": "-30.0811100",
+    "lon": "-51.0233300",
+    "pop": 285269,
+    "id": "1927"
+  },
+  {
+    "name": "Santa Maria",
+    "country": "BR",
+    "lat": "-29.6841700",
+    "lon": "-53.8069400",
+    "pop": 283677,
+    "id": "1935"
+  },
+  {
+    "name": "Volta Redonda",
+    "country": "BR",
+    "lat": "-22.5230600",
+    "lon": "-44.1041700",
+    "pop": 279898,
+    "id": "1964"
+  },
+  {
+    "name": "Tabo\u00e3o da Serra",
+    "country": "BR",
+    "lat": "-23.6261100",
+    "lon": "-46.7916700",
+    "pop": 273542,
+    "id": "2010"
+  },
+  {
+    "name": "Petr\u00f3polis",
+    "country": "BR",
+    "lat": "-22.5050000",
+    "lon": "-43.1786100",
+    "pop": 272691,
+    "id": "2019"
+  },
+  {
+    "name": "Parauapebas",
+    "country": "BR",
+    "lat": "-6.0675000",
+    "lon": "-49.9022200",
+    "pop": 267836,
+    "id": "2054"
+  },
+  {
+    "name": "Parnamirim",
+    "country": "BR",
+    "lat": "-5.9155600",
+    "lon": "-35.2627800",
+    "pop": 267036,
+    "id": "2061"
+  },
+  {
+    "name": "Gravata\u00ed",
+    "country": "BR",
+    "lat": "-29.9421800",
+    "lon": "-50.9927800",
+    "pop": 265074,
+    "id": "2077"
+  },
+  {
+    "name": "Mossor\u00f3",
+    "country": "BR",
+    "lat": "-5.1875000",
+    "lon": "-37.3441700",
+    "pop": 264577,
+    "id": "2084"
+  },
+  {
+    "name": "Rondon\u00f3polis",
+    "country": "BR",
+    "lat": "-16.4708300",
+    "lon": "-54.6355600",
+    "pop": 259167,
+    "id": "2128"
+  },
+  {
+    "name": "Foz do Igua\u00e7u",
+    "country": "BR",
+    "lat": "-25.5477800",
+    "lon": "-54.5880600",
+    "pop": 258248,
+    "id": "2135"
+  },
+  {
+    "name": "Cascavel",
+    "country": "BR",
+    "lat": "-24.9558300",
+    "lon": "-53.4552800",
+    "pop": 257172,
+    "id": "2146"
+  },
+  {
+    "name": "Indaiatuba",
+    "country": "BR",
+    "lat": "-23.0884200",
+    "lon": "-47.2119000",
+    "pop": 256223,
+    "id": "2161"
+  },
+  {
+    "name": "Novo Hamburgo",
+    "country": "BR",
+    "lat": "-29.6783300",
+    "lon": "-51.1305600",
+    "pop": 253841,
+    "id": "2178"
+  },
+  {
+    "name": "Cotia",
+    "country": "BR",
+    "lat": "-23.6038900",
+    "lon": "-46.9191700",
+    "pop": 253608,
+    "id": "2180"
+  },
+  {
+    "name": "Vit\u00f3ria da Conquista",
+    "country": "BR",
+    "lat": "-14.8661100",
+    "lon": "-40.8394400",
+    "pop": 253137,
+    "id": "2188"
+  },
+  {
+    "name": "Governador Valadares",
+    "country": "BR",
+    "lat": "-18.8511100",
+    "lon": "-41.9494400",
+    "pop": 250878,
+    "id": "2210"
+  },
+  {
+    "name": "Embu das Artes",
+    "country": "BR",
+    "lat": "-23.6488900",
+    "lon": "-46.8522200",
+    "pop": 250691,
+    "id": "2212"
+  },
+  {
+    "name": "Americana",
+    "country": "BR",
+    "lat": "-22.7391700",
+    "lon": "-47.3313900",
+    "pop": 246655,
+    "id": "2252"
+  },
+  {
+    "name": "Colombo",
+    "country": "BR",
+    "lat": "-25.2916700",
+    "lon": "-49.2241700",
+    "pop": 246540,
+    "id": "2254"
+  },
+  {
+    "name": "Mag\u00e9",
+    "country": "BR",
+    "lat": "-22.6527800",
+    "lon": "-43.0405600",
+    "pop": 244092,
+    "id": "2281"
+  },
+  {
+    "name": "Arapiraca",
+    "country": "BR",
+    "lat": "-9.7525000",
+    "lon": "-36.6611100",
+    "pop": 243661,
+    "id": "2286"
+  },
+  {
+    "name": "Itapevi",
+    "country": "BR",
+    "lat": "-23.5488900",
+    "lon": "-46.9341700",
+    "pop": 240961,
+    "id": "2310"
+  },
+  {
+    "name": "Mar\u00edlia",
+    "country": "BR",
+    "lat": "-22.2138900",
+    "lon": "-49.9458300",
+    "pop": 240590,
+    "id": "2312"
+  },
+  {
+    "name": "Itabora\u00ed",
+    "country": "BR",
+    "lat": "-22.7444400",
+    "lon": "-42.8594400",
+    "pop": 240040,
+    "id": "2317"
+  },
+  {
+    "name": "Cabo Frio",
+    "country": "BR",
+    "lat": "-22.8871700",
+    "lon": "-42.0262200",
+    "pop": 238166,
+    "id": "2334"
+  },
+  {
+    "name": "Juazeiro",
+    "country": "BR",
+    "lat": "-9.4116700",
+    "lon": "-40.4986100",
+    "pop": 237821,
+    "id": "2340"
+  },
+  {
+    "name": "Maracana\u00fa",
+    "country": "BR",
+    "lat": "-3.8766700",
+    "lon": "-38.6255600",
+    "pop": 234509,
+    "id": "2378"
+  },
+  {
+    "name": "Hortol\u00e2ndia",
+    "country": "BR",
+    "lat": "-22.8583300",
+    "lon": "-47.2200000",
+    "pop": 234259,
+    "id": "2382"
+  },
+  {
+    "name": "Divin\u00f3polis",
+    "country": "BR",
+    "lat": "-20.1435500",
+    "lon": "-44.8906500",
+    "pop": 231091,
+    "id": "2402"
+  },
+  {
+    "name": "Ipatinga",
+    "country": "BR",
+    "lat": "-19.4683300",
+    "lon": "-42.5366700",
+    "pop": 228746,
+    "id": "2423"
+  },
+  {
+    "name": "Sete Lagoas",
+    "country": "BR",
+    "lat": "-19.4658300",
+    "lon": "-44.2466700",
+    "pop": 227397,
+    "id": "2438"
+  },
+  {
+    "name": "Rio Verde",
+    "country": "BR",
+    "lat": "-17.7980600",
+    "lon": "-50.9280600",
+    "pop": 225696,
+    "id": "2462"
+  },
+  {
+    "name": "\u00c1guas Lindas de Goi\u00e1s",
+    "country": "BR",
+    "lat": "-15.7619400",
+    "lon": "-48.2816700",
+    "pop": 225693,
+    "id": "2463"
+  },
+  {
+    "name": "Presidente Prudente",
+    "country": "BR",
+    "lat": "-22.1255600",
+    "lon": "-51.3888900",
+    "pop": 225668,
+    "id": "2464"
+  },
+  {
+    "name": "Juazeiro do Norte",
+    "country": "BR",
+    "lat": "-7.2130600",
+    "lon": "-39.3152800",
+    "pop": 225230,
+    "id": "2468"
+  },
+  {
+    "name": "Santa Luzia",
+    "country": "BR",
+    "lat": "-19.7697200",
+    "lon": "-43.8513900",
+    "pop": 219132,
+    "id": "2540"
+  },
+  {
+    "name": "Samambaia",
+    "country": "BR",
+    "lat": "-15.8823100",
+    "lon": "-48.1042800",
+    "pop": 218840,
+    "id": "2542"
+  },
+  {
+    "name": "Imperatriz",
+    "country": "BR",
+    "lat": "-5.5263900",
+    "lon": "-47.4916700",
+    "pop": 218106,
+    "id": "2546"
+  },
+  {
+    "name": "Cabo de Santo Agostinho",
+    "country": "BR",
+    "lat": "-8.2877300",
+    "lon": "-35.0292500",
+    "pop": 216969,
+    "id": "2558"
+  },
+  {
+    "name": "Sinop",
+    "country": "BR",
+    "lat": "-11.8641700",
+    "lon": "-55.5025000",
+    "pop": 216029,
+    "id": "2569"
+  },
+  {
+    "name": "Jacare\u00ed",
+    "country": "BR",
+    "lat": "-23.3052800",
+    "lon": "-45.9658300",
+    "pop": 213110,
+    "id": "2604"
+  },
+  {
+    "name": "Maric\u00e1",
+    "country": "BR",
+    "lat": "-22.9194400",
+    "lon": "-42.8186100",
+    "pop": 211986,
+    "id": "2622"
+  },
+  {
+    "name": "S\u00e3o Leopoldo",
+    "country": "BR",
+    "lat": "-29.7602800",
+    "lon": "-51.1472200",
+    "pop": 209229,
+    "id": "2655"
+  },
+  {
+    "name": "Luzi\u00e2nia",
+    "country": "BR",
+    "lat": "-16.2525000",
+    "lon": "-47.9502800",
+    "pop": 209129,
+    "id": "2657"
+  },
+  {
+    "name": "Itabuna",
+    "country": "BR",
+    "lat": "-14.7855600",
+    "lon": "-39.2802800",
+    "pop": 205660,
+    "id": "2697"
+  },
+  {
+    "name": "S\u00e3o Carlos",
+    "country": "BR",
+    "lat": "-22.0175000",
+    "lon": "-47.8908300",
+    "pop": 205035,
+    "id": "2703"
+  },
+  {
+    "name": "Lauro de Freitas",
+    "country": "BR",
+    "lat": "-12.8944400",
+    "lon": "-38.3272200",
+    "pop": 203331,
+    "id": "2726"
+  },
+  {
+    "name": "Sobral",
+    "country": "BR",
+    "lat": "-3.6861100",
+    "lon": "-40.3497200",
+    "pop": 203023,
+    "id": "2729"
+  },
+  {
+    "name": "Rio Claro",
+    "country": "BR",
+    "lat": "-22.4113900",
+    "lon": "-47.5613900",
+    "pop": 201418,
+    "id": "2752"
+  },
+  {
+    "name": "S\u00e3o Jos\u00e9",
+    "country": "BR",
+    "lat": "-28.2134400",
+    "lon": "-49.1638300",
+    "pop": 200000,
+    "id": "2782"
+  },
+  {
+    "name": "Valpara\u00edso de Goi\u00e1s",
+    "country": "BR",
+    "lat": "-16.0658300",
+    "lon": "-47.9786100",
+    "pop": 198861,
+    "id": "2807"
+  },
+  {
+    "name": "Plano Piloto",
+    "country": "BR",
+    "lat": "-15.7941100",
+    "lon": "-47.8825000",
+    "pop": 198697,
+    "id": "2811"
+  },
+  {
+    "name": "Nossa Senhora do Socorro",
+    "country": "BR",
+    "lat": "-10.8550000",
+    "lon": "-37.1261100",
+    "pop": 192330,
+    "id": "2907"
+  },
+  {
+    "name": "Castanhal",
+    "country": "BR",
+    "lat": "-1.2938900",
+    "lon": "-47.9263900",
+    "pop": 192256,
+    "id": "2908"
+  },
+  {
+    "name": "Nova Friburgo",
+    "country": "BR",
+    "lat": "-22.2819400",
+    "lon": "-42.5311100",
+    "pop": 191158,
+    "id": "2921"
+  },
+  {
+    "name": "Planaltina",
+    "country": "BR",
+    "lat": "-15.6179100",
+    "lon": "-47.6487400",
+    "pop": 189412,
+    "id": "2948"
+  },
+  {
+    "name": "Santar\u00e9m",
+    "country": "BR",
+    "lat": "-2.4430600",
+    "lon": "-54.7083300",
+    "pop": 189047,
+    "id": "2956"
+  },
+  {
+    "name": "Cama\u00e7ari",
+    "country": "BR",
+    "lat": "-12.6975000",
+    "lon": "-38.3241700",
+    "pop": 188758,
+    "id": "2959"
+  },
+  {
+    "name": "Santa B\u00e1rbara d'Oeste",
+    "country": "BR",
+    "lat": "-22.7536100",
+    "lon": "-47.4136100",
+    "pop": 188000,
+    "id": "2971"
+  },
+  {
+    "name": "Alvorada",
+    "country": "BR",
+    "lat": "-30.0001800",
+    "lon": "-51.0763200",
+    "pop": 187315,
+    "id": "2982"
+  },
+  {
+    "name": "Cachoeiro de Itapemirim",
+    "country": "BR",
+    "lat": "-20.8488900",
+    "lon": "-41.1127800",
+    "pop": 187019,
+    "id": "2984"
+  },
+  {
+    "name": "Jaragu\u00e1 do Sul",
+    "country": "BR",
+    "lat": "-26.4861100",
+    "lon": "-49.0666700",
+    "pop": 182660,
+    "id": "3044"
+  },
+  {
+    "name": "Guarapuava",
+    "country": "BR",
+    "lat": "-25.3904800",
+    "lon": "-51.4654100",
+    "pop": 182093,
+    "id": "3057"
+  },
+  {
+    "name": "Passo Fundo",
+    "country": "BR",
+    "lat": "-28.2627800",
+    "lon": "-52.4066700",
+    "pop": 179529,
+    "id": "3095"
+  },
+  {
+    "name": "Ferraz de Vasconcelos",
+    "country": "BR",
+    "lat": "-23.5408300",
+    "lon": "-46.3686100",
+    "pop": 179198,
+    "id": "3102"
+  },
+  {
+    "name": "Bragan\u00e7a Paulista",
+    "country": "BR",
+    "lat": "-22.9527000",
+    "lon": "-46.5441800",
+    "pop": 176811,
+    "id": "3139"
+  },
+  {
+    "name": "Teres\u00f3polis",
+    "country": "BR",
+    "lat": "-22.4167000",
+    "lon": "-42.9782200",
+    "pop": 176692,
+    "id": "3140"
+  },
+  {
+    "name": "Palho\u00e7a",
+    "country": "BR",
+    "lat": "-27.6452800",
+    "lon": "-48.6677800",
+    "pop": 175272,
+    "id": "3168"
+  },
+  {
+    "name": "Timon",
+    "country": "BR",
+    "lat": "-5.0941700",
+    "lon": "-42.8366700",
+    "pop": 174465,
+    "id": "3181"
+  },
+  {
+    "name": "Ibirit\u00e9",
+    "country": "BR",
+    "lat": "-20.0219400",
+    "lon": "-44.0588900",
+    "pop": 170537,
+    "id": "3246"
+  },
+  {
+    "name": "Ara\u00e7atuba",
+    "country": "BR",
+    "lat": "-21.2088900",
+    "lon": "-50.4327800",
+    "pop": 170024,
+    "id": "3254"
+  },
+  {
+    "name": "Po\u00e7os de Caldas",
+    "country": "BR",
+    "lat": "-21.7877800",
+    "lon": "-46.5613900",
+    "pop": 168641,
+    "id": "3277"
+  },
+  {
+    "name": "Araraquara",
+    "country": "BR",
+    "lat": "-21.7944400",
+    "lon": "-48.1755600",
+    "pop": 168468,
+    "id": "3281"
+  },
+  {
+    "name": "Porto Seguro",
+    "country": "BR",
+    "lat": "-16.4497200",
+    "lon": "-39.0647200",
+    "pop": 168326,
+    "id": "3285"
+  },
+  {
+    "name": "Rio das Ostras",
+    "country": "BR",
+    "lat": "-22.5269400",
+    "lon": "-41.9450000",
+    "pop": 168099,
+    "id": "3290"
+  },
+  {
+    "name": "Linhares",
+    "country": "BR",
+    "lat": "-19.3911100",
+    "lon": "-40.0722200",
+    "pop": 166786,
+    "id": "3309"
+  },
+  {
+    "name": "S\u00e3o Caetano do Sul",
+    "country": "BR",
+    "lat": "-23.6230600",
+    "lon": "-46.5511100",
+    "pop": 165655,
+    "id": "3330"
+  },
+  {
+    "name": "Pindamonhangaba",
+    "country": "BR",
+    "lat": "-22.9238900",
+    "lon": "-45.4616700",
+    "pop": 165428,
+    "id": "3334"
+  },
+  {
+    "name": "Francisco Morato",
+    "country": "BR",
+    "lat": "-23.2816700",
+    "lon": "-46.7452800",
+    "pop": 165139,
+    "id": "3340"
+  },
+  {
+    "name": "Lages",
+    "country": "BR",
+    "lat": "-27.8161100",
+    "lon": "-50.3261100",
+    "pop": 164676,
+    "id": "3348"
+  },
+  {
+    "name": "Barra Mansa",
+    "country": "BR",
+    "lat": "-22.5441700",
+    "lon": "-44.1713900",
+    "pop": 164052,
+    "id": "3360"
+  },
+  {
+    "name": "Dourados",
+    "country": "BR",
+    "lat": "-22.2211100",
+    "lon": "-54.8055600",
+    "pop": 162202,
+    "id": "3398"
+  },
+  {
+    "name": "Crici\u00fama",
+    "country": "BR",
+    "lat": "-28.6775000",
+    "lon": "-49.3697200",
+    "pop": 161954,
+    "id": "3404"
+  },
+  {
+    "name": "Chapec\u00f3",
+    "country": "BR",
+    "lat": "-27.0963900",
+    "lon": "-52.6183300",
+    "pop": 160157,
+    "id": "3445"
+  },
+  {
+    "name": "Barreiras",
+    "country": "BR",
+    "lat": "-12.1527800",
+    "lon": "-44.9900000",
+    "pop": 159734,
+    "id": "3453"
+  },
+  {
+    "name": "Patos de Minas",
+    "country": "BR",
+    "lat": "-18.5788900",
+    "lon": "-46.5180600",
+    "pop": 159235,
+    "id": "3463"
+  },
+  {
+    "name": "Itapecerica da Serra",
+    "country": "BR",
+    "lat": "-23.7169400",
+    "lon": "-46.8491700",
+    "pop": 158522,
+    "id": "3473"
+  },
+  {
+    "name": "Abaetetuba",
+    "country": "BR",
+    "lat": "-1.7180600",
+    "lon": "-48.8825000",
+    "pop": 158188,
+    "id": "3484"
+  },
+  {
+    "name": "Itapetininga",
+    "country": "BR",
+    "lat": "-23.5916700",
+    "lon": "-48.0530600",
+    "pop": 157790,
+    "id": "3488"
+  },
+  {
+    "name": "Caxias",
+    "country": "BR",
+    "lat": "-4.8588900",
+    "lon": "-43.3561100",
+    "pop": 156973,
+    "id": "3504"
+  },
+  {
+    "name": "Camaragibe",
+    "country": "BR",
+    "lat": "-8.0216700",
+    "lon": "-34.9811100",
+    "pop": 155771,
+    "id": "3530"
+  },
+  {
+    "name": "Itaja\u00ed",
+    "country": "BR",
+    "lat": "-26.9077800",
+    "lon": "-48.6619400",
+    "pop": 155716,
+    "id": "3534"
+  },
+  {
+    "name": "Santana de Parna\u00edba",
+    "country": "BR",
+    "lat": "-23.4441700",
+    "lon": "-46.9177800",
+    "pop": 154105,
+    "id": "3578"
+  },
+  {
+    "name": "Mogi Gua\u00e7u",
+    "country": "BR",
+    "lat": "-22.3677000",
+    "lon": "-46.9455200",
+    "pop": 153658,
+    "id": "3587"
+  },
+  {
+    "name": "Pouso Alegre",
+    "country": "BR",
+    "lat": "-22.2300000",
+    "lon": "-45.9363900",
+    "pop": 152217,
+    "id": "3614"
+  },
+  {
+    "name": "Arauc\u00e1ria",
+    "country": "BR",
+    "lat": "-25.5930600",
+    "lon": "-49.4102800",
+    "pop": 151666,
+    "id": "3620"
+  },
+  {
+    "name": "Garanhuns",
+    "country": "BR",
+    "lat": "-8.8820200",
+    "lon": "-36.5021600",
+    "pop": 151064,
+    "id": "3630"
+  },
+  {
+    "name": "Santa Rita",
+    "country": "BR",
+    "lat": "-7.1138900",
+    "lon": "-34.9780600",
+    "pop": 149910,
+    "id": "3661"
+  },
+  {
+    "name": "Queimados",
+    "country": "BR",
+    "lat": "-22.7161100",
+    "lon": "-43.5552800",
+    "pop": 149093,
+    "id": "3675"
+  },
+  {
+    "name": "Fazenda Rio Grande",
+    "country": "BR",
+    "lat": "-25.6575000",
+    "lon": "-49.3080600",
+    "pop": 148873,
+    "id": "3681"
+  },
+  {
+    "name": "Botucatu",
+    "country": "BR",
+    "lat": "-22.8858300",
+    "lon": "-48.4450000",
+    "pop": 148130,
+    "id": "3701"
+  },
+  {
+    "name": "Nil\u00f3polis",
+    "country": "BR",
+    "lat": "-22.8075000",
+    "lon": "-43.4138900",
+    "pop": 147281,
+    "id": "3725"
+  },
+  {
+    "name": "Marab\u00e1",
+    "country": "BR",
+    "lat": "-5.3814600",
+    "lon": "-49.1323200",
+    "pop": 145860,
+    "id": "3752"
+  },
+  {
+    "name": "Pa\u00e7o do Lumiar",
+    "country": "BR",
+    "lat": "-2.5322200",
+    "lon": "-44.1075000",
+    "pop": 145643,
+    "id": "3756"
+  },
+  {
+    "name": "Franco da Rocha",
+    "country": "BR",
+    "lat": "-23.3216700",
+    "lon": "-46.7269400",
+    "pop": 144849,
+    "id": "3779"
+  },
+  {
+    "name": "Atibaia",
+    "country": "BR",
+    "lat": "-23.1169400",
+    "lon": "-46.5502800",
+    "pop": 144088,
+    "id": "3801"
+  },
+  {
+    "name": "Maca\u00e9",
+    "country": "BR",
+    "lat": "-22.3848400",
+    "lon": "-41.7832400",
+    "pop": 143029,
+    "id": "3828"
+  },
+  {
+    "name": "Trindade",
+    "country": "BR",
+    "lat": "-16.6494400",
+    "lon": "-49.4888900",
+    "pop": 142431,
+    "id": "3844"
+  },
+  {
+    "name": "Brusque",
+    "country": "BR",
+    "lat": "-27.0979500",
+    "lon": "-48.9128100",
+    "pop": 141385,
+    "id": "3878"
+  },
+  {
+    "name": "Gama",
+    "country": "BR",
+    "lat": "-16.0251100",
+    "lon": "-48.0712100",
+    "pop": 139467,
+    "id": "3939"
+  },
+  {
+    "name": "Balne\u00e1rio Cambori\u00fa",
+    "country": "BR",
+    "lat": "-26.9905600",
+    "lon": "-48.6347200",
+    "pop": 139155,
+    "id": "3947"
+  },
+  {
+    "name": "Parna\u00edba",
+    "country": "BR",
+    "lat": "-2.9047200",
+    "lon": "-41.7766700",
+    "pop": 138008,
+    "id": "3974"
+  },
+  {
+    "name": "Araruama",
+    "country": "BR",
+    "lat": "-22.8727800",
+    "lon": "-42.3430600",
+    "pop": 137773,
+    "id": "3981"
+  },
+  {
+    "name": "Itu",
+    "country": "BR",
+    "lat": "-23.2641700",
+    "lon": "-47.2991700",
+    "pop": 137586,
+    "id": "3984"
+  },
+  {
+    "name": "Varginha",
+    "country": "BR",
+    "lat": "-21.5513900",
+    "lon": "-45.4302800",
+    "pop": 136467,
+    "id": "4018"
+  },
+  {
+    "name": "Campo Largo",
+    "country": "BR",
+    "lat": "-25.4595500",
+    "lon": "-49.5301400",
+    "pop": 136327,
+    "id": "4021"
+  },
+  {
+    "name": "Cachoeirinha",
+    "country": "BR",
+    "lat": "-29.9511100",
+    "lon": "-51.0938900",
+    "pop": 136258,
+    "id": "4023"
+  },
+  {
+    "name": "Araras",
+    "country": "BR",
+    "lat": "-22.3569400",
+    "lon": "-47.3841700",
+    "pop": 135331,
+    "id": "4050"
+  },
+  {
+    "name": "Camet\u00e1",
+    "country": "BR",
+    "lat": "-2.2444400",
+    "lon": "-49.4958300",
+    "pop": 134184,
+    "id": "4082"
+  },
+  {
+    "name": "Vit\u00f3ria de Santo Ant\u00e3o",
+    "country": "BR",
+    "lat": "-8.1180600",
+    "lon": "-35.2913900",
+    "pop": 134084,
+    "id": "4084"
+  },
+  {
+    "name": "Ja\u00fa",
+    "country": "BR",
+    "lat": "-22.2963900",
+    "lon": "-48.5577800",
+    "pop": 133497,
+    "id": "4102"
+  },
+  {
+    "name": "Santa Cruz do Sul",
+    "country": "BR",
+    "lat": "-29.7175000",
+    "lon": "-52.4258300",
+    "pop": 133230,
+    "id": "4108"
+  },
+  {
+    "name": "Sapucaia do Sul",
+    "country": "BR",
+    "lat": "-29.8178200",
+    "lon": "-51.1455100",
+    "pop": 132107,
+    "id": "4145"
+  },
+  {
+    "name": "Itapipoca",
+    "country": "BR",
+    "lat": "-3.4944400",
+    "lon": "-39.5786100",
+    "pop": 131123,
+    "id": "4176"
+  },
+  {
+    "name": "Crato",
+    "country": "BR",
+    "lat": "-7.2341700",
+    "lon": "-39.4094400",
+    "pop": 131050,
+    "id": "4177"
+  },
+  {
+    "name": "Apucarana",
+    "country": "BR",
+    "lat": "-23.5508300",
+    "lon": "-51.4608300",
+    "pop": 130134,
+    "id": "4212"
+  },
+  {
+    "name": "Sabar\u00e1",
+    "country": "BR",
+    "lat": "-19.8863900",
+    "lon": "-43.8066700",
+    "pop": 129380,
+    "id": "4242"
+  },
+  {
+    "name": "Vespasiano",
+    "country": "BR",
+    "lat": "-19.6919400",
+    "lon": "-43.9233300",
+    "pop": 129246,
+    "id": "4248"
+  },
+  {
+    "name": "\u00c1guas Claras",
+    "country": "BR",
+    "lat": "-15.8396900",
+    "lon": "-48.0267500",
+    "pop": 128486,
+    "id": "4278"
+  },
+  {
+    "name": "Votorantim",
+    "country": "BR",
+    "lat": "-23.5466700",
+    "lon": "-47.4377800",
+    "pop": 127923,
+    "id": "4299"
+  },
+  {
+    "name": "Jequi\u00e9",
+    "country": "BR",
+    "lat": "-13.8587500",
+    "lon": "-40.0851200",
+    "pop": 127475,
+    "id": "4309"
+  },
+  {
+    "name": "Sert\u00e3ozinho",
+    "country": "BR",
+    "lat": "-21.1377800",
+    "lon": "-47.9902800",
+    "pop": 126887,
+    "id": "4328"
+  },
+  {
+    "name": "Barcarena",
+    "country": "BR",
+    "lat": "-1.5058300",
+    "lon": "-48.6258300",
+    "pop": 126650,
+    "id": "4342"
+  },
+  {
+    "name": "Valinhos",
+    "country": "BR",
+    "lat": "-22.9705600",
+    "lon": "-46.9958300",
+    "pop": 126373,
+    "id": "4352"
+  },
+  {
+    "name": "Altamira",
+    "country": "BR",
+    "lat": "-3.2033300",
+    "lon": "-52.2063900",
+    "pop": 126279,
+    "id": "4359"
+  },
+  {
+    "name": "Barbacena",
+    "country": "BR",
+    "lat": "-21.2258300",
+    "lon": "-43.7736100",
+    "pop": 125317,
+    "id": "4395"
+  },
+  {
+    "name": "Guarapari",
+    "country": "BR",
+    "lat": "-20.6718200",
+    "lon": "-40.5019600",
+    "pop": 124656,
+    "id": "4418"
+  },
+  {
+    "name": "Ji Paran\u00e1",
+    "country": "BR",
+    "lat": "-10.8852800",
+    "lon": "-61.9516700",
+    "pop": 124333,
+    "id": "4428"
+  },
+  {
+    "name": "Itagua\u00ed",
+    "country": "BR",
+    "lat": "-22.8522200",
+    "lon": "-43.7752800",
+    "pop": 123980,
+    "id": "4438"
+  },
+  {
+    "name": "S\u00e3o Mateus",
+    "country": "BR",
+    "lat": "-18.7201100",
+    "lon": "-39.8589100",
+    "pop": 123752,
+    "id": "4445"
+  },
+  {
+    "name": "Uruguaiana",
+    "country": "BR",
+    "lat": "-29.7547200",
+    "lon": "-57.0883300",
+    "pop": 123480,
+    "id": "4451"
+  },
+  {
+    "name": "Caraguatatuba",
+    "country": "BR",
+    "lat": "-23.6202800",
+    "lon": "-45.4130600",
+    "pop": 123389,
+    "id": "4453"
+  },
+  {
+    "name": "Itaituba",
+    "country": "BR",
+    "lat": "-4.2761100",
+    "lon": "-55.9836100",
+    "pop": 123314,
+    "id": "4454"
+  },
+  {
+    "name": "Bento Gon\u00e7alves",
+    "country": "BR",
+    "lat": "-29.1713900",
+    "lon": "-51.5191700",
+    "pop": 123151,
+    "id": "4462"
+  },
+  {
+    "name": "Bragan\u00e7a",
+    "country": "BR",
+    "lat": "-1.0536100",
+    "lon": "-46.7655600",
+    "pop": 123082,
+    "id": "4465"
+  },
+  {
+    "name": "Tatu\u00ed",
+    "country": "BR",
+    "lat": "-23.3555600",
+    "lon": "-47.8569400",
+    "pop": 122967,
+    "id": "4471"
+  },
+  {
+    "name": "Alagoinhas",
+    "country": "BR",
+    "lat": "-12.1355600",
+    "lon": "-38.4191700",
+    "pop": 122688,
+    "id": "4477"
+  },
+  {
+    "name": "Itatiba",
+    "country": "BR",
+    "lat": "-23.0058300",
+    "lon": "-46.8388900",
+    "pop": 122581,
+    "id": "4481"
+  },
+  {
+    "name": "Barretos",
+    "country": "BR",
+    "lat": "-20.5572200",
+    "lon": "-48.5677800",
+    "pop": 122485,
+    "id": "4487"
+  },
+  {
+    "name": "Igarassu",
+    "country": "BR",
+    "lat": "-7.8341700",
+    "lon": "-34.9063900",
+    "pop": 122312,
+    "id": "4495"
+  },
+  {
+    "name": "Sorriso",
+    "country": "BR",
+    "lat": "-12.5452800",
+    "lon": "-55.7113900",
+    "pop": 120985,
+    "id": "4543"
+  },
+  {
+    "name": "Guar\u00e1",
+    "country": "BR",
+    "lat": "-15.8097600",
+    "lon": "-47.9720200",
+    "pop": 120641,
+    "id": "4555"
+  },
+  {
+    "name": "Almirante Tamandar\u00e9",
+    "country": "BR",
+    "lat": "-25.3247200",
+    "lon": "-49.3100000",
+    "pop": 119825,
+    "id": "4591"
+  },
+  {
+    "name": "Salto",
+    "country": "BR",
+    "lat": "-23.2008300",
+    "lon": "-47.2869400",
+    "pop": 119736,
+    "id": "4594"
+  },
+  {
+    "name": "Toledo",
+    "country": "BR",
+    "lat": "-24.7136100",
+    "lon": "-53.7430600",
+    "pop": 119313,
+    "id": "4609"
+  },
+  {
+    "name": "Arapongas",
+    "country": "BR",
+    "lat": "-23.4194400",
+    "lon": "-51.4244400",
+    "pop": 119138,
+    "id": "4616"
+  },
+  {
+    "name": "Piraquara",
+    "country": "BR",
+    "lat": "-25.4422700",
+    "lon": "-49.0679500",
+    "pop": 118730,
+    "id": "4627"
+  },
+  {
+    "name": "Sarandi",
+    "country": "BR",
+    "lat": "-23.4436100",
+    "lon": "-51.8738900",
+    "pop": 118455,
+    "id": "4642"
+  },
+  {
+    "name": "Senador Canedo",
+    "country": "BR",
+    "lat": "-16.7080600",
+    "lon": "-49.0930600",
+    "pop": 118451,
+    "id": "4643"
+  },
+  {
+    "name": "Jandira",
+    "country": "BR",
+    "lat": "-23.5275000",
+    "lon": "-46.9025000",
+    "pop": 118045,
+    "id": "4660"
+  },
+  {
+    "name": "Guaratinguet\u00e1",
+    "country": "BR",
+    "lat": "-22.8163900",
+    "lon": "-45.1925000",
+    "pop": 118044,
+    "id": "4661"
+  },
+  {
+    "name": "Araguari",
+    "country": "BR",
+    "lat": "-18.6472200",
+    "lon": "-48.1872200",
+    "pop": 117808,
+    "id": "4675"
+  },
+  {
+    "name": "Umuarama",
+    "country": "BR",
+    "lat": "-23.7663900",
+    "lon": "-53.3250000",
+    "pop": 117095,
+    "id": "4713"
+  },
+  {
+    "name": "Pinhais",
+    "country": "BR",
+    "lat": "-25.4447200",
+    "lon": "-49.1925000",
+    "pop": 117000,
+    "id": "4720"
+  },
+  {
+    "name": "Santa Maria",
+    "country": "BR",
+    "lat": "-16.0309500",
+    "lon": "-48.0292900",
+    "pop": 116622,
+    "id": "4738"
+  },
+  {
+    "name": "Formosa",
+    "country": "BR",
+    "lat": "-15.5372200",
+    "lon": "-47.3344400",
+    "pop": 115901,
+    "id": "4773"
+  },
+  {
+    "name": "S\u00e3o Gon\u00e7alo do Amarante",
+    "country": "BR",
+    "lat": "-5.7933300",
+    "lon": "-35.3294400",
+    "pop": 115838,
+    "id": "4776"
+  },
+  {
+    "name": "Catanduva",
+    "country": "BR",
+    "lat": "-21.1377800",
+    "lon": "-48.9727800",
+    "pop": 115791,
+    "id": "4779"
+  },
+  {
+    "name": "V\u00e1rzea Paulista",
+    "country": "BR",
+    "lat": "-23.2113900",
+    "lon": "-46.8283300",
+    "pop": 115771,
+    "id": "4780"
+  },
+  {
+    "name": "Ribeir\u00e3o Pires",
+    "country": "BR",
+    "lat": "-23.7105600",
+    "lon": "-46.4133300",
+    "pop": 115559,
+    "id": "4789"
+  },
+  {
+    "name": "Recanto das Emas",
+    "country": "BR",
+    "lat": "-15.9086400",
+    "lon": "-48.0644700",
+    "pop": 115550,
+    "id": "4790"
+  },
+  {
+    "name": "Sim\u00f5es Filho",
+    "country": "BR",
+    "lat": "-12.7844400",
+    "lon": "-38.4038900",
+    "pop": 114559,
+    "id": "4824"
+  },
+  {
+    "name": "Catal\u00e3o",
+    "country": "BR",
+    "lat": "-18.1658300",
+    "lon": "-47.9463900",
+    "pop": 114427,
+    "id": "4832"
+  },
+  {
+    "name": "Cod\u00f3",
+    "country": "BR",
+    "lat": "-4.4552800",
+    "lon": "-43.8855600",
+    "pop": 114275,
+    "id": "4838"
+  },
+  {
+    "name": "Eun\u00e1polis",
+    "country": "BR",
+    "lat": "-16.3775000",
+    "lon": "-39.5802800",
+    "pop": 113710,
+    "id": "4855"
+  },
+  {
+    "name": "Itabira",
+    "country": "BR",
+    "lat": "-19.6191700",
+    "lon": "-43.2269400",
+    "pop": 113343,
+    "id": "4873"
+  },
+  {
+    "name": "Paulo Afonso",
+    "country": "BR",
+    "lat": "-9.4061100",
+    "lon": "-38.2147200",
+    "pop": 112870,
+    "id": "4886"
+  },
+  {
+    "name": "Tangar\u00e1 da Serra",
+    "country": "BR",
+    "lat": "-14.6194400",
+    "lon": "-57.4858300",
+    "pop": 112547,
+    "id": "4904"
+  },
+  {
+    "name": "Itacoatiara",
+    "country": "BR",
+    "lat": "-3.1430600",
+    "lon": "-58.4441700",
+    "pop": 112520,
+    "id": "4906"
+  },
+  {
+    "name": "Cubat\u00e3o",
+    "country": "BR",
+    "lat": "-23.8950000",
+    "lon": "-46.4252800",
+    "pop": 112476,
+    "id": "4909"
+  },
+  {
+    "name": "Paul\u00ednia",
+    "country": "BR",
+    "lat": "-22.7611100",
+    "lon": "-47.1541700",
+    "pop": 112003,
+    "id": "4933"
+  },
+  {
+    "name": "Passos",
+    "country": "BR",
+    "lat": "-20.7188900",
+    "lon": "-46.6097200",
+    "pop": 111939,
+    "id": "4937"
+  },
+  {
+    "name": "Marituba",
+    "country": "BR",
+    "lat": "-1.3552800",
+    "lon": "-48.3419400",
+    "pop": 111785,
+    "id": "4944"
+  },
+  {
+    "name": "Nova Lima",
+    "country": "BR",
+    "lat": "-19.9855600",
+    "lon": "-43.8466700",
+    "pop": 111697,
+    "id": "4951"
+  },
+  {
+    "name": "Arax\u00e1",
+    "country": "BR",
+    "lat": "-19.5933300",
+    "lon": "-46.9405600",
+    "pop": 111691,
+    "id": "4953"
+  },
+  {
+    "name": "Conselheiro Lafaiete",
+    "country": "BR",
+    "lat": "-20.6602800",
+    "lon": "-43.7861100",
+    "pop": 111596,
+    "id": "4956"
+  },
+  {
+    "name": "Resende",
+    "country": "BR",
+    "lat": "-22.4688900",
+    "lon": "-44.4466700",
+    "pop": 111514,
+    "id": "4958"
+  },
+  {
+    "name": "S\u00e3o Louren\u00e7o da Mata",
+    "country": "BR",
+    "lat": "-8.0022200",
+    "lon": "-35.0183300",
+    "pop": 111249,
+    "id": "4972"
+  },
+  {
+    "name": "Manacapuru",
+    "country": "BR",
+    "lat": "-3.2997200",
+    "lon": "-60.6205600",
+    "pop": 110691,
+    "id": "4994"
+  },
+  {
+    "name": "S\u00e3o Pedro da Aldeia",
+    "country": "BR",
+    "lat": "-22.8391700",
+    "lon": "-42.1027800",
+    "pop": 110556,
+    "id": "4996"
+  },
+  {
+    "name": "Tubar\u00e3o",
+    "country": "BR",
+    "lat": "-28.4666700",
+    "lon": "-49.0069400",
+    "pop": 110088,
+    "id": "5017"
+  },
+  {
+    "name": "Luis Eduardo Magalh\u00e3es",
+    "country": "BR",
+    "lat": "-12.0908600",
+    "lon": "-45.7850100",
+    "pop": 107909,
+    "id": "5106"
+  },
+  {
+    "name": "Santana",
+    "country": "BR",
+    "lat": "-0.0381600",
+    "lon": "-51.1747600",
+    "pop": 107618,
+    "id": "5122"
+  },
+  {
+    "name": "Itaperuna",
+    "country": "BR",
+    "lat": "-21.2050000",
+    "lon": "-41.8877800",
+    "pop": 107246,
+    "id": "5134"
+  },
+  {
+    "name": "Camb\u00e9",
+    "country": "BR",
+    "lat": "-23.2758300",
+    "lon": "-51.2783300",
+    "pop": 107208,
+    "id": "5136"
+  },
+  {
+    "name": "Breves",
+    "country": "BR",
+    "lat": "-1.6822200",
+    "lon": "-50.4802800",
+    "pop": 106968,
+    "id": "5146"
+  },
+  {
+    "name": "A\u00e7ail\u00e2ndia",
+    "country": "BR",
+    "lat": "-4.9466700",
+    "lon": "-47.5047200",
+    "pop": 106550,
+    "id": "5160"
+  },
+  {
+    "name": "Jata\u00ed",
+    "country": "BR",
+    "lat": "-17.8793900",
+    "lon": "-51.7216600",
+    "pop": 105729,
+    "id": "5189"
+  },
+  {
+    "name": "Ipojuca",
+    "country": "BR",
+    "lat": "-8.3988900",
+    "lon": "-35.0638900",
+    "pop": 105638,
+    "id": "5192"
+  },
+  {
+    "name": "Nova Serrana",
+    "country": "BR",
+    "lat": "-19.8761100",
+    "lon": "-44.9836100",
+    "pop": 105552,
+    "id": "5194"
+  },
+  {
+    "name": "Paragominas",
+    "country": "BR",
+    "lat": "-2.9956500",
+    "lon": "-47.3548800",
+    "pop": 105550,
+    "id": "5195"
+  },
+  {
+    "name": "Riacho Fundo II",
+    "country": "BR",
+    "lat": "-15.8981000",
+    "lon": "-48.0467100",
+    "pop": 105210,
+    "id": "5214"
+  },
+  {
+    "name": "Maranguape",
+    "country": "BR",
+    "lat": "-3.8908300",
+    "lon": "-38.6855600",
+    "pop": 105093,
+    "id": "5224"
+  },
+  {
+    "name": "Assis",
+    "country": "BR",
+    "lat": "-22.6616700",
+    "lon": "-50.4122200",
+    "pop": 105087,
+    "id": "5225"
+  },
+  {
+    "name": "Planaltina",
+    "country": "BR",
+    "lat": "-15.4527800",
+    "lon": "-47.6141700",
+    "pop": 105031,
+    "id": "5230"
+  },
+  {
+    "name": "Aragua\u00edna",
+    "country": "BR",
+    "lat": "-7.1911100",
+    "lon": "-48.2072200",
+    "pop": 105019,
+    "id": "5231"
+  },
+  {
+    "name": "Lavras",
+    "country": "BR",
+    "lat": "-21.2452800",
+    "lon": "-44.9997200",
+    "pop": 104761,
+    "id": "5247"
+  },
+  {
+    "name": "Coronel Fabriciano",
+    "country": "BR",
+    "lat": "-19.5186100",
+    "lon": "-42.6288900",
+    "pop": 104736,
+    "id": "5248"
+  },
+  {
+    "name": "Muria\u00e9",
+    "country": "BR",
+    "lat": "-21.1305600",
+    "lon": "-42.3663900",
+    "pop": 104108,
+    "id": "5275"
+  },
+  {
+    "name": "Ourinhos",
+    "country": "BR",
+    "lat": "-22.9788900",
+    "lon": "-49.8705600",
+    "pop": 103970,
+    "id": "5286"
+  },
+  {
+    "name": "Abreu e Lima",
+    "country": "BR",
+    "lat": "-7.9116700",
+    "lon": "-34.9027800",
+    "pop": 103945,
+    "id": "5288"
+  },
+  {
+    "name": "Novo Gama",
+    "country": "BR",
+    "lat": "-16.0591700",
+    "lon": "-48.0394400",
+    "pop": 103804,
+    "id": "5298"
+  },
+  {
+    "name": "Po\u00e1",
+    "country": "BR",
+    "lat": "-23.5280600",
+    "lon": "-46.3447200",
+    "pop": 103765,
+    "id": "5299"
+  },
+  {
+    "name": "Bacabal",
+    "country": "BR",
+    "lat": "-4.2324600",
+    "lon": "-44.7816400",
+    "pop": 103711,
+    "id": "5303"
+  },
+  {
+    "name": "Itabaiana",
+    "country": "BR",
+    "lat": "-10.6850000",
+    "lon": "-37.4252800",
+    "pop": 103440,
+    "id": "5322"
+  },
+  {
+    "name": "Ub\u00e1",
+    "country": "BR",
+    "lat": "-21.1200000",
+    "lon": "-42.9427800",
+    "pop": 103365,
+    "id": "5326"
+  },
+  {
+    "name": "Itanha\u00e9m",
+    "country": "BR",
+    "lat": "-24.1830600",
+    "lon": "-46.7888900",
+    "pop": 103102,
+    "id": "5337"
+  },
+  {
+    "name": "Santo Ant\u00f4nio de Jesus",
+    "country": "BR",
+    "lat": "-12.9688900",
+    "lon": "-39.2613900",
+    "pop": 103055,
+    "id": "5340"
+  },
+  {
+    "name": "Caieiras",
+    "country": "BR",
+    "lat": "-23.3641700",
+    "lon": "-46.7405600",
+    "pop": 102775,
+    "id": "5358"
+  },
+  {
+    "name": "Birigui",
+    "country": "BR",
+    "lat": "-21.2886100",
+    "lon": "-50.3400000",
+    "pop": 102277,
+    "id": "5389"
+  },
+  {
+    "name": "Ituiutaba",
+    "country": "BR",
+    "lat": "-18.9742800",
+    "lon": "-49.4621200",
+    "pop": 102217,
+    "id": "5392"
+  },
+  {
+    "name": "Japeri",
+    "country": "BR",
+    "lat": "-22.6430600",
+    "lon": "-43.6533300",
+    "pop": 102149,
+    "id": "5395"
+  },
+  {
+    "name": "Parintins",
+    "country": "BR",
+    "lat": "-2.6283300",
+    "lon": "-56.7358300",
+    "pop": 101956,
+    "id": "5401"
+  },
+  {
+    "name": "Mairipor\u00e3",
+    "country": "BR",
+    "lat": "-23.3186100",
+    "lon": "-46.5866700",
+    "pop": 101937,
+    "id": "5402"
+  },
+  {
+    "name": "Balsas",
+    "country": "BR",
+    "lat": "-7.5325000",
+    "lon": "-46.0355600",
+    "pop": 101767,
+    "id": "5406"
+  },
+  {
+    "name": "Lagarto",
+    "country": "BR",
+    "lat": "-10.9172200",
+    "lon": "-37.6500000",
+    "pop": 101579,
+    "id": "5416"
+  },
+  {
+    "name": "Colatina",
+    "country": "BR",
+    "lat": "-19.5394400",
+    "lon": "-40.6305600",
+    "pop": 101190,
+    "id": "5443"
+  },
+  {
+    "name": "Te\u00f3filo Otoni",
+    "country": "BR",
+    "lat": "-17.8575000",
+    "lon": "-41.5052800",
+    "pop": 101170,
+    "id": "5445"
+  },
+  {
+    "name": "Campo Mour\u00e3o",
+    "country": "BR",
+    "lat": "-24.0430900",
+    "lon": "-52.3792900",
+    "pop": 99432,
+    "id": "5566"
+  },
+  {
+    "name": "Bag\u00e9",
+    "country": "BR",
+    "lat": "-31.3313900",
+    "lon": "-54.1069400",
+    "pop": 98940,
+    "id": "5594"
+  },
+  {
+    "name": "Caldas Novas",
+    "country": "BR",
+    "lat": "-17.7443100",
+    "lon": "-48.6278900",
+    "pop": 98622,
+    "id": "5607"
+  },
+  {
+    "name": "S\u00e3o Sebasti\u00e3o",
+    "country": "BR",
+    "lat": "-15.9028700",
+    "lon": "-47.7761300",
+    "pop": 98612,
+    "id": "5609"
+  },
+  {
+    "name": "Barra do Pira\u00ed",
+    "country": "BR",
+    "lat": "-22.4700000",
+    "lon": "-43.8255600",
+    "pop": 98501,
+    "id": "5616"
+  },
+  {
+    "name": "Santa Cruz do Capibaribe",
+    "country": "BR",
+    "lat": "-7.9575000",
+    "lon": "-36.2047200",
+    "pop": 98254,
+    "id": "5629"
+  },
+  {
+    "name": "Leme",
+    "country": "BR",
+    "lat": "-22.1855600",
+    "lon": "-47.3902800",
+    "pop": 98161,
+    "id": "5635"
+  },
+  {
+    "name": "Iguatu",
+    "country": "BR",
+    "lat": "-6.3594400",
+    "lon": "-39.2986100",
+    "pop": 98064,
+    "id": "5642"
+  },
+  {
+    "name": "Ita\u00fana",
+    "country": "BR",
+    "lat": "-20.0752800",
+    "lon": "-44.5763900",
+    "pop": 97669,
+    "id": "5668"
+  },
+  {
+    "name": "Rio Largo",
+    "country": "BR",
+    "lat": "-9.4783300",
+    "lon": "-35.8533300",
+    "pop": 97435,
+    "id": "5681"
+  },
+  {
+    "name": "Par\u00e1 de Minas",
+    "country": "BR",
+    "lat": "-19.8602800",
+    "lon": "-44.6083300",
+    "pop": 97139,
+    "id": "5697"
+  },
+  {
+    "name": "Ariquemes",
+    "country": "BR",
+    "lat": "-9.9133300",
+    "lon": "-63.0408300",
+    "pop": 96833,
+    "id": "5713"
+  },
+  {
+    "name": "Francisco Beltr\u00e3o",
+    "country": "BR",
+    "lat": "-26.0811100",
+    "lon": "-53.0550000",
+    "pop": 96666,
+    "id": "5727"
+  },
+  {
+    "name": "Corumb\u00e1",
+    "country": "BR",
+    "lat": "-19.0091700",
+    "lon": "-57.6533300",
+    "pop": 96520,
+    "id": "5733"
+  },
+  {
+    "name": "Ca\u00e7apava",
+    "country": "BR",
+    "lat": "-23.1008300",
+    "lon": "-45.7069400",
+    "pop": 96202,
+    "id": "5747"
+  },
+  {
+    "name": "Avar\u00e9",
+    "country": "BR",
+    "lat": "-23.0986100",
+    "lon": "-48.9258300",
+    "pop": 96098,
+    "id": "5755"
+  },
+  {
+    "name": "Erechim",
+    "country": "BR",
+    "lat": "-27.6346100",
+    "lon": "-52.2754000",
+    "pop": 96087,
+    "id": "5757"
+  },
+  {
+    "name": "Vilhena",
+    "country": "BR",
+    "lat": "-12.7405600",
+    "lon": "-60.1458300",
+    "pop": 95832,
+    "id": "5773"
+  },
+  {
+    "name": "S\u00e3o Crist\u00f3v\u00e3o",
+    "country": "BR",
+    "lat": "-11.0147200",
+    "lon": "-37.2063900",
+    "pop": 95612,
+    "id": "5781"
+  },
+  {
+    "name": "Saquarema",
+    "country": "BR",
+    "lat": "-22.8988900",
+    "lon": "-42.4698500",
+    "pop": 95201,
+    "id": "5808"
+  },
+  {
+    "name": "Aracruz",
+    "country": "BR",
+    "lat": "-19.8202800",
+    "lon": "-40.2733300",
+    "pop": 94765,
+    "id": "5845"
+  },
+  {
+    "name": "Paracatu",
+    "country": "BR",
+    "lat": "-17.2222200",
+    "lon": "-46.8747200",
+    "pop": 94023,
+    "id": "5881"
+  },
+  {
+    "name": "Lajeado",
+    "country": "BR",
+    "lat": "-29.4669400",
+    "lon": "-51.9613900",
+    "pop": 93646,
+    "id": "5903"
+  },
+  {
+    "name": "Itajub\u00e1",
+    "country": "BR",
+    "lat": "-22.4255600",
+    "lon": "-45.4527800",
+    "pop": 93073,
+    "id": "5947"
+  },
+  {
+    "name": "Gua\u00edba",
+    "country": "BR",
+    "lat": "-30.1138900",
+    "lon": "-51.3250000",
+    "pop": 92924,
+    "id": "5964"
+  },
+  {
+    "name": "Cajamar",
+    "country": "BR",
+    "lat": "-23.3561100",
+    "lon": "-46.8769400",
+    "pop": 92689,
+    "id": "5974"
+  },
+  {
+    "name": "Patos",
+    "country": "BR",
+    "lat": "-7.0244400",
+    "lon": "-37.2800000",
+    "pop": 92575,
+    "id": "5980"
+  },
+  {
+    "name": "S\u00e3o Jo\u00e3o da Boa Vista",
+    "country": "BR",
+    "lat": "-21.9691700",
+    "lon": "-46.7980600",
+    "pop": 92547,
+    "id": "5984"
+  },
+  {
+    "name": "Lucas do Rio Verde",
+    "country": "BR",
+    "lat": "-13.0712700",
+    "lon": "-55.9147900",
+    "pop": 92256,
+    "id": "6004"
+  },
+  {
+    "name": "Ponta Por\u00e3",
+    "country": "BR",
+    "lat": "-22.5361100",
+    "lon": "-55.7255600",
+    "pop": 92017,
+    "id": "6017"
+  },
+  {
+    "name": "Paranava\u00ed",
+    "country": "BR",
+    "lat": "-23.0730600",
+    "lon": "-52.4652800",
+    "pop": 92001,
+    "id": "6020"
+  },
+  {
+    "name": "Cruzeiro do Sul",
+    "country": "BR",
+    "lat": "-7.6275900",
+    "lon": "-72.6775600",
+    "pop": 91888,
+    "id": "6029"
+  },
+  {
+    "name": "Gravat\u00e1",
+    "country": "BR",
+    "lat": "-8.2011100",
+    "lon": "-35.5647200",
+    "pop": 91887,
+    "id": "6030"
+  },
+  {
+    "name": "Manhua\u00e7u",
+    "country": "BR",
+    "lat": "-20.2580600",
+    "lon": "-42.0336100",
+    "pop": 91886,
+    "id": "6031"
+  },
+  {
+    "name": "Pato Branco",
+    "country": "BR",
+    "lat": "-26.2286100",
+    "lon": "-52.6705600",
+    "pop": 91836,
+    "id": "6035"
+  },
+  {
+    "name": "Ubatuba",
+    "country": "BR",
+    "lat": "-23.4338900",
+    "lon": "-45.0711100",
+    "pop": 91824,
+    "id": "6036"
+  },
+  {
+    "name": "Cidade Ocidental",
+    "country": "BR",
+    "lat": "-16.1097100",
+    "lon": "-47.9326100",
+    "pop": 91767,
+    "id": "6041"
+  },
+  {
+    "name": "C\u00e1ceres",
+    "country": "BR",
+    "lat": "-16.0705600",
+    "lon": "-57.6788900",
+    "pop": 91626,
+    "id": "6048"
+  },
+  {
+    "name": "Tucuru\u00ed",
+    "country": "BR",
+    "lat": "-3.7658500",
+    "lon": "-49.6792300",
+    "pop": 91306,
+    "id": "6071"
+  },
+  {
+    "name": "Aruj\u00e1",
+    "country": "BR",
+    "lat": "-23.3961100",
+    "lon": "-46.3208300",
+    "pop": 91157,
+    "id": "6076"
+  },
+  {
+    "name": "Araripina",
+    "country": "BR",
+    "lat": "-7.5761100",
+    "lon": "-40.4983300",
+    "pop": 90104,
+    "id": "6146"
+  },
+  {
+    "name": "Patroc\u00ednio",
+    "country": "BR",
+    "lat": "-18.9438900",
+    "lon": "-46.9925000",
+    "pop": 89826,
+    "id": "6169"
+  },
+  {
+    "name": "Itapeva",
+    "country": "BR",
+    "lat": "-23.9822200",
+    "lon": "-48.8755600",
+    "pop": 89728,
+    "id": "6177"
+  },
+  {
+    "name": "Gurupi",
+    "country": "BR",
+    "lat": "-11.7291700",
+    "lon": "-49.0686100",
+    "pop": 89574,
+    "id": "6187"
+  },
+  {
+    "name": "Guanambi",
+    "country": "BR",
+    "lat": "-14.2233300",
+    "lon": "-42.7813900",
+    "pop": 87817,
+    "id": "6307"
+  },
+  {
+    "name": "Caratinga",
+    "country": "BR",
+    "lat": "-19.7897200",
+    "lon": "-42.1391700",
+    "pop": 87360,
+    "id": "6348"
+  },
+  {
+    "name": "Serra Talhada",
+    "country": "BR",
+    "lat": "-7.9919400",
+    "lon": "-38.2983300",
+    "pop": 86915,
+    "id": "6380"
+  },
+  {
+    "name": "Cacoal",
+    "country": "BR",
+    "lat": "-11.4386100",
+    "lon": "-61.4472200",
+    "pop": 86887,
+    "id": "6383"
+  },
+  {
+    "name": "Barra do Corda",
+    "country": "BR",
+    "lat": "-5.5055600",
+    "lon": "-45.2433300",
+    "pop": 86662,
+    "id": "6405"
+  },
+  {
+    "name": "Una\u00ed",
+    "country": "BR",
+    "lat": "-16.3575000",
+    "lon": "-46.9061100",
+    "pop": 86619,
+    "id": "6409"
+  },
+  {
+    "name": "Navegantes",
+    "country": "BR",
+    "lat": "-26.8988900",
+    "lon": "-48.6541700",
+    "pop": 86401,
+    "id": "6427"
+  },
+  {
+    "name": "Valen\u00e7a",
+    "country": "BR",
+    "lat": "-13.3702800",
+    "lon": "-39.0730600",
+    "pop": 85655,
+    "id": "6477"
+  },
+  {
+    "name": "Esmeraldas",
+    "country": "BR",
+    "lat": "-19.7625000",
+    "lon": "-44.3138900",
+    "pop": 85598,
+    "id": "6482"
+  },
+  {
+    "name": "Reden\u00e7\u00e3o",
+    "country": "BR",
+    "lat": "-8.0286100",
+    "lon": "-50.0313900",
+    "pop": 85597,
+    "id": "6483"
+  },
+  {
+    "name": "Goiana",
+    "country": "BR",
+    "lat": "-7.5605600",
+    "lon": "-35.0025000",
+    "pop": 85160,
+    "id": "6513"
+  },
+  {
+    "name": "Cambori\u00fa",
+    "country": "BR",
+    "lat": "-27.0252800",
+    "lon": "-48.6544400",
+    "pop": 85105,
+    "id": "6519"
+  },
+  {
+    "name": "Santa In\u00eas",
+    "country": "BR",
+    "lat": "-3.6666700",
+    "lon": "-45.3800000",
+    "pop": 85014,
+    "id": "6525"
+  },
+  {
+    "name": "Lorena",
+    "country": "BR",
+    "lat": "-22.7308300",
+    "lon": "-45.1247200",
+    "pop": 84855,
+    "id": "6536"
+  },
+  {
+    "name": "Iju\u00ed",
+    "country": "BR",
+    "lat": "-28.3877800",
+    "lon": "-53.9147200",
+    "pop": 84780,
+    "id": "6545"
+  },
+  {
+    "name": "Serop\u00e9dica",
+    "country": "BR",
+    "lat": "-22.7438900",
+    "lon": "-43.7075000",
+    "pop": 84737,
+    "id": "6550"
+  },
+  {
+    "name": "Pinheiro",
+    "country": "BR",
+    "lat": "-2.5213900",
+    "lon": "-45.0825000",
+    "pop": 84621,
+    "id": "6564"
+  },
+  {
+    "name": "Sant'Ana do Livramento",
+    "country": "BR",
+    "lat": "-30.8908300",
+    "lon": "-55.5327800",
+    "pop": 84421,
+    "id": "6579"
+  },
+  {
+    "name": "Quixad\u00e1",
+    "country": "BR",
+    "lat": "-4.9713900",
+    "lon": "-39.0152800",
+    "pop": 84168,
+    "id": "6602"
+  },
+  {
+    "name": "Moju",
+    "country": "BR",
+    "lat": "-1.8838900",
+    "lon": "-48.7688900",
+    "pop": 84094,
+    "id": "6604"
+  },
+  {
+    "name": "Cianorte",
+    "country": "BR",
+    "lat": "-23.6633300",
+    "lon": "-52.6050000",
+    "pop": 83816,
+    "id": "6626"
+  },
+  {
+    "name": "Belo Jardim",
+    "country": "BR",
+    "lat": "-8.3355600",
+    "lon": "-36.4241700",
+    "pop": 83647,
+    "id": "6632"
+  },
+  {
+    "name": "S\u00e3o Bento do Sul",
+    "country": "BR",
+    "lat": "-26.2502800",
+    "lon": "-49.3786100",
+    "pop": 83277,
+    "id": "6653"
+  },
+  {
+    "name": "Carpina",
+    "country": "BR",
+    "lat": "-7.8508300",
+    "lon": "-35.2547200",
+    "pop": 83205,
+    "id": "6661"
+  },
+  {
+    "name": "Picos",
+    "country": "BR",
+    "lat": "-7.0769400",
+    "lon": "-41.4669400",
+    "pop": 83090,
+    "id": "6671"
+  },
+  {
+    "name": "Sobradinho II",
+    "country": "BR",
+    "lat": "-15.6336100",
+    "lon": "-47.8347800",
+    "pop": 82785,
+    "id": "6702"
+  },
+  {
+    "name": "Bayeux",
+    "country": "BR",
+    "lat": "-7.1250000",
+    "lon": "-34.9322200",
+    "pop": 82742,
+    "id": "6708"
+  },
+  {
+    "name": "Jacobina",
+    "country": "BR",
+    "lat": "-11.1814300",
+    "lon": "-40.5137200",
+    "pop": 82590,
+    "id": "6720"
+  },
+  {
+    "name": "Tr\u00eas Rios",
+    "country": "BR",
+    "lat": "-22.1166700",
+    "lon": "-43.2091700",
+    "pop": 82300,
+    "id": "6753"
+  },
+  {
+    "name": "Maca\u00edba",
+    "country": "BR",
+    "lat": "-5.8583300",
+    "lon": "-35.3538900",
+    "pop": 82249,
+    "id": "6760"
+  },
+  {
+    "name": "Quixeramobim",
+    "country": "BR",
+    "lat": "-5.1991700",
+    "lon": "-39.2927800",
+    "pop": 82177,
+    "id": "6765"
+  },
+  {
+    "name": "Arcoverde",
+    "country": "BR",
+    "lat": "-8.4188900",
+    "lon": "-37.0538900",
+    "pop": 82003,
+    "id": "6772"
+  },
+  {
+    "name": "Conc\u00f3rdia",
+    "country": "BR",
+    "lat": "-27.2341700",
+    "lon": "-52.0277800",
+    "pop": 81646,
+    "id": "6808"
+  },
+  {
+    "name": "Tim\u00f3teo",
+    "country": "BR",
+    "lat": "-19.5810600",
+    "lon": "-42.6495300",
+    "pop": 81579,
+    "id": "6817"
+  },
+  {
+    "name": "Pacatuba",
+    "country": "BR",
+    "lat": "-3.9841700",
+    "lon": "-38.6202800",
+    "pop": 81524,
+    "id": "6820"
+  },
+  {
+    "name": "Tiangu\u00e1",
+    "country": "BR",
+    "lat": "-3.7322200",
+    "lon": "-40.9916700",
+    "pop": 81506,
+    "id": "6822"
+  },
+  {
+    "name": "Chapadinha",
+    "country": "BR",
+    "lat": "-3.7416700",
+    "lon": "-43.3602800",
+    "pop": 81386,
+    "id": "6828"
+  },
+  {
+    "name": "Curvelo",
+    "country": "BR",
+    "lat": "-18.7563900",
+    "lon": "-44.4308300",
+    "pop": 80665,
+    "id": "6882"
+  },
+  {
+    "name": "\u00c1gua Rasa",
+    "country": "BR",
+    "lat": "-20.4333300",
+    "lon": "-45.1666700",
+    "pop": 80484,
+    "id": "6899"
+  },
+  {
+    "name": "Serrinha",
+    "country": "BR",
+    "lat": "-11.6641700",
+    "lon": "-39.0075000",
+    "pop": 80435,
+    "id": "6905"
+  },
+  {
+    "name": "Jo\u00e3o Monlevade",
+    "country": "BR",
+    "lat": "-19.8100000",
+    "lon": "-43.1736100",
+    "pop": 80187,
+    "id": "6927"
+  },
+  {
+    "name": "Vinhedo",
+    "country": "BR",
+    "lat": "-23.0297200",
+    "lon": "-46.9752800",
+    "pop": 80111,
+    "id": "6930"
+  },
+  {
+    "name": "Cachoeira do Sul",
+    "country": "BR",
+    "lat": "-30.0391700",
+    "lon": "-52.8938900",
+    "pop": 80070,
+    "id": "6933"
+  },
+  {
+    "name": "Itumbiara",
+    "country": "BR",
+    "lat": "-18.4191700",
+    "lon": "-49.2152800",
+    "pop": 79582,
+    "id": "6975"
+  },
+  {
+    "name": "S\u00e3o Roque",
+    "country": "BR",
+    "lat": "-23.5291700",
+    "lon": "-47.1352800",
+    "pop": 79484,
+    "id": "6985"
+  },
+  {
+    "name": "Tef\u00e9",
+    "country": "BR",
+    "lat": "-3.3684100",
+    "lon": "-64.7205400",
+    "pop": 79278,
+    "id": "6994"
+  },
+  {
+    "name": "Cear\u00e1-Mirim",
+    "country": "BR",
+    "lat": "-5.6344400",
+    "lon": "-35.4255600",
+    "pop": 79115,
+    "id": "7005"
+  },
+  {
+    "name": "Mat\u00e3o",
+    "country": "BR",
+    "lat": "-21.6033300",
+    "lon": "-48.3658300",
+    "pop": 79033,
+    "id": "7016"
+  },
+  {
+    "name": "Alfenas",
+    "country": "BR",
+    "lat": "-21.4291700",
+    "lon": "-45.9472200",
+    "pop": 78970,
+    "id": "7025"
+  },
+  {
+    "name": "Tr\u00eas Lagoas",
+    "country": "BR",
+    "lat": "-20.7876500",
+    "lon": "-51.7033800",
+    "pop": 78712,
+    "id": "7045"
+  },
+  {
+    "name": "S\u00e3o Jo\u00e3o del Rei",
+    "country": "BR",
+    "lat": "-21.1355600",
+    "lon": "-44.2616700",
+    "pop": 78592,
+    "id": "7059"
+  },
+  {
+    "name": "Lins",
+    "country": "BR",
+    "lat": "-21.6786100",
+    "lon": "-49.7425000",
+    "pop": 78503,
+    "id": "7066"
+  },
+  {
+    "name": "Mogi Mirim",
+    "country": "BR",
+    "lat": "-22.4319400",
+    "lon": "-46.9577800",
+    "pop": 78244,
+    "id": "7091"
+  },
+  {
+    "name": "Jardim Bot\u00e2nico",
+    "country": "BR",
+    "lat": "-15.8652700",
+    "lon": "-47.8147700",
+    "pop": 77767,
+    "id": "7123"
+  },
+  {
+    "name": "Campo Limpo Paulista",
+    "country": "BR",
+    "lat": "-23.2055400",
+    "lon": "-46.7838000",
+    "pop": 77632,
+    "id": "7139"
+  },
+  {
+    "name": "Cana\u00e3 dos Caraj\u00e1s",
+    "country": "BR",
+    "lat": "-6.5239200",
+    "lon": "-49.8516700",
+    "pop": 77079,
+    "id": "7198"
+  },
+  {
+    "name": "Santa Rosa",
+    "country": "BR",
+    "lat": "-27.8708300",
+    "lon": "-54.4813900",
+    "pop": 76963,
+    "id": "7212"
+  },
+  {
+    "name": "Santo \u00c2ngelo",
+    "country": "BR",
+    "lat": "-28.2991700",
+    "lon": "-54.2630600",
+    "pop": 76917,
+    "id": "7215"
+  },
+  {
+    "name": "Bigua\u00e7u",
+    "country": "BR",
+    "lat": "-27.4941700",
+    "lon": "-48.6555600",
+    "pop": 76773,
+    "id": "7228"
+  },
+  {
+    "name": "Vi\u00e7osa",
+    "country": "BR",
+    "lat": "-20.7538900",
+    "lon": "-42.8819400",
+    "pop": 76430,
+    "id": "7262"
+  },
+  {
+    "name": "Crate\u00fas",
+    "country": "BR",
+    "lat": "-5.1777500",
+    "lon": "-40.6694900",
+    "pop": 76390,
+    "id": "7268"
+  },
+  {
+    "name": "Bebedouro",
+    "country": "BR",
+    "lat": "-20.9494400",
+    "lon": "-48.4791700",
+    "pop": 76373,
+    "id": "7272"
+  },
+  {
+    "name": "Esteio",
+    "country": "BR",
+    "lat": "-29.8613900",
+    "lon": "-51.1791700",
+    "pop": 76137,
+    "id": "7299"
+  },
+  {
+    "name": "Itapema",
+    "country": "BR",
+    "lat": "-27.0902800",
+    "lon": "-48.6113900",
+    "pop": 75940,
+    "id": "7318"
+  },
+  {
+    "name": "Sapiranga",
+    "country": "BR",
+    "lat": "-29.6380600",
+    "lon": "-51.0069400",
+    "pop": 75648,
+    "id": "7347"
+  },
+  {
+    "name": "Ibi\u00fana",
+    "country": "BR",
+    "lat": "-23.6563900",
+    "lon": "-47.2225000",
+    "pop": 75605,
+    "id": "7354"
+  },
+  {
+    "name": "Tr\u00eas Cora\u00e7\u00f5es",
+    "country": "BR",
+    "lat": "-21.6969400",
+    "lon": "-45.2533300",
+    "pop": 75485,
+    "id": "7365"
+  },
+  {
+    "name": "Lagoa Santa",
+    "country": "BR",
+    "lat": "-19.6300600",
+    "lon": "-43.9009000",
+    "pop": 75145,
+    "id": "7394"
+  },
+  {
+    "name": "Tel\u00eamaco Borba",
+    "country": "BR",
+    "lat": "-24.3238900",
+    "lon": "-50.6155600",
+    "pop": 75042,
+    "id": "7404"
+  },
+  {
+    "name": "Barbalha",
+    "country": "BR",
+    "lat": "-7.3111100",
+    "lon": "-39.3041700",
+    "pop": 75033,
+    "id": "7406"
+  },
+  {
+    "name": "Cruzeiro",
+    "country": "BR",
+    "lat": "-22.5731600",
+    "lon": "-44.9710800",
+    "pop": 74961,
+    "id": "7419"
+  },
+  {
+    "name": "Ouro Preto",
+    "country": "BR",
+    "lat": "-20.3948400",
+    "lon": "-43.5051700",
+    "pop": 74821,
+    "id": "7431"
+  },
+  {
+    "name": "Senhor do Bonfim",
+    "country": "BR",
+    "lat": "-10.4613900",
+    "lon": "-40.1894400",
+    "pop": 74523,
+    "id": "7462"
+  },
+  {
+    "name": "Irec\u00ea",
+    "country": "BR",
+    "lat": "-11.3041700",
+    "lon": "-41.8558300",
+    "pop": 74507,
+    "id": "7463"
+  },
+  {
+    "name": "Canind\u00e9",
+    "country": "BR",
+    "lat": "-4.3588900",
+    "lon": "-39.3116700",
+    "pop": 74174,
+    "id": "7499"
+  },
+  {
+    "name": "Eus\u00e9bio",
+    "country": "BR",
+    "lat": "-3.8900000",
+    "lon": "-38.4505600",
+    "pop": 74170,
+    "id": "7501"
+  },
+  {
+    "name": "Graja\u00fa",
+    "country": "BR",
+    "lat": "-5.8194400",
+    "lon": "-46.1386100",
+    "pop": 73872,
+    "id": "7534"
+  },
+  {
+    "name": "Coari",
+    "country": "BR",
+    "lat": "-4.0850000",
+    "lon": "-63.1413900",
+    "pop": 73820,
+    "id": "7542"
+  },
+  {
+    "name": "Ca\u00e7ador",
+    "country": "BR",
+    "lat": "-26.7752800",
+    "lon": "-51.0150000",
+    "pop": 73720,
+    "id": "7550"
+  },
+  {
+    "name": "Goian\u00e9sia",
+    "country": "BR",
+    "lat": "-15.3175000",
+    "lon": "-49.1175000",
+    "pop": 73707,
+    "id": "7552"
+  },
+  {
+    "name": "Pirassununga",
+    "country": "BR",
+    "lat": "-21.9961100",
+    "lon": "-47.4258300",
+    "pop": 73545,
+    "id": "7575"
+  },
+  {
+    "name": "Viana",
+    "country": "BR",
+    "lat": "-20.3902800",
+    "lon": "-40.4961100",
+    "pop": 73423,
+    "id": "7586"
+  },
+  {
+    "name": "Castro",
+    "country": "BR",
+    "lat": "-24.7892700",
+    "lon": "-50.0122500",
+    "pop": 73075,
+    "id": "7619"
+  },
+  {
+    "name": "Santa Isabel do Par\u00e1",
+    "country": "BR",
+    "lat": "-1.2986100",
+    "lon": "-48.1605600",
+    "pop": 73019,
+    "id": "7628"
+  },
+  {
+    "name": "Russas",
+    "country": "BR",
+    "lat": "-4.9402800",
+    "lon": "-37.9758300",
+    "pop": 72928,
+    "id": "7641"
+  },
+  {
+    "name": "Cascavel",
+    "country": "BR",
+    "lat": "-4.1330600",
+    "lon": "-38.2419400",
+    "pop": 72720,
+    "id": "7658"
+  },
+  {
+    "name": "Barra do Gar\u00e7as",
+    "country": "BR",
+    "lat": "-15.8900000",
+    "lon": "-52.2566700",
+    "pop": 72694,
+    "id": "7660"
+  },
+  {
+    "name": "Amparo",
+    "country": "BR",
+    "lat": "-22.7011100",
+    "lon": "-46.7644400",
+    "pop": 72677,
+    "id": "7661"
+  },
+  {
+    "name": "Rio do Sul",
+    "country": "BR",
+    "lat": "-27.2141700",
+    "lon": "-49.6430600",
+    "pop": 72587,
+    "id": "7671"
+  },
+  {
+    "name": "Gaspar",
+    "country": "BR",
+    "lat": "-26.9313900",
+    "lon": "-48.9588900",
+    "pop": 72570,
+    "id": "7673"
+  },
+  {
+    "name": "Tail\u00e2ndia",
+    "country": "BR",
+    "lat": "-2.9472200",
+    "lon": "-48.9530600",
+    "pop": 72493,
+    "id": "7677"
+  },
+  {
+    "name": "Alegrete",
+    "country": "BR",
+    "lat": "-29.7830600",
+    "lon": "-55.7919400",
+    "pop": 72409,
+    "id": "7686"
+  },
+  {
+    "name": "Candeias",
+    "country": "BR",
+    "lat": "-12.6677800",
+    "lon": "-38.5505600",
+    "pop": 72382,
+    "id": "7688"
+  },
+  {
+    "name": "Tabatinga",
+    "country": "BR",
+    "lat": "-4.2311600",
+    "lon": "-69.9385800",
+    "pop": 72283,
+    "id": "7700"
+  },
+  {
+    "name": "Sobradinho",
+    "country": "BR",
+    "lat": "-15.6471300",
+    "lon": "-47.7931500",
+    "pop": 72273,
+    "id": "7704"
+  },
+  {
+    "name": "Santo Ant\u00f4nio do Descoberto",
+    "country": "BR",
+    "lat": "-15.9397200",
+    "lon": "-48.2550000",
+    "pop": 72127,
+    "id": "7712"
+  },
+  {
+    "name": "Casa Nova",
+    "country": "BR",
+    "lat": "-9.1741900",
+    "lon": "-40.9751400",
+    "pop": 72086,
+    "id": "7718"
+  },
+  {
+    "name": "Itapira",
+    "country": "BR",
+    "lat": "-22.4361100",
+    "lon": "-46.8216700",
+    "pop": 72022,
+    "id": "7722"
+  },
+  {
+    "name": "Ararangu\u00e1",
+    "country": "BR",
+    "lat": "-28.9357500",
+    "lon": "-49.4953800",
+    "pop": 71922,
+    "id": "7736"
+  },
+  {
+    "name": "Goianira",
+    "country": "BR",
+    "lat": "-16.4961100",
+    "lon": "-49.4263900",
+    "pop": 71916,
+    "id": "7737"
+  },
+  {
+    "name": "Jaboticabal",
+    "country": "BR",
+    "lat": "-21.2547200",
+    "lon": "-48.3222200",
+    "pop": 71821,
+    "id": "7751"
+  },
+  {
+    "name": "S\u00e3o Sebasti\u00e3o do Para\u00edso",
+    "country": "BR",
+    "lat": "-20.9169400",
+    "lon": "-46.9913900",
+    "pop": 71796,
+    "id": "7753"
+  },
+  {
+    "name": "Rol\u00e2ndia",
+    "country": "BR",
+    "lat": "-23.3097200",
+    "lon": "-51.3691700",
+    "pop": 71670,
+    "id": "7763"
+  },
+  {
+    "name": "Indaial",
+    "country": "BR",
+    "lat": "-26.8977800",
+    "lon": "-49.2316700",
+    "pop": 71549,
+    "id": "7776"
+  },
+  {
+    "name": "Dias d'\u00c1vila",
+    "country": "BR",
+    "lat": "-12.6125000",
+    "lon": "-38.2969400",
+    "pop": 71485,
+    "id": "7783"
+  },
+  {
+    "name": "Valen\u00e7a",
+    "country": "BR",
+    "lat": "-22.2455600",
+    "lon": "-43.7002800",
+    "pop": 71462,
+    "id": "7787"
+  },
+  {
+    "name": "Campo Formoso",
+    "country": "BR",
+    "lat": "-10.5075000",
+    "lon": "-40.3213900",
+    "pop": 71377,
+    "id": "7799"
+  },
+  {
+    "name": "Fernand\u00f3polis",
+    "country": "BR",
+    "lat": "-20.2838900",
+    "lon": "-50.2463900",
+    "pop": 71186,
+    "id": "7829"
+  },
+  {
+    "name": "Horizonte",
+    "country": "BR",
+    "lat": "-4.0980200",
+    "lon": "-38.4860000",
+    "pop": 70983,
+    "id": "7859"
+  },
+  {
+    "name": "Pacajus",
+    "country": "BR",
+    "lat": "-4.1725000",
+    "lon": "-38.4605600",
+    "pop": 70983,
+    "id": "7860"
+  },
+  {
+    "name": "Jana\u00faba",
+    "country": "BR",
+    "lat": "-15.8025000",
+    "lon": "-43.3088900",
+    "pop": 70699,
+    "id": "7891"
+  },
+  {
+    "name": "Brumado",
+    "country": "BR",
+    "lat": "-14.2036100",
+    "lon": "-41.6652800",
+    "pop": 70510,
+    "id": "7911"
+  },
+  {
+    "name": "Capanema",
+    "country": "BR",
+    "lat": "-1.1958300",
+    "lon": "-47.1808300",
+    "pop": 70394,
+    "id": "7927"
+  },
+  {
+    "name": "Farroupilha",
+    "country": "BR",
+    "lat": "-29.2250000",
+    "lon": "-51.3477800",
+    "pop": 70286,
+    "id": "7940"
+  },
+  {
+    "name": "Mineiros",
+    "country": "BR",
+    "lat": "-17.5694400",
+    "lon": "-52.5511100",
+    "pop": 70081,
+    "id": "7969"
+  },
+  {
+    "name": "Votuporanga",
+    "country": "BR",
+    "lat": "-20.4227800",
+    "lon": "-49.9727800",
+    "pop": 69863,
+    "id": "7996"
+  },
+  {
+    "name": "Alenquer",
+    "country": "BR",
+    "lat": "-1.9416700",
+    "lon": "-54.7383300",
+    "pop": 69377,
+    "id": "8038"
+  },
+  {
+    "name": "Ven\u00e2ncio Aires",
+    "country": "BR",
+    "lat": "-29.6063900",
+    "lon": "-52.1919400",
+    "pop": 68763,
+    "id": "8097"
+  },
+  {
+    "name": "Porto Nacional",
+    "country": "BR",
+    "lat": "-10.7080600",
+    "lon": "-48.4172200",
+    "pop": 68555,
+    "id": "8117"
+  },
+  {
+    "name": "Peru\u00edbe",
+    "country": "BR",
+    "lat": "-24.3200000",
+    "lon": "-46.9983300",
+    "pop": 68352,
+    "id": "8135"
+  },
+  {
+    "name": "Oriximin\u00e1",
+    "country": "BR",
+    "lat": "-1.7655600",
+    "lon": "-55.8661100",
+    "pop": 68294,
+    "id": "8141"
+  },
+  {
+    "name": "Formiga",
+    "country": "BR",
+    "lat": "-20.4644400",
+    "lon": "-45.4263900",
+    "pop": 68248,
+    "id": "8147"
+  },
+  {
+    "name": "Concei\u00e7\u00e3o do Coit\u00e9",
+    "country": "BR",
+    "lat": "-11.5638900",
+    "lon": "-39.2827800",
+    "pop": 67825,
+    "id": "8200"
+  },
+  {
+    "name": "Mococa",
+    "country": "BR",
+    "lat": "-21.4677800",
+    "lon": "-47.0047200",
+    "pop": 67681,
+    "id": "8227"
+  },
+  {
+    "name": "Tom\u00e9-A\u00e7u",
+    "country": "BR",
+    "lat": "-2.4188900",
+    "lon": "-48.1522200",
+    "pop": 67585,
+    "id": "8245"
+  },
+  {
+    "name": "Sousa",
+    "country": "BR",
+    "lat": "-6.7591700",
+    "lon": "-38.2280600",
+    "pop": 67259,
+    "id": "8283"
+  },
+  {
+    "name": "Iranduba",
+    "country": "BR",
+    "lat": "-3.2847200",
+    "lon": "-60.1861100",
+    "pop": 67114,
+    "id": "8297"
+  },
+  {
+    "name": "Embu-Gua\u00e7u",
+    "country": "BR",
+    "lat": "-23.8322200",
+    "lon": "-46.8113900",
+    "pop": 66970,
+    "id": "8316"
+  },
+  {
+    "name": "Len\u00e7\u00f3is Paulista",
+    "country": "BR",
+    "lat": "-22.5986100",
+    "lon": "-48.8002800",
+    "pop": 66505,
+    "id": "8374"
+  },
+  {
+    "name": "Cataguases",
+    "country": "BR",
+    "lat": "-21.3891700",
+    "lon": "-42.6966700",
+    "pop": 66261,
+    "id": "8404"
+  },
+  {
+    "name": "Itapetinga",
+    "country": "BR",
+    "lat": "-15.2488900",
+    "lon": "-40.2477800",
+    "pop": 65897,
+    "id": "8461"
+  },
+  {
+    "name": "Montenegro",
+    "country": "BR",
+    "lat": "-29.6886100",
+    "lon": "-51.4611100",
+    "pop": 65721,
+    "id": "8485"
+  },
+  {
+    "name": "Mau\u00e9s",
+    "country": "BR",
+    "lat": "-3.3836100",
+    "lon": "-57.7186100",
+    "pop": 65714,
+    "id": "8486"
+  },
+  {
+    "name": "Barreirinhas",
+    "country": "BR",
+    "lat": "-2.7555600",
+    "lon": "-42.8259100",
+    "pop": 65589,
+    "id": "8506"
+  },
+  {
+    "name": "Bom Jesus da Lapa",
+    "country": "BR",
+    "lat": "-13.2550000",
+    "lon": "-43.4180600",
+    "pop": 65550,
+    "id": "8511"
+  },
+  {
+    "name": "Piripiri",
+    "country": "BR",
+    "lat": "-4.2733300",
+    "lon": "-41.7769400",
+    "pop": 65538,
+    "id": "8512"
+  },
+  {
+    "name": "S\u00e3o F\u00e9lix do Xingu",
+    "country": "BR",
+    "lat": "-6.6447200",
+    "lon": "-51.9950000",
+    "pop": 65418,
+    "id": "8528"
+  },
+  {
+    "name": "Itapo\u00e3",
+    "country": "BR",
+    "lat": "-15.7493700",
+    "lon": "-47.7686000",
+    "pop": 65408,
+    "id": "8531"
+  },
+  {
+    "name": "Acara\u00fa",
+    "country": "BR",
+    "lat": "-2.8855600",
+    "lon": "-40.1200000",
+    "pop": 65264,
+    "id": "8556"
+  },
+  {
+    "name": "Ouricuri",
+    "country": "BR",
+    "lat": "-7.8825000",
+    "lon": "-40.0816700",
+    "pop": 65245,
+    "id": "8563"
+  },
+  {
+    "name": "Janu\u00e1ria",
+    "country": "BR",
+    "lat": "-15.4794900",
+    "lon": "-44.3652000",
+    "pop": 65150,
+    "id": "8572"
+  },
+  {
+    "name": "Aquiraz",
+    "country": "BR",
+    "lat": "-3.9013900",
+    "lon": "-38.3911100",
+    "pop": 65116,
+    "id": "8576"
+  },
+  {
+    "name": "Est\u00e2ncia",
+    "country": "BR",
+    "lat": "-11.2683300",
+    "lon": "-37.4383300",
+    "pop": 65078,
+    "id": "8581"
+  },
+  {
+    "name": "Itaberaba",
+    "country": "BR",
+    "lat": "-12.5275000",
+    "lon": "-40.3069400",
+    "pop": 65073,
+    "id": "8582"
+  },
+  {
+    "name": "Igarap\u00e9 Miri",
+    "country": "BR",
+    "lat": "-1.9750000",
+    "lon": "-48.9597200",
+    "pop": 64831,
+    "id": "8611"
+  },
+  {
+    "name": "Bezerros",
+    "country": "BR",
+    "lat": "-8.2333300",
+    "lon": "-35.7969400",
+    "pop": 64809,
+    "id": "8615"
+  },
+  {
+    "name": "Bertioga",
+    "country": "BR",
+    "lat": "-23.8544400",
+    "lon": "-46.1386100",
+    "pop": 64723,
+    "id": "8625"
+  },
+  {
+    "name": "Monte Mor",
+    "country": "BR",
+    "lat": "-22.9466700",
+    "lon": "-47.3158300",
+    "pop": 64662,
+    "id": "8634"
+  },
+  {
+    "name": "Itaitinga",
+    "country": "BR",
+    "lat": "-3.9694400",
+    "lon": "-38.5280600",
+    "pop": 64650,
+    "id": "8637"
+  },
+  {
+    "name": "Vacaria",
+    "country": "BR",
+    "lat": "-28.5122200",
+    "lon": "-50.9338900",
+    "pop": 64197,
+    "id": "8703"
+  },
+  {
+    "name": "Surubim",
+    "country": "BR",
+    "lat": "-7.8330600",
+    "lon": "-35.7547200",
+    "pop": 64120,
+    "id": "8713"
+  },
+  {
+    "name": "Tup\u00e3",
+    "country": "BR",
+    "lat": "-21.9347200",
+    "lon": "-50.5136100",
+    "pop": 63928,
+    "id": "8734"
+  },
+  {
+    "name": "Parano\u00e1",
+    "country": "BR",
+    "lat": "-15.7755300",
+    "lon": "-47.7811700",
+    "pop": 63923,
+    "id": "8735"
+  },
+  {
+    "name": "Cap\u00e3o da Canoa",
+    "country": "BR",
+    "lat": "-29.7455600",
+    "lon": "-50.0097200",
+    "pop": 63594,
+    "id": "8791"
+  },
+  {
+    "name": "Benevides",
+    "country": "BR",
+    "lat": "-1.3613900",
+    "lon": "-48.2447200",
+    "pop": 63567,
+    "id": "8798"
+  },
+  {
+    "name": "Mirassol",
+    "country": "BR",
+    "lat": "-20.8191700",
+    "lon": "-49.5211100",
+    "pop": 63337,
+    "id": "8825"
+  },
+  {
+    "name": "Cajazeiras",
+    "country": "BR",
+    "lat": "-6.8902800",
+    "lon": "-38.5552800",
+    "pop": 63239,
+    "id": "8836"
+  },
+  {
+    "name": "Campo Bom",
+    "country": "BR",
+    "lat": "-29.6788900",
+    "lon": "-51.0533300",
+    "pop": 62886,
+    "id": "8880"
+  },
+  {
+    "name": "Pesqueira",
+    "country": "BR",
+    "lat": "-8.3577800",
+    "lon": "-36.6963900",
+    "pop": 62722,
+    "id": "8900"
+  },
+  {
+    "name": "Ic\u00f3",
+    "country": "BR",
+    "lat": "-6.4011100",
+    "lon": "-38.8622200",
+    "pop": 62642,
+    "id": "8908"
+  },
+  {
+    "name": "Pedro Leopoldo",
+    "country": "BR",
+    "lat": "-19.6180600",
+    "lon": "-44.0430600",
+    "pop": 62580,
+    "id": "8916"
+  },
+  {
+    "name": "Portel",
+    "country": "BR",
+    "lat": "-1.9355600",
+    "lon": "-50.8211100",
+    "pop": 62503,
+    "id": "8925"
+  },
+  {
+    "name": "Salgueiro",
+    "country": "BR",
+    "lat": "-8.0741700",
+    "lon": "-39.1191700",
+    "pop": 62372,
+    "id": "8943"
+  },
+  {
+    "name": "Marechal Deodoro",
+    "country": "BR",
+    "lat": "-9.7102800",
+    "lon": "-35.8950000",
+    "pop": 62341,
+    "id": "8948"
+  },
+  {
+    "name": "Camocim",
+    "country": "BR",
+    "lat": "-2.9022200",
+    "lon": "-40.8411100",
+    "pop": 62326,
+    "id": "8950"
+  },
+  {
+    "name": "Humait\u00e1",
+    "country": "BR",
+    "lat": "-7.5165100",
+    "lon": "-63.0310500",
+    "pop": 62312,
+    "id": "8953"
+  },
+  {
+    "name": "Escada",
+    "country": "BR",
+    "lat": "-8.3591700",
+    "lon": "-35.2236100",
+    "pop": 62252,
+    "id": "8956"
+  },
+  {
+    "name": "Camaqu\u00e3",
+    "country": "BR",
+    "lat": "-30.8511100",
+    "lon": "-51.8122200",
+    "pop": 62200,
+    "id": "8963"
+  },
+  {
+    "name": "Boituva",
+    "country": "BR",
+    "lat": "-23.2833300",
+    "lon": "-47.6722200",
+    "pop": 62170,
+    "id": "8969"
+  },
+  {
+    "name": "Floriano",
+    "country": "BR",
+    "lat": "-6.7669400",
+    "lon": "-43.0225000",
+    "pop": 62036,
+    "id": "8992"
+  },
+  {
+    "name": "Nova Odessa",
+    "country": "BR",
+    "lat": "-22.7775000",
+    "lon": "-47.2958300",
+    "pop": 62019,
+    "id": "8995"
+  },
+  {
+    "name": "Carazinho",
+    "country": "BR",
+    "lat": "-28.2838900",
+    "lon": "-52.7863900",
+    "pop": 61804,
+    "id": "9035"
+  },
+  {
+    "name": "Pen\u00e1polis",
+    "country": "BR",
+    "lat": "-21.4197200",
+    "lon": "-50.0775000",
+    "pop": 61679,
+    "id": "9063"
+  },
+  {
+    "name": "Extremoz",
+    "country": "BR",
+    "lat": "-5.7055600",
+    "lon": "-35.3072200",
+    "pop": 61635,
+    "id": "9071"
+  },
+  {
+    "name": "Andradina",
+    "country": "BR",
+    "lat": "-20.8961100",
+    "lon": "-51.3794400",
+    "pop": 61473,
+    "id": "9097"
+  },
+  {
+    "name": "Euclides da Cunha",
+    "country": "BR",
+    "lat": "-10.5075000",
+    "lon": "-39.0158300",
+    "pop": 61456,
+    "id": "9104"
+  },
+  {
+    "name": "Morada Nova",
+    "country": "BR",
+    "lat": "-5.1066700",
+    "lon": "-38.3725000",
+    "pop": 61443,
+    "id": "9106"
+  },
+  {
+    "name": "Mariana",
+    "country": "BR",
+    "lat": "-20.3777800",
+    "lon": "-43.4161100",
+    "pop": 61387,
+    "id": "9115"
+  },
+  {
+    "name": "Coroat\u00e1",
+    "country": "BR",
+    "lat": "-4.1300000",
+    "lon": "-44.1241700",
+    "pop": 61351,
+    "id": "9120"
+  },
+  {
+    "name": "Tau\u00e1",
+    "country": "BR",
+    "lat": "-6.0030600",
+    "lon": "-40.2927800",
+    "pop": 61227,
+    "id": "9137"
+  },
+  {
+    "name": "Nova Mutum",
+    "country": "BR",
+    "lat": "-13.8288900",
+    "lon": "-56.0822200",
+    "pop": 61223,
+    "id": "9138"
+  },
+  {
+    "name": "Caic\u00f3",
+    "country": "BR",
+    "lat": "-6.4583300",
+    "lon": "-37.0977800",
+    "pop": 61146,
+    "id": "9146"
+  },
+  {
+    "name": "Uni\u00e3o dos Palmares",
+    "country": "BR",
+    "lat": "-9.1627800",
+    "lon": "-36.0319400",
+    "pop": 60874,
+    "id": "9192"
+  },
+  {
+    "name": "Novo Repartimento",
+    "country": "BR",
+    "lat": "-4.3305600",
+    "lon": "-49.7963900",
+    "pop": 60732,
+    "id": "9220"
+  },
+  {
+    "name": "Itapecuru Mirim",
+    "country": "BR",
+    "lat": "-3.3925000",
+    "lon": "-44.3586100",
+    "pop": 60440,
+    "id": "9265"
+  },
+  {
+    "name": "Cruz das Almas",
+    "country": "BR",
+    "lat": "-12.6700000",
+    "lon": "-39.1019400",
+    "pop": 60348,
+    "id": "9278"
+  },
+  {
+    "name": "Cristalina",
+    "country": "BR",
+    "lat": "-16.7676900",
+    "lon": "-47.6153000",
+    "pop": 60210,
+    "id": "9299"
+  },
+  {
+    "name": "Penedo",
+    "country": "BR",
+    "lat": "-10.2902800",
+    "lon": "-36.5863900",
+    "pop": 60189,
+    "id": "9308"
+  },
+  {
+    "name": "Ibitinga",
+    "country": "BR",
+    "lat": "-21.7577800",
+    "lon": "-48.8288900",
+    "pop": 60033,
+    "id": "9336"
+  },
+  {
+    "name": "S\u00e3o Borja",
+    "country": "BR",
+    "lat": "-28.6605600",
+    "lon": "-56.0044400",
+    "pop": 60019,
+    "id": "9337"
+  },
+  {
+    "name": "Monte Alegre",
+    "country": "BR",
+    "lat": "-2.0008200",
+    "lon": "-54.0810200",
+    "pop": 60012,
+    "id": "9339"
+  },
+  {
+    "name": "Registro",
+    "country": "BR",
+    "lat": "-24.4875000",
+    "lon": "-47.8436100",
+    "pop": 59947,
+    "id": "9358"
+  },
+  {
+    "name": "Jacund\u00e1",
+    "country": "BR",
+    "lat": "-4.4469600",
+    "lon": "-49.1155600",
+    "pop": 59842,
+    "id": "9379"
+  },
+  {
+    "name": "Cachoeiras de Macacu",
+    "country": "BR",
+    "lat": "-22.4625000",
+    "lon": "-42.6530600",
+    "pop": 59837,
+    "id": "9381"
+  },
+  {
+    "name": "Cosm\u00f3polis",
+    "country": "BR",
+    "lat": "-22.6458300",
+    "lon": "-47.1961100",
+    "pop": 59773,
+    "id": "9389"
+  },
+  {
+    "name": "Vi\u00e7osa do Cear\u00e1",
+    "country": "BR",
+    "lat": "-3.5622200",
+    "lon": "-41.0922200",
+    "pop": 59712,
+    "id": "9398"
+  },
+  {
+    "name": "Itamaraju",
+    "country": "BR",
+    "lat": "-17.0391700",
+    "lon": "-39.5311100",
+    "pop": 59605,
+    "id": "9413"
+  },
+  {
+    "name": "Limoeiro do Norte",
+    "country": "BR",
+    "lat": "-5.1455600",
+    "lon": "-38.0980600",
+    "pop": 59560,
+    "id": "9420"
+  },
+  {
+    "name": "Irati",
+    "country": "BR",
+    "lat": "-25.4672200",
+    "lon": "-50.6511100",
+    "pop": 59250,
+    "id": "9455"
+  },
+  {
+    "name": "Rio Bonito",
+    "country": "BR",
+    "lat": "-22.7086100",
+    "lon": "-42.6097200",
+    "pop": 59113,
+    "id": "9483"
+  },
+  {
+    "name": "I\u00e7ara",
+    "country": "BR",
+    "lat": "-28.7133300",
+    "lon": "-49.3000000",
+    "pop": 59035,
+    "id": "9505"
+  },
+  {
+    "name": "Acar\u00e1",
+    "country": "BR",
+    "lat": "-1.9608300",
+    "lon": "-48.1966700",
+    "pop": 59023,
+    "id": "9509"
+  },
+  {
+    "name": "Cruz Alta",
+    "country": "BR",
+    "lat": "-28.6439700",
+    "lon": "-53.6063300",
+    "pop": 58913,
+    "id": "9525"
+  },
+  {
+    "name": "Jaguari\u00fana",
+    "country": "BR",
+    "lat": "-22.7055600",
+    "lon": "-46.9858300",
+    "pop": 58722,
+    "id": "9554"
+  },
+  {
+    "name": "Viseu",
+    "country": "BR",
+    "lat": "-1.1966700",
+    "lon": "-46.1400000",
+    "pop": 58692,
+    "id": "9561"
+  },
+  {
+    "name": "Frutal",
+    "country": "BR",
+    "lat": "-20.0247200",
+    "lon": "-48.9405600",
+    "pop": 58588,
+    "id": "9578"
+  },
+  {
+    "name": "S\u00e3o Gabriel",
+    "country": "BR",
+    "lat": "-30.3363900",
+    "lon": "-54.3200000",
+    "pop": 58487,
+    "id": "9591"
+  },
+  {
+    "name": "Dom Eliseu",
+    "country": "BR",
+    "lat": "-4.2850000",
+    "lon": "-47.5050000",
+    "pop": 58484,
+    "id": "9593"
+  },
+  {
+    "name": "Trairi",
+    "country": "BR",
+    "lat": "-3.2777800",
+    "lon": "-39.2688900",
+    "pop": 58415,
+    "id": "9609"
+  },
+  {
+    "name": "Batatais",
+    "country": "BR",
+    "lat": "-20.8911100",
+    "lon": "-47.5850000",
+    "pop": 58402,
+    "id": "9613"
+  },
+  {
+    "name": "Ponte Nova",
+    "country": "BR",
+    "lat": "-20.4163900",
+    "lon": "-42.9086100",
+    "pop": 57776,
+    "id": "9698"
+  },
+  {
+    "name": "Manicor\u00e9",
+    "country": "BR",
+    "lat": "-5.8091700",
+    "lon": "-61.3002800",
+    "pop": 57758,
+    "id": "9703"
+  },
+  {
+    "name": "Mongagu\u00e1",
+    "country": "BR",
+    "lat": "-24.0930600",
+    "lon": "-46.6208300",
+    "pop": 57648,
+    "id": "9712"
+  },
+  {
+    "name": "Santa Luzia",
+    "country": "BR",
+    "lat": "-3.9633300",
+    "lon": "-45.6583300",
+    "pop": 57635,
+    "id": "9714"
+  },
+  {
+    "name": "Guarabira",
+    "country": "BR",
+    "lat": "-6.8547200",
+    "lon": "-35.4900000",
+    "pop": 57484,
+    "id": "9732"
+  },
+  {
+    "name": "Ipir\u00e1",
+    "country": "BR",
+    "lat": "-12.1583300",
+    "lon": "-39.7372200",
+    "pop": 56876,
+    "id": "9832"
+  },
+  {
+    "name": "Paudalho",
+    "country": "BR",
+    "lat": "-7.8966700",
+    "lon": "-35.1797200",
+    "pop": 56665,
+    "id": "9867"
+  },
+  {
+    "name": "Limoeiro",
+    "country": "BR",
+    "lat": "-7.8747200",
+    "lon": "-35.4502800",
+    "pop": 56510,
+    "id": "9885"
+  },
+  {
+    "name": "Capit\u00e3o Po\u00e7o",
+    "country": "BR",
+    "lat": "-1.7463900",
+    "lon": "-47.0594400",
+    "pop": 56506,
+    "id": "9887"
+  },
+  {
+    "name": "A\u00e7u",
+    "country": "BR",
+    "lat": "-5.5766700",
+    "lon": "-36.9086100",
+    "pop": 56496,
+    "id": "9888"
+  },
+  {
+    "name": "Rolim de Moura",
+    "country": "BR",
+    "lat": "-11.8036100",
+    "lon": "-61.8033300",
+    "pop": 56406,
+    "id": "9898"
+  },
+  {
+    "name": "S\u00e3o Gabriel da Cachoeira",
+    "country": "BR",
+    "lat": "-0.1181000",
+    "lon": "-67.0852700",
+    "pop": 56406,
+    "id": "9899"
+  },
+  {
+    "name": "Santo Amaro",
+    "country": "BR",
+    "lat": "-12.5466700",
+    "lon": "-38.7119400",
+    "pop": 56012,
+    "id": "9968"
+  },
+  {
+    "name": "Marechal C\u00e2ndido Rondon",
+    "country": "BR",
+    "lat": "-24.5561100",
+    "lon": "-54.0566700",
+    "pop": 55836,
+    "id": "9991"
+  },
+  {
+    "name": "Pirapora",
+    "country": "BR",
+    "lat": "-17.3450000",
+    "lon": "-44.9419400",
+    "pop": 55606,
+    "id": "10027"
+  },
+  {
+    "name": "Brazl\u00e2ndia",
+    "country": "BR",
+    "lat": "-15.6794100",
+    "lon": "-48.1966700",
+    "pop": 55561,
+    "id": "10037"
+  },
+  {
+    "name": "Buriticupu",
+    "country": "BR",
+    "lat": "-4.3212400",
+    "lon": "-46.4546800",
+    "pop": 55499,
+    "id": "10054"
+  },
+  {
+    "name": "Videira",
+    "country": "BR",
+    "lat": "-27.0083300",
+    "lon": "-51.1516700",
+    "pop": 55466,
+    "id": "10056"
+  },
+  {
+    "name": "Moreno",
+    "country": "BR",
+    "lat": "-8.1186100",
+    "lon": "-35.0922200",
+    "pop": 55292,
+    "id": "10099"
+  },
+  {
+    "name": "Mafra",
+    "country": "BR",
+    "lat": "-26.1113900",
+    "lon": "-49.8052800",
+    "pop": 55286,
+    "id": "10100"
+  },
+  {
+    "name": "Tr\u00eas Pontas",
+    "country": "BR",
+    "lat": "-21.3666700",
+    "lon": "-45.5125000",
+    "pop": 55255,
+    "id": "10107"
+  },
+  {
+    "name": "Para\u00edso do Tocantins",
+    "country": "BR",
+    "lat": "-10.1761100",
+    "lon": "-48.8666700",
+    "pop": 55164,
+    "id": "10128"
+  },
+  {
+    "name": "Ol\u00edmpia",
+    "country": "BR",
+    "lat": "-20.7372200",
+    "lon": "-48.9147200",
+    "pop": 55074,
+    "id": "10144"
+  },
+  {
+    "name": "Uni\u00e3o da Vit\u00f3ria",
+    "country": "BR",
+    "lat": "-26.2300000",
+    "lon": "-51.0863900",
+    "pop": 55033,
+    "id": "10147"
+  },
+  {
+    "name": "Canoinhas",
+    "country": "BR",
+    "lat": "-26.1772200",
+    "lon": "-50.3900000",
+    "pop": 55016,
+    "id": "10148"
+  },
+  {
+    "name": "Pontes e Lacerda",
+    "country": "BR",
+    "lat": "-15.2261100",
+    "lon": "-59.3352800",
+    "pop": 54795,
+    "id": "10185"
+  },
+  {
+    "name": "Palmares",
+    "country": "BR",
+    "lat": "-8.6833300",
+    "lon": "-35.5916700",
+    "pop": 54584,
+    "id": "10215"
+  },
+  {
+    "name": "Bu\u00edque",
+    "country": "BR",
+    "lat": "-8.6230600",
+    "lon": "-37.1558300",
+    "pop": 54425,
+    "id": "10241"
+  },
+  {
+    "name": "Tramanda\u00ed",
+    "country": "BR",
+    "lat": "-29.9847200",
+    "lon": "-50.1336100",
+    "pop": 54387,
+    "id": "10254"
+  },
+  {
+    "name": "Medianeira",
+    "country": "BR",
+    "lat": "-25.2952800",
+    "lon": "-54.0938900",
+    "pop": 54369,
+    "id": "10258"
+  },
+  {
+    "name": "Guapimirim",
+    "country": "BR",
+    "lat": "-22.5372200",
+    "lon": "-42.9819400",
+    "pop": 54300,
+    "id": "10265"
+  },
+  {
+    "name": "S\u00e3o Gon\u00e7alo do Amarante",
+    "country": "BR",
+    "lat": "-3.6072200",
+    "lon": "-38.9683300",
+    "pop": 54143,
+    "id": "10283"
+  },
+  {
+    "name": "Ribeira do Pombal",
+    "country": "BR",
+    "lat": "-10.8344400",
+    "lon": "-38.5358300",
+    "pop": 54010,
+    "id": "10314"
+  },
+  {
+    "name": "Extrema",
+    "country": "BR",
+    "lat": "-22.8547200",
+    "lon": "-46.3183300",
+    "pop": 53482,
+    "id": "10410"
+  },
+  {
+    "name": "Porto Feliz",
+    "country": "BR",
+    "lat": "-23.2147200",
+    "lon": "-47.5238900",
+    "pop": 53402,
+    "id": "10428"
+  },
+  {
+    "name": "S\u00e3o Miguel dos Campos",
+    "country": "BR",
+    "lat": "-9.7811100",
+    "lon": "-36.0936100",
+    "pop": 53391,
+    "id": "10433"
+  },
+  {
+    "name": "Itabirito",
+    "country": "BR",
+    "lat": "-20.2533300",
+    "lon": "-43.8013900",
+    "pop": 53365,
+    "id": "10438"
+  },
+  {
+    "name": "Granja",
+    "country": "BR",
+    "lat": "-3.1202800",
+    "lon": "-40.8261100",
+    "pop": 53344,
+    "id": "10443"
+  },
+  {
+    "name": "Taquara",
+    "country": "BR",
+    "lat": "-29.6505600",
+    "lon": "-50.7805600",
+    "pop": 53242,
+    "id": "10459"
+  },
+  {
+    "name": "Santa Isabel",
+    "country": "BR",
+    "lat": "-23.3155600",
+    "lon": "-46.2213900",
+    "pop": 53174,
+    "id": "10475"
+  },
+  {
+    "name": "Artur Nogueira",
+    "country": "BR",
+    "lat": "-22.5730600",
+    "lon": "-47.1725000",
+    "pop": 53157,
+    "id": "10479"
+  },
+  {
+    "name": "Rondon do Par\u00e1",
+    "country": "BR",
+    "lat": "-4.7761100",
+    "lon": "-48.0672200",
+    "pop": 53143,
+    "id": "10483"
+  },
+  {
+    "name": "Beberibe",
+    "country": "BR",
+    "lat": "-4.1797200",
+    "lon": "-38.1305600",
+    "pop": 53114,
+    "id": "10491"
+  },
+  {
+    "name": "Piedade",
+    "country": "BR",
+    "lat": "-23.7119400",
+    "lon": "-47.4277800",
+    "pop": 52970,
+    "id": "10516"
+  },
+  {
+    "name": "S\u00e3o Miguel do Guam\u00e1",
+    "country": "BR",
+    "lat": "-1.6266700",
+    "lon": "-47.4833300",
+    "pop": 52894,
+    "id": "10524"
+  },
+  {
+    "name": "Xinguara",
+    "country": "BR",
+    "lat": "-7.0982900",
+    "lon": "-49.9435000",
+    "pop": 52893,
+    "id": "10525"
+  },
+  {
+    "name": "Congonhas",
+    "country": "BR",
+    "lat": "-20.5052500",
+    "lon": "-43.8588000",
+    "pop": 52890,
+    "id": "10527"
+  },
+  {
+    "name": "Delmiro Gouveia",
+    "country": "BR",
+    "lat": "-9.3886100",
+    "lon": "-37.9991700",
+    "pop": 52809,
+    "id": "10538"
+  },
+  {
+    "name": "S\u00e3o Francisco",
+    "country": "BR",
+    "lat": "-15.9486100",
+    "lon": "-44.8644400",
+    "pop": 52762,
+    "id": "10548"
+  },
+  {
+    "name": "Porto Ferreira",
+    "country": "BR",
+    "lat": "-21.8538900",
+    "lon": "-47.4791700",
+    "pop": 52649,
+    "id": "10576"
+  },
+  {
+    "name": "Imbituba",
+    "country": "BR",
+    "lat": "-28.2400000",
+    "lon": "-48.6702800",
+    "pop": 52579,
+    "id": "10589"
+  },
+  {
+    "name": "Campos do Jord\u00e3o",
+    "country": "BR",
+    "lat": "-22.7394400",
+    "lon": "-45.5913900",
+    "pop": 52405,
+    "id": "10629"
+  },
+  {
+    "name": "\u00d3bidos",
+    "country": "BR",
+    "lat": "-1.9175000",
+    "lon": "-55.5180600",
+    "pop": 52306,
+    "id": "10641"
+  },
+  {
+    "name": "Campo Belo",
+    "country": "BR",
+    "lat": "-20.8972200",
+    "lon": "-45.2772200",
+    "pop": 52277,
+    "id": "10652"
+  },
+  {
+    "name": "Santo Est\u00eav\u00e3o",
+    "country": "BR",
+    "lat": "-12.4302800",
+    "lon": "-39.2513900",
+    "pop": 52276,
+    "id": "10654"
+  },
+  {
+    "name": "Taquaritinga",
+    "country": "BR",
+    "lat": "-21.4061100",
+    "lon": "-48.5047200",
+    "pop": 52260,
+    "id": "10657"
+  },
+  {
+    "name": "S\u00e3o Jos\u00e9 do Rio Pardo",
+    "country": "BR",
+    "lat": "-21.5955600",
+    "lon": "-46.8886100",
+    "pop": 52205,
+    "id": "10672"
+  },
+  {
+    "name": "Inhumas",
+    "country": "BR",
+    "lat": "-16.3577800",
+    "lon": "-49.4961100",
+    "pop": 52204,
+    "id": "10673"
+  },
+  {
+    "name": "Parob\u00e9",
+    "country": "BR",
+    "lat": "-29.6286100",
+    "lon": "-50.8347200",
+    "pop": 52058,
+    "id": "10701"
+  },
+  {
+    "name": "Caetit\u00e9",
+    "country": "BR",
+    "lat": "-14.0694400",
+    "lon": "-42.4750000",
+    "pop": 52012,
+    "id": "10710"
+  },
+  {
+    "name": "Louveira",
+    "country": "BR",
+    "lat": "-23.0863900",
+    "lon": "-46.9505600",
+    "pop": 51847,
+    "id": "10741"
+  },
+  {
+    "name": "Coruripe",
+    "country": "BR",
+    "lat": "-10.1255600",
+    "lon": "-36.1755600",
+    "pop": 51788,
+    "id": "10751"
+  },
+  {
+    "name": "Bom Despacho",
+    "country": "BR",
+    "lat": "-19.7363900",
+    "lon": "-45.2522200",
+    "pop": 51737,
+    "id": "10761"
+  },
+  {
+    "name": "Bai\u00e3o",
+    "country": "BR",
+    "lat": "-2.7905600",
+    "lon": "-49.6716700",
+    "pop": 51641,
+    "id": "10780"
+  },
+  {
+    "name": "Xanxer\u00ea",
+    "country": "BR",
+    "lat": "-26.8769400",
+    "lon": "-52.4041700",
+    "pop": 51607,
+    "id": "10786"
+  },
+  {
+    "name": "Ibipor\u00e3",
+    "country": "BR",
+    "lat": "-23.2691700",
+    "lon": "-51.0480600",
+    "pop": 51603,
+    "id": "10787"
+  },
+  {
+    "name": "Tijucas",
+    "country": "BR",
+    "lat": "-27.2413900",
+    "lon": "-48.6336100",
+    "pop": 51592,
+    "id": "10788"
+  },
+  {
+    "name": "Viana",
+    "country": "BR",
+    "lat": "-3.2202800",
+    "lon": "-45.0036100",
+    "pop": 51442,
+    "id": "10810"
+  },
+  {
+    "name": "Lagoa da Prata",
+    "country": "BR",
+    "lat": "-20.0225000",
+    "lon": "-45.5436100",
+    "pop": 51412,
+    "id": "10816"
+  },
+  {
+    "name": "Morrinhos",
+    "country": "BR",
+    "lat": "-17.7311100",
+    "lon": "-49.0994400",
+    "pop": 51351,
+    "id": "10832"
+  },
+  {
+    "name": "Sap\u00e9",
+    "country": "BR",
+    "lat": "-7.0963900",
+    "lon": "-35.2327800",
+    "pop": 51306,
+    "id": "10839"
+  },
+  {
+    "name": "Trememb\u00e9",
+    "country": "BR",
+    "lat": "-22.9583300",
+    "lon": "-45.5494400",
+    "pop": 51173,
+    "id": "10874"
+  },
+  {
+    "name": "Leopoldina",
+    "country": "BR",
+    "lat": "-21.5319400",
+    "lon": "-42.6430600",
+    "pop": 51145,
+    "id": "10879"
+  },
+  {
+    "name": "Brejo da Madre de Deus",
+    "country": "BR",
+    "lat": "-8.1458300",
+    "lon": "-36.3711100",
+    "pop": 51107,
+    "id": "10888"
+  },
+  {
+    "name": "Barra",
+    "country": "BR",
+    "lat": "-11.0894400",
+    "lon": "-43.1416700",
+    "pop": 51092,
+    "id": "10890"
+  },
+  {
+    "name": "Brejo Santo",
+    "country": "BR",
+    "lat": "-7.4933300",
+    "lon": "-38.9872200",
+    "pop": 51090,
+    "id": "10892"
+  },
+  {
+    "name": "Guaxup\u00e9",
+    "country": "BR",
+    "lat": "-21.3052800",
+    "lon": "-46.7127800",
+    "pop": 50911,
+    "id": "10921"
+  },
+  {
+    "name": "Tobias Barreto",
+    "country": "BR",
+    "lat": "-11.1838900",
+    "lon": "-37.9983300",
+    "pop": 50905,
+    "id": "10922"
+  },
+  {
+    "name": "Juruti",
+    "country": "BR",
+    "lat": "-2.1522200",
+    "lon": "-56.0922200",
+    "pop": 50881,
+    "id": "10928"
+  },
+  {
+    "name": "Vigia",
+    "country": "BR",
+    "lat": "-0.8583300",
+    "lon": "-48.1416700",
+    "pop": 50832,
+    "id": "10939"
+  },
+  {
+    "name": "Jaru",
+    "country": "BR",
+    "lat": "-10.4388900",
+    "lon": "-62.4663900",
+    "pop": 50591,
+    "id": "10979"
+  },
+  {
+    "name": "Navira\u00ed",
+    "country": "BR",
+    "lat": "-23.0650000",
+    "lon": "-54.1905600",
+    "pop": 50457,
+    "id": "11007"
+  },
+  {
+    "name": "Vargem Grande Paulista",
+    "country": "BR",
+    "lat": "-23.6033300",
+    "lon": "-47.0263900",
+    "pop": 50415,
+    "id": "11012"
+  },
+  {
+    "name": "Boa Viagem",
+    "country": "BR",
+    "lat": "-5.1275000",
+    "lon": "-39.7322200",
+    "pop": 50411,
+    "id": "11013"
+  },
+  {
+    "name": "Capivari",
+    "country": "BR",
+    "lat": "-22.9950000",
+    "lon": "-47.5077800",
+    "pop": 50068,
+    "id": "11081"
+  },
+  {
+    "name": "Campo Novo do Parecis",
+    "country": "BR",
+    "lat": "-13.6752800",
+    "lon": "-57.8919400",
+    "pop": 50033,
+    "id": "11087"
+  },
+  {
+    "name": "Mairinque",
+    "country": "BR",
+    "lat": "-23.5458300",
+    "lon": "-47.1833300",
+    "pop": 50027,
+    "id": "11088"
+  }
+]

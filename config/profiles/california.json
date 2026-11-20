@@ -1,0 +1,25 @@
+{
+  "bbox": [
+    -124.6,
+    32.4,
+    -114.0,
+    42.1
+  ],
+  "countries": [
+    "US"
+  ],
+  "cities_file": "data/california/cities.json",
+  "population_file": "data/california/population.geojson",
+  "prep": {
+    "max_cities": 100
+  },
+  "search": {
+    "batch_accept_limit": 5
+  },
+  "reporting": {
+    "currency_code": "USD",
+    "currency_symbol": "$",
+    "eur_to_local": 1.1,
+    "region_name": "California"
+  }
+}

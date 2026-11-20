@@ -1,0 +1,26 @@
+{
+  "bbox": [
+    95,
+    -11.2,
+    141.2,
+    6.2
+  ],
+  "countries": [
+    "ID"
+  ],
+  "cities_file": "data/indonesia/cities.json",
+  "population_file": "data/indonesia/population.geojson",
+  "boundaries_file": "data/indonesia/boundaries.geojson",
+  "prep": {
+    "max_cities": 100
+  },
+  "search": {
+    "batch_accept_limit": 5
+  },
+  "reporting": {
+    "currency_code": "IDR",
+    "currency_symbol": "Rp",
+    "eur_to_local": 17500,
+    "region_name": "Indonesia"
+  }
+}

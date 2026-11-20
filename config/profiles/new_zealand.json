@@ -1,0 +1,26 @@
+{
+  "bbox": [
+    165.5,
+    -47.5,
+    179,
+    -34
+  ],
+  "countries": [
+    "NZ"
+  ],
+  "cities_file": "data/new_zealand/cities.json",
+  "population_file": "data/new_zealand/population.geojson",
+  "boundaries_file": "data/new_zealand/boundaries.geojson",
+  "prep": {
+    "max_cities": 100
+  },
+  "search": {
+    "batch_accept_limit": 5
+  },
+  "reporting": {
+    "currency_code": "NZD",
+    "currency_symbol": "$",
+    "eur_to_local": 1.8,
+    "region_name": "New Zealand"
+  }
+}

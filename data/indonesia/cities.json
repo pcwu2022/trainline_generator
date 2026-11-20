@@ -1,0 +1,1970 @@
+[
+  {
+    "name": "Jakarta",
+    "country": "ID",
+    "lat": "-6.2146200",
+    "lon": "106.8451300",
+    "pop": 8540121,
+    "id": "30"
+  },
+  {
+    "name": "Bekasi",
+    "country": "ID",
+    "lat": "-6.2349000",
+    "lon": "106.9896000",
+    "pop": 2564940,
+    "id": "145"
+  },
+  {
+    "name": "Bandung",
+    "country": "ID",
+    "lat": "-6.9222200",
+    "lon": "107.6069400",
+    "pop": 2444160,
+    "id": "150"
+  },
+  {
+    "name": "Medan",
+    "country": "ID",
+    "lat": "3.5833300",
+    "lon": "98.6666700",
+    "pop": 2435252,
+    "id": "151"
+  },
+  {
+    "name": "Depok",
+    "country": "ID",
+    "lat": "-6.4000000",
+    "lon": "106.8186100",
+    "pop": 2145400,
+    "id": "179"
+  },
+  {
+    "name": "Tangerang",
+    "country": "ID",
+    "lat": "-6.1780600",
+    "lon": "106.6300000",
+    "pop": 1912679,
+    "id": "210"
+  },
+  {
+    "name": "Palembang",
+    "country": "ID",
+    "lat": "-2.9167300",
+    "lon": "104.7458000",
+    "pop": 1668848,
+    "id": "259"
+  },
+  {
+    "name": "Semarang",
+    "country": "ID",
+    "lat": "-6.9930600",
+    "lon": "110.4208300",
+    "pop": 1653524,
+    "id": "262"
+  },
+  {
+    "name": "Makassar",
+    "country": "ID",
+    "lat": "-5.1486100",
+    "lon": "119.4319400",
+    "pop": 1423877,
+    "id": "339"
+  },
+  {
+    "name": "South Tangerang",
+    "country": "ID",
+    "lat": "-6.2886200",
+    "lon": "106.7178900",
+    "pop": 1404785,
+    "id": "344"
+  },
+  {
+    "name": "Jepara",
+    "country": "ID",
+    "lat": "-6.5924000",
+    "lon": "110.6710000",
+    "pop": 1257912,
+    "id": "397"
+  },
+  {
+    "name": "Bandar Lampung",
+    "country": "ID",
+    "lat": "-5.4291700",
+    "lon": "105.2611100",
+    "pop": 1166066,
+    "id": "442"
+  },
+  {
+    "name": "Batam",
+    "country": "ID",
+    "lat": "1.1493700",
+    "lon": "104.0249100",
+    "pop": 1164352,
+    "id": "445"
+  },
+  {
+    "name": "Bogor",
+    "country": "ID",
+    "lat": "-6.5944400",
+    "lon": "106.7891700",
+    "pop": 1127408,
+    "id": "461"
+  },
+  {
+    "name": "Pekanbaru",
+    "country": "ID",
+    "lat": "0.5166700",
+    "lon": "101.4416700",
+    "pop": 1085000,
+    "id": "478"
+  },
+  {
+    "name": "Padang",
+    "country": "ID",
+    "lat": "-0.9492400",
+    "lon": "100.3542700",
+    "pop": 909040,
+    "id": "589"
+  },
+  {
+    "name": "Malang",
+    "country": "ID",
+    "lat": "-7.9797000",
+    "lon": "112.6304000",
+    "pop": 847182,
+    "id": "633"
+  },
+  {
+    "name": "Samarinda",
+    "country": "ID",
+    "lat": "-0.4916700",
+    "lon": "117.1458300",
+    "pop": 831460,
+    "id": "648"
+  },
+  {
+    "name": "Tasikmalaya",
+    "country": "ID",
+    "lat": "-7.3274000",
+    "lon": "108.2207000",
+    "pop": 741760,
+    "id": "717"
+  },
+  {
+    "name": "Denpasar",
+    "country": "ID",
+    "lat": "-8.6500000",
+    "lon": "115.2166700",
+    "pop": 725314,
+    "id": "737"
+  },
+  {
+    "name": "Serang",
+    "country": "ID",
+    "lat": "-6.1152800",
+    "lon": "106.1541700",
+    "pop": 692101,
+    "id": "771"
+  },
+  {
+    "name": "Situbondo",
+    "country": "ID",
+    "lat": "-7.7062300",
+    "lon": "114.0097600",
+    "pop": 685967,
+    "id": "784"
+  },
+  {
+    "name": "Pontianak",
+    "country": "ID",
+    "lat": "-0.0319400",
+    "lon": "109.3250000",
+    "pop": 658685,
+    "id": "811"
+  },
+  {
+    "name": "Banjarmasin",
+    "country": "ID",
+    "lat": "-3.3198700",
+    "lon": "114.5907500",
+    "pop": 657663,
+    "id": "813"
+  },
+  {
+    "name": "Jambi City",
+    "country": "ID",
+    "lat": "-1.6000000",
+    "lon": "103.6166700",
+    "pop": 606200,
+    "id": "881"
+  },
+  {
+    "name": "Cimahi",
+    "country": "ID",
+    "lat": "-6.8722200",
+    "lon": "107.5425000",
+    "pop": 590782,
+    "id": "912"
+  },
+  {
+    "name": "Surakarta",
+    "country": "ID",
+    "lat": "-7.5561100",
+    "lon": "110.8316700",
+    "pop": 526870,
+    "id": "1033"
+  },
+  {
+    "name": "Manado",
+    "country": "ID",
+    "lat": "1.4821800",
+    "lon": "124.8489200",
+    "pop": 451916,
+    "id": "1230"
+  },
+  {
+    "name": "Cilegon",
+    "country": "ID",
+    "lat": "-6.0144000",
+    "lon": "106.0542000",
+    "pop": 450271,
+    "id": "1233"
+  },
+  {
+    "name": "Mataram",
+    "country": "ID",
+    "lat": "-8.5833300",
+    "lon": "116.1166700",
+    "pop": 429651,
+    "id": "1284"
+  },
+  {
+    "name": "Jayapura",
+    "country": "ID",
+    "lat": "-2.5337100",
+    "lon": "140.7181300",
+    "pop": 404004,
+    "id": "1365"
+  },
+  {
+    "name": "Yogyakarta",
+    "country": "ID",
+    "lat": "-7.8013900",
+    "lon": "110.3647200",
+    "pop": 373589,
+    "id": "1454"
+  },
+  {
+    "name": "Palu",
+    "country": "ID",
+    "lat": "-0.9083300",
+    "lon": "119.8708300",
+    "pop": 373218,
+    "id": "1458"
+  },
+  {
+    "name": "Cibinong",
+    "country": "ID",
+    "lat": "-6.4816700",
+    "lon": "106.8541700",
+    "pop": 363424,
+    "id": "1501"
+  },
+  {
+    "name": "Sukabumi",
+    "country": "ID",
+    "lat": "-6.9180600",
+    "lon": "106.9266700",
+    "pop": 360644,
+    "id": "1513"
+  },
+  {
+    "name": "Ambon",
+    "country": "ID",
+    "lat": "-3.6958300",
+    "lon": "128.1833300",
+    "pop": 347288,
+    "id": "1581"
+  },
+  {
+    "name": "Kendari",
+    "country": "ID",
+    "lat": "-3.9778000",
+    "lon": "122.5150700",
+    "pop": 345107,
+    "id": "1593"
+  },
+  {
+    "name": "Cirebon",
+    "country": "ID",
+    "lat": "-6.7063000",
+    "lon": "108.5570000",
+    "pop": 341980,
+    "id": "1614"
+  },
+  {
+    "name": "Dumai",
+    "country": "ID",
+    "lat": "1.6671100",
+    "lon": "101.4431600",
+    "pop": 331832,
+    "id": "1651"
+  },
+  {
+    "name": "Pekalongan",
+    "country": "ID",
+    "lat": "-6.8886000",
+    "lon": "109.6753000",
+    "pop": 317524,
+    "id": "1733"
+  },
+  {
+    "name": "Percut",
+    "country": "ID",
+    "lat": "3.6253000",
+    "lon": "98.8640000",
+    "pop": 311063,
+    "id": "1766"
+  },
+  {
+    "name": "Jember",
+    "country": "ID",
+    "lat": "-8.1721100",
+    "lon": "113.6995300",
+    "pop": 298585,
+    "id": "1840"
+  },
+  {
+    "name": "Palangkaraya",
+    "country": "ID",
+    "lat": "-2.2083300",
+    "lon": "113.9166700",
+    "pop": 293500,
+    "id": "1867"
+  },
+  {
+    "name": "Cileungsir",
+    "country": "ID",
+    "lat": "-6.3947200",
+    "lon": "106.9591700",
+    "pop": 288347,
+    "id": "1900"
+  },
+  {
+    "name": "Tegal",
+    "country": "ID",
+    "lat": "-6.8694000",
+    "lon": "109.1402000",
+    "pop": 282781,
+    "id": "1945"
+  },
+  {
+    "name": "Binjai",
+    "country": "ID",
+    "lat": "3.6001000",
+    "lon": "98.4854000",
+    "pop": 279302,
+    "id": "1968"
+  },
+  {
+    "name": "Pematangsiantar",
+    "country": "ID",
+    "lat": "2.9595000",
+    "lon": "99.0687000",
+    "pop": 274838,
+    "id": "1997"
+  },
+  {
+    "name": "Pasarkemis",
+    "country": "ID",
+    "lat": "-6.1702800",
+    "lon": "106.5302800",
+    "pop": 273659,
+    "id": "2009"
+  },
+  {
+    "name": "Banda Aceh",
+    "country": "ID",
+    "lat": "5.5416700",
+    "lon": "95.3333300",
+    "pop": 255029,
+    "id": "2168"
+  },
+  {
+    "name": "Sorong",
+    "country": "ID",
+    "lat": "-0.8795600",
+    "lon": "131.2610400",
+    "pop": 254294,
+    "id": "2175"
+  },
+  {
+    "name": "Tarakan",
+    "country": "ID",
+    "lat": "3.3133200",
+    "lon": "117.5915200",
+    "pop": 249960,
+    "id": "2222"
+  },
+  {
+    "name": "Probolinggo",
+    "country": "ID",
+    "lat": "-7.7543000",
+    "lon": "113.2159000",
+    "pop": 246980,
+    "id": "2247"
+  },
+  {
+    "name": "Singkawang",
+    "country": "ID",
+    "lat": "0.9092500",
+    "lon": "108.9846300",
+    "pop": 246112,
+    "id": "2258"
+  },
+  {
+    "name": "Padangsidempuan",
+    "country": "ID",
+    "lat": "1.3795200",
+    "lon": "99.2714600",
+    "pop": 236217,
+    "id": "2358"
+  },
+  {
+    "name": "Kediri",
+    "country": "ID",
+    "lat": "-7.8166700",
+    "lon": "112.0166700",
+    "pop": 235143,
+    "id": "2370"
+  },
+  {
+    "name": "Lubuklinggau",
+    "country": "ID",
+    "lat": "-3.2945000",
+    "lon": "102.8614000",
+    "pop": 234166,
+    "id": "2384"
+  },
+  {
+    "name": "Purwokerto",
+    "country": "ID",
+    "lat": "-7.4213900",
+    "lon": "109.2344400",
+    "pop": 230235,
+    "id": "2406"
+  },
+  {
+    "name": "Bitung",
+    "country": "ID",
+    "lat": "1.4405900",
+    "lon": "125.1282400",
+    "pop": 225134,
+    "id": "2469"
+  },
+  {
+    "name": "Batu",
+    "country": "ID",
+    "lat": "-7.8700000",
+    "lon": "112.5283300",
+    "pop": 221714,
+    "id": "2510"
+  },
+  {
+    "name": "Pangkalpinang",
+    "country": "ID",
+    "lat": "-2.1291400",
+    "lon": "106.1137700",
+    "pop": 216893,
+    "id": "2559"
+  },
+  {
+    "name": "Citeureup",
+    "country": "ID",
+    "lat": "-6.4855600",
+    "lon": "106.8819400",
+    "pop": 214668,
+    "id": "2588"
+  },
+  {
+    "name": "Loa Janan",
+    "country": "ID",
+    "lat": "-0.5829500",
+    "lon": "117.0950300",
+    "pop": 212816,
+    "id": "2608"
+  },
+  {
+    "name": "Pasuruan",
+    "country": "ID",
+    "lat": "-7.6453000",
+    "lon": "112.9075000",
+    "pop": 212466,
+    "id": "2614"
+  },
+  {
+    "name": "Ciputat",
+    "country": "ID",
+    "lat": "-6.2375000",
+    "lon": "106.6955600",
+    "pop": 207858,
+    "id": "2671"
+  },
+  {
+    "name": "Ciampea",
+    "country": "ID",
+    "lat": "-6.5547200",
+    "lon": "106.7008300",
+    "pop": 207212,
+    "id": "2681"
+  },
+  {
+    "name": "Madiun",
+    "country": "ID",
+    "lat": "-7.6298000",
+    "lon": "111.5239000",
+    "pop": 202544,
+    "id": "2738"
+  },
+  {
+    "name": "Rengasdengklok",
+    "country": "ID",
+    "lat": "-6.1591700",
+    "lon": "107.2980600",
+    "pop": 201463,
+    "id": "2751"
+  },
+  {
+    "name": "Salatiga",
+    "country": "ID",
+    "lat": "-7.3319400",
+    "lon": "110.4927800",
+    "pop": 201369,
+    "id": "2753"
+  },
+  {
+    "name": "Banjar",
+    "country": "ID",
+    "lat": "-7.1955000",
+    "lon": "107.4313000",
+    "pop": 200970,
+    "id": "2760"
+  },
+  {
+    "name": "Sumedang",
+    "country": "ID",
+    "lat": "-6.8586100",
+    "lon": "107.9163900",
+    "pop": 200000,
+    "id": "2786"
+  },
+  {
+    "name": "Gorontalo",
+    "country": "ID",
+    "lat": "0.5375000",
+    "lon": "123.0625000",
+    "pop": 198539,
+    "id": "2817"
+  },
+  {
+    "name": "Lhokseumawe",
+    "country": "ID",
+    "lat": "5.1801000",
+    "lon": "97.1507000",
+    "pop": 196067,
+    "id": "2854"
+  },
+  {
+    "name": "Langsa",
+    "country": "ID",
+    "lat": "4.4683000",
+    "lon": "97.9683000",
+    "pop": 194730,
+    "id": "2879"
+  },
+  {
+    "name": "Curug",
+    "country": "ID",
+    "lat": "-6.2658300",
+    "lon": "106.5563900",
+    "pop": 191406,
+    "id": "2915"
+  },
+  {
+    "name": "Palopo",
+    "country": "ID",
+    "lat": "-2.9925000",
+    "lon": "120.1969400",
+    "pop": 190867,
+    "id": "2928"
+  },
+  {
+    "name": "Bontang",
+    "country": "ID",
+    "lat": "0.1324000",
+    "lon": "117.4854000",
+    "pop": 189968,
+    "id": "2942"
+  },
+  {
+    "name": "Labuan Bajo",
+    "country": "ID",
+    "lat": "-8.4964000",
+    "lon": "119.8877000",
+    "pop": 188724,
+    "id": "2960"
+  },
+  {
+    "name": "Padalarang",
+    "country": "ID",
+    "lat": "-6.8377800",
+    "lon": "107.4727800",
+    "pop": 184182,
+    "id": "3023"
+  },
+  {
+    "name": "Pemalang",
+    "country": "ID",
+    "lat": "-6.8919300",
+    "lon": "109.3826300",
+    "pop": 184149,
+    "id": "3025"
+  },
+  {
+    "name": "Tanjungbalai",
+    "country": "ID",
+    "lat": "2.9666700",
+    "lon": "99.8000000",
+    "pop": 183170,
+    "id": "3036"
+  },
+  {
+    "name": "Lembang",
+    "country": "ID",
+    "lat": "-6.8116700",
+    "lon": "107.6175000",
+    "pop": 183130,
+    "id": "3038"
+  },
+  {
+    "name": "Singosari",
+    "country": "ID",
+    "lat": "-7.8924000",
+    "lon": "112.6658000",
+    "pop": 180740,
+    "id": "3070"
+  },
+  {
+    "name": "Purwakarta",
+    "country": "ID",
+    "lat": "-6.5569400",
+    "lon": "107.4433300",
+    "pop": 179233,
+    "id": "3100"
+  },
+  {
+    "name": "Metro",
+    "country": "ID",
+    "lat": "-5.1130600",
+    "lon": "105.3066700",
+    "pop": 178381,
+    "id": "3123"
+  },
+  {
+    "name": "Cianjur",
+    "country": "ID",
+    "lat": "-6.8222200",
+    "lon": "107.1394400",
+    "pop": 174587,
+    "id": "3178"
+  },
+  {
+    "name": "Pamulang",
+    "country": "ID",
+    "lat": "-6.3427800",
+    "lon": "106.7383300",
+    "pop": 174557,
+    "id": "3179"
+  },
+  {
+    "name": "Cikupa",
+    "country": "ID",
+    "lat": "-6.2363900",
+    "lon": "106.5083300",
+    "pop": 174041,
+    "id": "3186"
+  },
+  {
+    "name": "Ungaran",
+    "country": "ID",
+    "lat": "-7.1397200",
+    "lon": "110.4050000",
+    "pop": 171378,
+    "id": "3226"
+  },
+  {
+    "name": "Plumbon",
+    "country": "ID",
+    "lat": "-6.7050000",
+    "lon": "108.4727800",
+    "pop": 167105,
+    "id": "3305"
+  },
+  {
+    "name": "Sampit",
+    "country": "ID",
+    "lat": "-2.5315000",
+    "lon": "112.9496000",
+    "pop": 166773,
+    "id": "3310"
+  },
+  {
+    "name": "Sawangan",
+    "country": "ID",
+    "lat": "-6.4027800",
+    "lon": "106.7744400",
+    "pop": 165631,
+    "id": "3331"
+  },
+  {
+    "name": "Banjaran",
+    "country": "ID",
+    "lat": "-7.0452800",
+    "lon": "107.5877800",
+    "pop": 164952,
+    "id": "3343"
+  },
+  {
+    "name": "Bima",
+    "country": "ID",
+    "lat": "-8.4600600",
+    "lon": "118.7266700",
+    "pop": 161362,
+    "id": "3413"
+  },
+  {
+    "name": "Parepare",
+    "country": "ID",
+    "lat": "-4.0135000",
+    "lon": "119.6255000",
+    "pop": 160309,
+    "id": "3442"
+  },
+  {
+    "name": "Sunggal",
+    "country": "ID",
+    "lat": "3.5765000",
+    "lon": "98.6151000",
+    "pop": 157914,
+    "id": "3487"
+  },
+  {
+    "name": "Perbaungan",
+    "country": "ID",
+    "lat": "3.5679000",
+    "lon": "98.9560000",
+    "pop": 157174,
+    "id": "3495"
+  },
+  {
+    "name": "Blitar",
+    "country": "ID",
+    "lat": "-8.0983000",
+    "lon": "112.1681000",
+    "pop": 150371,
+    "id": "3642"
+  },
+  {
+    "name": "Watampone",
+    "country": "ID",
+    "lat": "-4.5386000",
+    "lon": "120.3279000",
+    "pop": 149336,
+    "id": "3669"
+  },
+  {
+    "name": "Astanajapura",
+    "country": "ID",
+    "lat": "-6.8017000",
+    "lon": "108.6311000",
+    "pop": 148047,
+    "id": "3703"
+  },
+  {
+    "name": "Cikampek",
+    "country": "ID",
+    "lat": "-6.4197200",
+    "lon": "107.4558300",
+    "pop": 145620,
+    "id": "3758"
+  },
+  {
+    "name": "Timika",
+    "country": "ID",
+    "lat": "-4.6140700",
+    "lon": "136.6767900",
+    "pop": 142909,
+    "id": "3833"
+  },
+  {
+    "name": "Kisaran",
+    "country": "ID",
+    "lat": "2.9845000",
+    "lon": "99.6158000",
+    "pop": 141915,
+    "id": "3859"
+  },
+  {
+    "name": "Mojokerto",
+    "country": "ID",
+    "lat": "-7.4664000",
+    "lon": "112.4338000",
+    "pop": 141785,
+    "id": "3860"
+  },
+  {
+    "name": "Payakumbuh",
+    "country": "ID",
+    "lat": "-0.2159000",
+    "lon": "100.6334000",
+    "pop": 139576,
+    "id": "3933"
+  },
+  {
+    "name": "Purwodadi",
+    "country": "ID",
+    "lat": "-7.0868000",
+    "lon": "110.9158000",
+    "pop": 139387,
+    "id": "3942"
+  },
+  {
+    "name": "Sidoarjo",
+    "country": "ID",
+    "lat": "-7.4478000",
+    "lon": "112.7183000",
+    "pop": 139189,
+    "id": "3945"
+  },
+  {
+    "name": "Weru",
+    "country": "ID",
+    "lat": "-6.7110000",
+    "lon": "108.5037000",
+    "pop": 139004,
+    "id": "3954"
+  },
+  {
+    "name": "Subang",
+    "country": "ID",
+    "lat": "-6.5700000",
+    "lon": "107.7566700",
+    "pop": 137234,
+    "id": "3992"
+  },
+  {
+    "name": "Rangkasbitung",
+    "country": "ID",
+    "lat": "-6.3591000",
+    "lon": "106.2494000",
+    "pop": 137041,
+    "id": "4000"
+  },
+  {
+    "name": "Gunungsitoli",
+    "country": "ID",
+    "lat": "1.2888000",
+    "lon": "97.6143000",
+    "pop": 136707,
+    "id": "4011"
+  },
+  {
+    "name": "Baturaja",
+    "country": "ID",
+    "lat": "-4.1289100",
+    "lon": "104.1669500",
+    "pop": 134759,
+    "id": "4065"
+  },
+  {
+    "name": "Adiwerna",
+    "country": "ID",
+    "lat": "-6.9375000",
+    "lon": "109.1325000",
+    "pop": 134188,
+    "id": "4081"
+  },
+  {
+    "name": "Singaraja",
+    "country": "ID",
+    "lat": "-8.1120000",
+    "lon": "115.0881800",
+    "pop": 133784,
+    "id": "4092"
+  },
+  {
+    "name": "Garut",
+    "country": "ID",
+    "lat": "-7.2450000",
+    "lon": "107.9210000",
+    "pop": 131809,
+    "id": "4159"
+  },
+  {
+    "name": "Martapura",
+    "country": "ID",
+    "lat": "-3.4109000",
+    "lon": "114.8642000",
+    "pop": 131449,
+    "id": "4167"
+  },
+  {
+    "name": "Teluknaga",
+    "country": "ID",
+    "lat": "-6.0988900",
+    "lon": "106.6380600",
+    "pop": 128275,
+    "id": "4288"
+  },
+  {
+    "name": "Klaten",
+    "country": "ID",
+    "lat": "-7.7058300",
+    "lon": "110.6063900",
+    "pop": 126831,
+    "id": "4331"
+  },
+  {
+    "name": "Jombang",
+    "country": "ID",
+    "lat": "-7.5459500",
+    "lon": "112.2330700",
+    "pop": 126465,
+    "id": "4346"
+  },
+  {
+    "name": "Paseh",
+    "country": "ID",
+    "lat": "-7.0680000",
+    "lon": "107.7940000",
+    "pop": 126181,
+    "id": "4363"
+  },
+  {
+    "name": "Lumajang",
+    "country": "ID",
+    "lat": "-8.1335000",
+    "lon": "113.2248000",
+    "pop": 123626,
+    "id": "4448"
+  },
+  {
+    "name": "Indramayu",
+    "country": "ID",
+    "lat": "-6.3263900",
+    "lon": "108.3200000",
+    "pop": 123263,
+    "id": "4456"
+  },
+  {
+    "name": "Parung",
+    "country": "ID",
+    "lat": "-6.4213900",
+    "lon": "106.7330600",
+    "pop": 123078,
+    "id": "4466"
+  },
+  {
+    "name": "Magelang",
+    "country": "ID",
+    "lat": "-7.4705600",
+    "lon": "110.2177800",
+    "pop": 121526,
+    "id": "4525"
+  },
+  {
+    "name": "Bukittinggi",
+    "country": "ID",
+    "lat": "-0.3090700",
+    "lon": "100.3705500",
+    "pop": 121028,
+    "id": "4541"
+  },
+  {
+    "name": "Bangil",
+    "country": "ID",
+    "lat": "-7.5993900",
+    "lon": "112.8186000",
+    "pop": 120551,
+    "id": "4557"
+  },
+  {
+    "name": "Sepatan",
+    "country": "ID",
+    "lat": "-6.1188900",
+    "lon": "106.5750000",
+    "pop": 118439,
+    "id": "4645"
+  },
+  {
+    "name": "Banyuwangi",
+    "country": "ID",
+    "lat": "-8.2325000",
+    "lon": "114.3575500",
+    "pop": 117558,
+    "id": "4690"
+  },
+  {
+    "name": "Tebingtinggi",
+    "country": "ID",
+    "lat": "3.3285000",
+    "lon": "99.1625000",
+    "pop": 117530,
+    "id": "4691"
+  },
+  {
+    "name": "Kedungwuni",
+    "country": "ID",
+    "lat": "-6.9703800",
+    "lon": "109.6479400",
+    "pop": 117249,
+    "id": "4705"
+  },
+  {
+    "name": "Soreang",
+    "country": "ID",
+    "lat": "-7.0330600",
+    "lon": "107.5183300",
+    "pop": 116780,
+    "id": "4731"
+  },
+  {
+    "name": "Pamanukan",
+    "country": "ID",
+    "lat": "-6.2841700",
+    "lon": "107.8105600",
+    "pop": 114290,
+    "id": "4837"
+  },
+  {
+    "name": "Lawang",
+    "country": "ID",
+    "lat": "-7.8353000",
+    "lon": "112.6947000",
+    "pop": 112540,
+    "id": "4905"
+  },
+  {
+    "name": "Kuningan",
+    "country": "ID",
+    "lat": "-6.9758300",
+    "lon": "108.4830600",
+    "pop": 111742,
+    "id": "4947"
+  },
+  {
+    "name": "Cileunyi",
+    "country": "ID",
+    "lat": "-6.9388900",
+    "lon": "107.7527800",
+    "pop": 111476,
+    "id": "4962"
+  },
+  {
+    "name": "Kresek",
+    "country": "ID",
+    "lat": "-6.1313900",
+    "lon": "106.3797200",
+    "pop": 110182,
+    "id": "5013"
+  },
+  {
+    "name": "Ciamis",
+    "country": "ID",
+    "lat": "-7.3257000",
+    "lon": "108.3534000",
+    "pop": 109839,
+    "id": "5036"
+  },
+  {
+    "name": "Pelabuhanratu",
+    "country": "ID",
+    "lat": "-6.9875000",
+    "lon": "106.5513900",
+    "pop": 109523,
+    "id": "5047"
+  },
+  {
+    "name": "Manokwari",
+    "country": "ID",
+    "lat": "-0.8629100",
+    "lon": "134.0640200",
+    "pop": 107325,
+    "id": "5131"
+  },
+  {
+    "name": "Pati",
+    "country": "ID",
+    "lat": "-6.7559000",
+    "lon": "111.0380000",
+    "pop": 107028,
+    "id": "5144"
+  },
+  {
+    "name": "Cikarang",
+    "country": "ID",
+    "lat": "-6.2611100",
+    "lon": "107.1527800",
+    "pop": 106479,
+    "id": "5161"
+  },
+  {
+    "name": "Arjawinangun",
+    "country": "ID",
+    "lat": "-6.6452800",
+    "lon": "108.4102800",
+    "pop": 105845,
+    "id": "5186"
+  },
+  {
+    "name": "Depok",
+    "country": "ID",
+    "lat": "-7.7625000",
+    "lon": "110.4316700",
+    "pop": 104527,
+    "id": "5257"
+  },
+  {
+    "name": "Prabumulih",
+    "country": "ID",
+    "lat": "-3.4344700",
+    "lon": "104.2305600",
+    "pop": 103470,
+    "id": "5321"
+  },
+  {
+    "name": "Rantauprapat",
+    "country": "ID",
+    "lat": "2.1000000",
+    "lon": "99.8333300",
+    "pop": 103009,
+    "id": "5344"
+  },
+  {
+    "name": "Belawan",
+    "country": "ID",
+    "lat": "3.7755000",
+    "lon": "98.6832000",
+    "pop": 102707,
+    "id": "5361"
+  },
+  {
+    "name": "Merauke",
+    "country": "ID",
+    "lat": "-8.4995800",
+    "lon": "140.4061300",
+    "pop": 102351,
+    "id": "5379"
+  },
+  {
+    "name": "Sungailiat",
+    "country": "ID",
+    "lat": "-1.8544200",
+    "lon": "106.1221500",
+    "pop": 100750,
+    "id": "5476"
+  },
+  {
+    "name": "Grogol",
+    "country": "ID",
+    "lat": "-7.6011100",
+    "lon": "110.8186100",
+    "pop": 100613,
+    "id": "5484"
+  },
+  {
+    "name": "Sungai Penuh",
+    "country": "ID",
+    "lat": "-2.0561000",
+    "lon": "101.3913000",
+    "pop": 99233,
+    "id": "5579"
+  },
+  {
+    "name": "Dukuhturi",
+    "country": "ID",
+    "lat": "-6.9000000",
+    "lon": "109.0833300",
+    "pop": 98074,
+    "id": "5641"
+  },
+  {
+    "name": "Sumber",
+    "country": "ID",
+    "lat": "-6.7602800",
+    "lon": "108.4830600",
+    "pop": 96725,
+    "id": "5725"
+  },
+  {
+    "name": "Wonosobo",
+    "country": "ID",
+    "lat": "-7.3588900",
+    "lon": "109.9030600",
+    "pop": 92990,
+    "id": "5954"
+  },
+  {
+    "name": "Palimanan",
+    "country": "ID",
+    "lat": "-6.7069400",
+    "lon": "108.4241700",
+    "pop": 92600,
+    "id": "5978"
+  },
+  {
+    "name": "Selong",
+    "country": "ID",
+    "lat": "-8.6503000",
+    "lon": "116.5318000",
+    "pop": 92464,
+    "id": "5989"
+  },
+  {
+    "name": "Pamekasan",
+    "country": "ID",
+    "lat": "-7.1568000",
+    "lon": "113.4746000",
+    "pop": 92447,
+    "id": "5994"
+  },
+  {
+    "name": "Pandeglang",
+    "country": "ID",
+    "lat": "-6.3084000",
+    "lon": "106.1067000",
+    "pop": 92316,
+    "id": "6000"
+  },
+  {
+    "name": "Kudus",
+    "country": "ID",
+    "lat": "-6.8048000",
+    "lon": "110.8405000",
+    "pop": 92156,
+    "id": "6008"
+  },
+  {
+    "name": "Caringin",
+    "country": "ID",
+    "lat": "-6.7061100",
+    "lon": "106.8213900",
+    "pop": 91845,
+    "id": "6032"
+  },
+  {
+    "name": "Sibolga",
+    "country": "ID",
+    "lat": "1.7401600",
+    "lon": "98.7811700",
+    "pop": 91265,
+    "id": "6074"
+  },
+  {
+    "name": "Subulussalam",
+    "country": "ID",
+    "lat": "2.6620000",
+    "lon": "97.8827000",
+    "pop": 90751,
+    "id": "6098"
+  },
+  {
+    "name": "Banjar",
+    "country": "ID",
+    "lat": "-8.1900000",
+    "lon": "114.9675000",
+    "pop": 89040,
+    "id": "6217"
+  },
+  {
+    "name": "Cicurug",
+    "country": "ID",
+    "lat": "-6.7813900",
+    "lon": "106.7825000",
+    "pop": 88965,
+    "id": "6221"
+  },
+  {
+    "name": "Kartasura",
+    "country": "ID",
+    "lat": "-7.5519400",
+    "lon": "110.7377800",
+    "pop": 88927,
+    "id": "6224"
+  },
+  {
+    "name": "Klangenan",
+    "country": "ID",
+    "lat": "-6.7094400",
+    "lon": "108.4400000",
+    "pop": 88378,
+    "id": "6267"
+  },
+  {
+    "name": "Maumere",
+    "country": "ID",
+    "lat": "-8.6199000",
+    "lon": "122.2111000",
+    "pop": 87720,
+    "id": "6315"
+  },
+  {
+    "name": "Wonosari",
+    "country": "ID",
+    "lat": "-7.9655600",
+    "lon": "110.6036100",
+    "pop": 87454,
+    "id": "6340"
+  },
+  {
+    "name": "Ende",
+    "country": "ID",
+    "lat": "-8.8432000",
+    "lon": "121.6623000",
+    "pop": 87269,
+    "id": "6354"
+  },
+  {
+    "name": "Bojonegoro",
+    "country": "ID",
+    "lat": "-7.1502000",
+    "lon": "111.8817000",
+    "pop": 86568,
+    "id": "6413"
+  },
+  {
+    "name": "Kasihan",
+    "country": "ID",
+    "lat": "-7.8269400",
+    "lon": "110.3291700",
+    "pop": 86234,
+    "id": "6439"
+  },
+  {
+    "name": "Sintang",
+    "country": "ID",
+    "lat": "0.0666700",
+    "lon": "111.5000000",
+    "pop": 85000,
+    "id": "6530"
+  },
+  {
+    "name": "Sumenep",
+    "country": "ID",
+    "lat": "-7.0115200",
+    "lon": "113.8604200",
+    "pop": 84656,
+    "id": "6560"
+  },
+  {
+    "name": "Margahayukencana",
+    "country": "ID",
+    "lat": "-6.9708300",
+    "lon": "107.5675000",
+    "pop": 83119,
+    "id": "6666"
+  },
+  {
+    "name": "Galesong",
+    "country": "ID",
+    "lat": "-5.3166000",
+    "lon": "119.3661000",
+    "pop": 83050,
+    "id": "6675"
+  },
+  {
+    "name": "Atambua",
+    "country": "ID",
+    "lat": "-9.1061100",
+    "lon": "124.8925000",
+    "pop": 82196,
+    "id": "6763"
+  },
+  {
+    "name": "Kedungwaru",
+    "country": "ID",
+    "lat": "-8.0666700",
+    "lon": "111.9166700",
+    "pop": 80257,
+    "id": "6918"
+  },
+  {
+    "name": "Serpong",
+    "country": "ID",
+    "lat": "-6.3169400",
+    "lon": "106.6641700",
+    "pop": 80193,
+    "id": "6925"
+  },
+  {
+    "name": "Genteng",
+    "country": "ID",
+    "lat": "-8.3666700",
+    "lon": "114.1500000",
+    "pop": 79652,
+    "id": "6970"
+  },
+  {
+    "name": "Gedangan",
+    "country": "ID",
+    "lat": "-7.3908300",
+    "lon": "112.7266700",
+    "pop": 79230,
+    "id": "6998"
+  },
+  {
+    "name": "Ponorogo",
+    "country": "ID",
+    "lat": "-7.8685000",
+    "lon": "111.4620000",
+    "pop": 79026,
+    "id": "7017"
+  },
+  {
+    "name": "Ciranjang-hilir",
+    "country": "ID",
+    "lat": "-6.8200000",
+    "lon": "107.2572200",
+    "pop": 77758,
+    "id": "7124"
+  },
+  {
+    "name": "Tuban",
+    "country": "ID",
+    "lat": "-6.8976000",
+    "lon": "112.0649000",
+    "pop": 76242,
+    "id": "7289"
+  },
+  {
+    "name": "Karangsembung",
+    "country": "ID",
+    "lat": "-6.8487000",
+    "lon": "108.6422000",
+    "pop": 75856,
+    "id": "7329"
+  },
+  {
+    "name": "Tarub",
+    "country": "ID",
+    "lat": "-6.9333300",
+    "lon": "109.1666700",
+    "pop": 75739,
+    "id": "7337"
+  },
+  {
+    "name": "Ubud",
+    "country": "ID",
+    "lat": "-8.5098000",
+    "lon": "115.2654000",
+    "pop": 74800,
+    "id": "7433"
+  },
+  {
+    "name": "Sewon",
+    "country": "ID",
+    "lat": "-7.8763900",
+    "lon": "110.3588900",
+    "pop": 73585,
+    "id": "7568"
+  },
+  {
+    "name": "Kabanjahe",
+    "country": "ID",
+    "lat": "3.1001000",
+    "lon": "98.4908000",
+    "pop": 73581,
+    "id": "7570"
+  },
+  {
+    "name": "Solok",
+    "country": "ID",
+    "lat": "-0.8006000",
+    "lon": "100.6571000",
+    "pop": 73438,
+    "id": "7583"
+  },
+  {
+    "name": "Majalengka",
+    "country": "ID",
+    "lat": "-6.8361100",
+    "lon": "108.2277800",
+    "pop": 73052,
+    "id": "7623"
+  },
+  {
+    "name": "Jatibarang",
+    "country": "ID",
+    "lat": "-6.4747200",
+    "lon": "108.3152800",
+    "pop": 73010,
+    "id": "7629"
+  },
+  {
+    "name": "Sragen",
+    "country": "ID",
+    "lat": "-7.4263900",
+    "lon": "111.0222200",
+    "pop": 71522,
+    "id": "7779"
+  },
+  {
+    "name": "Pagar Alam",
+    "country": "ID",
+    "lat": "-4.0250600",
+    "lon": "103.2469400",
+    "pop": 70386,
+    "id": "7928"
+  },
+  {
+    "name": "Raha",
+    "country": "ID",
+    "lat": "-4.8380000",
+    "lon": "122.7209000",
+    "pop": 69980,
+    "id": "7981"
+  },
+  {
+    "name": "Mertoyudan",
+    "country": "ID",
+    "lat": "-7.5200000",
+    "lon": "110.2263900",
+    "pop": 69871,
+    "id": "7995"
+  },
+  {
+    "name": "Bondowoso",
+    "country": "ID",
+    "lat": "-7.9134600",
+    "lon": "113.8214500",
+    "pop": 69783,
+    "id": "8003"
+  },
+  {
+    "name": "Nganjuk",
+    "country": "ID",
+    "lat": "-7.6051000",
+    "lon": "111.9035000",
+    "pop": 69011,
+    "id": "8068"
+  },
+  {
+    "name": "Melati",
+    "country": "ID",
+    "lat": "-7.7333300",
+    "lon": "110.3666700",
+    "pop": 67090,
+    "id": "8302"
+  },
+  {
+    "name": "Nunukan",
+    "country": "ID",
+    "lat": "4.1384100",
+    "lon": "117.6507000",
+    "pop": 67006,
+    "id": "8310"
+  },
+  {
+    "name": "Sokaraja",
+    "country": "ID",
+    "lat": "-7.4580600",
+    "lon": "109.2880600",
+    "pop": 66482,
+    "id": "8381"
+  },
+  {
+    "name": "Gamping Lor",
+    "country": "ID",
+    "lat": "-7.7955600",
+    "lon": "110.3263900",
+    "pop": 66110,
+    "id": "8430"
+  },
+  {
+    "name": "Lahat",
+    "country": "ID",
+    "lat": "-3.7851400",
+    "lon": "103.5427900",
+    "pop": 65906,
+    "id": "8457"
+  },
+  {
+    "name": "Polewali",
+    "country": "ID",
+    "lat": "-3.4324000",
+    "lon": "119.3435000",
+    "pop": 65800,
+    "id": "8477"
+  },
+  {
+    "name": "Tulungagung",
+    "country": "ID",
+    "lat": "-8.0657000",
+    "lon": "111.9025000",
+    "pop": 65262,
+    "id": "8558"
+  },
+  {
+    "name": "Muncar",
+    "country": "ID",
+    "lat": "-8.4333300",
+    "lon": "114.3333300",
+    "pop": 64537,
+    "id": "8659"
+  },
+  {
+    "name": "Bantul",
+    "country": "ID",
+    "lat": "-7.8880600",
+    "lon": "110.3288900",
+    "pop": 64360,
+    "id": "8675"
+  },
+  {
+    "name": "Tulangan Utara",
+    "country": "ID",
+    "lat": "-7.4737000",
+    "lon": "112.6505000",
+    "pop": 63889,
+    "id": "8739"
+  },
+  {
+    "name": "Ambarawa",
+    "country": "ID",
+    "lat": "-7.2633300",
+    "lon": "110.3975000",
+    "pop": 63193,
+    "id": "8841"
+  },
+  {
+    "name": "Godean",
+    "country": "ID",
+    "lat": "-7.7697200",
+    "lon": "110.2938900",
+    "pop": 63164,
+    "id": "8848"
+  },
+  {
+    "name": "Sumbawa Besar",
+    "country": "ID",
+    "lat": "-8.4931700",
+    "lon": "117.4202400",
+    "pop": 62753,
+    "id": "8897"
+  },
+  {
+    "name": "Abepura",
+    "country": "ID",
+    "lat": "-2.5964000",
+    "lon": "140.6324000",
+    "pop": 62248,
+    "id": "8957"
+  },
+  {
+    "name": "Slawi",
+    "country": "ID",
+    "lat": "-6.9816000",
+    "lon": "109.1407000",
+    "pop": 61206,
+    "id": "9141"
+  },
+  {
+    "name": "Pecangaan",
+    "country": "ID",
+    "lat": "-6.6978000",
+    "lon": "110.7107000",
+    "pop": 61046,
+    "id": "9160"
+  },
+  {
+    "name": "Kertosono",
+    "country": "ID",
+    "lat": "-7.5833300",
+    "lon": "112.1000000",
+    "pop": 60782,
+    "id": "9213"
+  },
+  {
+    "name": "Boyolali",
+    "country": "ID",
+    "lat": "-7.5330600",
+    "lon": "110.5958300",
+    "pop": 59851,
+    "id": "9376"
+  },
+  {
+    "name": "Sengkang",
+    "country": "ID",
+    "lat": "-4.1279000",
+    "lon": "120.0297000",
+    "pop": 59523,
+    "id": "9423"
+  },
+  {
+    "name": "Lamongan",
+    "country": "ID",
+    "lat": "-7.1166700",
+    "lon": "112.4166700",
+    "pop": 59224,
+    "id": "9460"
+  },
+  {
+    "name": "Baki",
+    "country": "ID",
+    "lat": "-7.6127800",
+    "lon": "110.7838900",
+    "pop": 58909,
+    "id": "9527"
+  },
+  {
+    "name": "Padangpanjang",
+    "country": "ID",
+    "lat": "-0.4560200",
+    "lon": "100.4052100",
+    "pop": 58627,
+    "id": "9571"
+  },
+  {
+    "name": "Weleri",
+    "country": "ID",
+    "lat": "-6.9713000",
+    "lon": "110.0666000",
+    "pop": 58448,
+    "id": "9600"
+  },
+  {
+    "name": "Jatiwangi",
+    "country": "ID",
+    "lat": "-6.7336100",
+    "lon": "108.2627800",
+    "pop": 57973,
+    "id": "9668"
+  },
+  {
+    "name": "Baekrajan",
+    "country": "ID",
+    "lat": "-6.7674000",
+    "lon": "110.8541000",
+    "pop": 57920,
+    "id": "9677"
+  },
+  {
+    "name": "Kota Sambas",
+    "country": "ID",
+    "lat": "1.3625900",
+    "lon": "109.3009300",
+    "pop": 57295,
+    "id": "9764"
+  },
+  {
+    "name": "Purbalingga",
+    "country": "ID",
+    "lat": "-7.3880600",
+    "lon": "109.3638900",
+    "pop": 56903,
+    "id": "9829"
+  },
+  {
+    "name": "Pare",
+    "country": "ID",
+    "lat": "-7.7679000",
+    "lon": "112.1980000",
+    "pop": 56699,
+    "id": "9862"
+  },
+  {
+    "name": "Tanjung Selor",
+    "country": "ID",
+    "lat": "2.8375000",
+    "lon": "117.3652800",
+    "pop": 56569,
+    "id": "9878"
+  },
+  {
+    "name": "Balai Pungut",
+    "country": "ID",
+    "lat": "1.0594900",
+    "lon": "101.2905400",
+    "pop": 56452,
+    "id": "9892"
+  },
+  {
+    "name": "Mendaha",
+    "country": "ID",
+    "lat": "-1.0163000",
+    "lon": "103.5933100",
+    "pop": 56268,
+    "id": "9921"
+  },
+  {
+    "name": "Sleman",
+    "country": "ID",
+    "lat": "-7.7155600",
+    "lon": "110.3555600",
+    "pop": 56215,
+    "id": "9929"
+  },
+  {
+    "name": "Pandak",
+    "country": "ID",
+    "lat": "-7.9130600",
+    "lon": "110.2936100",
+    "pop": 56043,
+    "id": "9962"
+  },
+  {
+    "name": "Barabai",
+    "country": "ID",
+    "lat": "-2.5833300",
+    "lon": "115.3833300",
+    "pop": 55687,
+    "id": "10009"
+  },
+  {
+    "name": "Amuntai",
+    "country": "ID",
+    "lat": "-2.4177300",
+    "lon": "115.2494100",
+    "pop": 55560,
+    "id": "10039"
+  },
+  {
+    "name": "Besuki",
+    "country": "ID",
+    "lat": "-7.7337900",
+    "lon": "113.6978500",
+    "pop": 55465,
+    "id": "10057"
+  },
+  {
+    "name": "Taliwang",
+    "country": "ID",
+    "lat": "-8.7449000",
+    "lon": "116.8532000",
+    "pop": 55340,
+    "id": "10086"
+  },
+  {
+    "name": "Wedi",
+    "country": "ID",
+    "lat": "-7.7430600",
+    "lon": "110.5794400",
+    "pop": 55300,
+    "id": "10093"
+  },
+  {
+    "name": "Cepu",
+    "country": "ID",
+    "lat": "-7.1475000",
+    "lon": "111.5906000",
+    "pop": 55055,
+    "id": "10145"
+  },
+  {
+    "name": "Dompu",
+    "country": "ID",
+    "lat": "-8.5365000",
+    "lon": "118.4634000",
+    "pop": 54987,
+    "id": "10156"
+  },
+  {
+    "name": "Sampang",
+    "country": "ID",
+    "lat": "-7.1872000",
+    "lon": "113.2394000",
+    "pop": 53269,
+    "id": "10456"
+  },
+  {
+    "name": "Tanjungagung",
+    "country": "ID",
+    "lat": "-3.9372800",
+    "lon": "103.8046500",
+    "pop": 53117,
+    "id": "10490"
+  },
+  {
+    "name": "Terbanggi Besar",
+    "country": "ID",
+    "lat": "-4.8789800",
+    "lon": "105.2181800",
+    "pop": 52566,
+    "id": "10594"
+  },
+  {
+    "name": "Kepanjen",
+    "country": "ID",
+    "lat": "-8.1303000",
+    "lon": "112.5727000",
+    "pop": 51919,
+    "id": "10723"
+  },
+  {
+    "name": "Blora",
+    "country": "ID",
+    "lat": "-6.9698000",
+    "lon": "111.4186000",
+    "pop": 51811,
+    "id": "10747"
+  },
+  {
+    "name": "Comal",
+    "country": "ID",
+    "lat": "-6.9053000",
+    "lon": "109.5347000",
+    "pop": 51092,
+    "id": "10891"
+  },
+  {
+    "name": "Sidikalang",
+    "country": "ID",
+    "lat": "2.7489900",
+    "lon": "98.3127000",
+    "pop": 50671,
+    "id": "10960"
+  },
+  {
+    "name": "Karanganom",
+    "country": "ID",
+    "lat": "-7.6488900",
+    "lon": "110.6250000",
+    "pop": 50670,
+    "id": "10961"
+  },
+  {
+    "name": "Kawalu",
+    "country": "ID",
+    "lat": "-7.3817000",
+    "lon": "108.2082000",
+    "pop": 50541,
+    "id": "10990"
+  },
+  {
+    "name": "Gombong",
+    "country": "ID",
+    "lat": "-7.6072200",
+    "lon": "109.5141700",
+    "pop": 50200,
+    "id": "11050"
+  },
+  {
+    "name": "Jatiroto",
+    "country": "ID",
+    "lat": "-7.8833300",
+    "lon": "111.1166700",
+    "pop": 50059,
+    "id": "11084"
+  }
+]

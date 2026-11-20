@@ -1,0 +1,1970 @@
+[
+  {
+    "name": "Quezon City",
+    "country": "PH",
+    "lat": "14.6488000",
+    "lon": "121.0509000",
+    "pop": 3084270,
+    "id": "110"
+  },
+  {
+    "name": "Caloocan City",
+    "country": "PH",
+    "lat": "14.6495300",
+    "lon": "120.9678800",
+    "pop": 1712945,
+    "id": "247"
+  },
+  {
+    "name": "Manila",
+    "country": "PH",
+    "lat": "14.6042000",
+    "lon": "120.9822000",
+    "pop": 1600000,
+    "id": "276"
+  },
+  {
+    "name": "Taguig",
+    "country": "PH",
+    "lat": "14.5243000",
+    "lon": "121.0792000",
+    "pop": 1308085,
+    "id": "373"
+  },
+  {
+    "name": "Budta",
+    "country": "PH",
+    "lat": "7.2041700",
+    "lon": "124.4397200",
+    "pop": 1273715,
+    "id": "388"
+  },
+  {
+    "name": "Malingao",
+    "country": "PH",
+    "lat": "7.1608300",
+    "lon": "124.4750000",
+    "pop": 1121974,
+    "id": "462"
+  },
+  {
+    "name": "Cebu City",
+    "country": "PH",
+    "lat": "10.3167200",
+    "lon": "123.8907100",
+    "pop": 965332,
+    "id": "556"
+  },
+  {
+    "name": "Antipolo",
+    "country": "PH",
+    "lat": "14.6257800",
+    "lon": "121.1225100",
+    "pop": 913712,
+    "id": "582"
+  },
+  {
+    "name": "Pasig City",
+    "country": "PH",
+    "lat": "14.5869100",
+    "lon": "121.0614000",
+    "pop": 853050,
+    "id": "627"
+  },
+  {
+    "name": "Cagayan de Oro",
+    "country": "PH",
+    "lat": "8.4822200",
+    "lon": "124.6472200",
+    "pop": 741617,
+    "id": "719"
+  },
+  {
+    "name": "Valenzuela",
+    "country": "PH",
+    "lat": "14.7000000",
+    "lon": "120.9667000",
+    "pop": 725173,
+    "id": "738"
+  },
+  {
+    "name": "General Santos",
+    "country": "PH",
+    "lat": "6.1127800",
+    "lon": "125.1716700",
+    "pop": 722059,
+    "id": "743"
+  },
+  {
+    "name": "Paranaque City",
+    "country": "PH",
+    "lat": "14.4815600",
+    "lon": "121.0174900",
+    "pop": 703245,
+    "id": "756"
+  },
+  {
+    "name": "Las Pi\u00f1as",
+    "country": "PH",
+    "lat": "14.4505600",
+    "lon": "120.9827800",
+    "pop": 615549,
+    "id": "871"
+  },
+  {
+    "name": "Calamba",
+    "country": "PH",
+    "lat": "14.2116700",
+    "lon": "121.1652800",
+    "pop": 575046,
+    "id": "931"
+  },
+  {
+    "name": "Makati City",
+    "country": "PH",
+    "lat": "14.5502700",
+    "lon": "121.0326900",
+    "pop": 510383,
+    "id": "1076"
+  },
+  {
+    "name": "Angeles City",
+    "country": "PH",
+    "lat": "15.1500000",
+    "lon": "120.5833300",
+    "pop": 483452,
+    "id": "1139"
+  },
+  {
+    "name": "Imus",
+    "country": "PH",
+    "lat": "14.4297200",
+    "lon": "120.9366700",
+    "pop": 481949,
+    "id": "1145"
+  },
+  {
+    "name": "Marikina City",
+    "country": "PH",
+    "lat": "14.6481000",
+    "lon": "121.1133000",
+    "pop": 471323,
+    "id": "1176"
+  },
+  {
+    "name": "Mandaluyong City",
+    "country": "PH",
+    "lat": "14.5832000",
+    "lon": "121.0409000",
+    "pop": 465902,
+    "id": "1190"
+  },
+  {
+    "name": "Bacolod City",
+    "country": "PH",
+    "lat": "10.6666700",
+    "lon": "122.9500000",
+    "pop": 454898,
+    "id": "1222"
+  },
+  {
+    "name": "Mansilingan",
+    "country": "PH",
+    "lat": "10.6311100",
+    "lon": "122.9788900",
+    "pop": 454150,
+    "id": "1224"
+  },
+  {
+    "name": "Dasmari\u00f1as",
+    "country": "PH",
+    "lat": "14.3294400",
+    "lon": "120.9366700",
+    "pop": 441876,
+    "id": "1254"
+  },
+  {
+    "name": "Mandaluyong",
+    "country": "PH",
+    "lat": "14.5783700",
+    "lon": "121.0352200",
+    "pop": 425000,
+    "id": "1298"
+  },
+  {
+    "name": "Pasay",
+    "country": "PH",
+    "lat": "14.5374800",
+    "lon": "121.0014400",
+    "pop": 416522,
+    "id": "1326"
+  },
+  {
+    "name": "Tarlac City",
+    "country": "PH",
+    "lat": "15.4801700",
+    "lon": "120.5979400",
+    "pop": 401892,
+    "id": "1372"
+  },
+  {
+    "name": "Cotabato",
+    "country": "PH",
+    "lat": "7.2236100",
+    "lon": "124.2463900",
+    "pop": 383383,
+    "id": "1423"
+  },
+  {
+    "name": "Malabon",
+    "country": "PH",
+    "lat": "14.6733300",
+    "lon": "120.9397200",
+    "pop": 365525,
+    "id": "1488"
+  },
+  {
+    "name": "San Jose del Monte",
+    "country": "PH",
+    "lat": "14.8138900",
+    "lon": "121.0452800",
+    "pop": 357828,
+    "id": "1527"
+  },
+  {
+    "name": "Bacoor",
+    "country": "PH",
+    "lat": "14.4589600",
+    "lon": "120.9385100",
+    "pop": 356974,
+    "id": "1534"
+  },
+  {
+    "name": "San Pedro",
+    "country": "PH",
+    "lat": "14.3595000",
+    "lon": "121.0473000",
+    "pop": 348968,
+    "id": "1571"
+  },
+  {
+    "name": "Cabanatuan City",
+    "country": "PH",
+    "lat": "15.4858600",
+    "lon": "120.9664800",
+    "pop": 343672,
+    "id": "1604"
+  },
+  {
+    "name": "Iligan",
+    "country": "PH",
+    "lat": "8.2289000",
+    "lon": "124.2434400",
+    "pop": 342618,
+    "id": "1609"
+  },
+  {
+    "name": "Mandaue City",
+    "country": "PH",
+    "lat": "10.3236100",
+    "lon": "123.9222200",
+    "pop": 331320,
+    "id": "1654"
+  },
+  {
+    "name": "Iligan City",
+    "country": "PH",
+    "lat": "8.2500000",
+    "lon": "124.4000000",
+    "pop": 312323,
+    "id": "1761"
+  },
+  {
+    "name": "Butuan",
+    "country": "PH",
+    "lat": "8.9491700",
+    "lon": "125.5436100",
+    "pop": 309709,
+    "id": "1771"
+  },
+  {
+    "name": "Cabuyao",
+    "country": "PH",
+    "lat": "14.2726000",
+    "lon": "121.1262000",
+    "pop": 308745,
+    "id": "1777"
+  },
+  {
+    "name": "San Pablo",
+    "country": "PH",
+    "lat": "14.0683000",
+    "lon": "121.3256000",
+    "pop": 300166,
+    "id": "1825"
+  },
+  {
+    "name": "Bi\u00f1an",
+    "country": "PH",
+    "lat": "14.3426700",
+    "lon": "121.0807100",
+    "pop": 300000,
+    "id": "1831"
+  },
+  {
+    "name": "Santol",
+    "country": "PH",
+    "lat": "15.1622200",
+    "lon": "120.5675000",
+    "pop": 298976,
+    "id": "1838"
+  },
+  {
+    "name": "Cainta",
+    "country": "PH",
+    "lat": "14.5786000",
+    "lon": "121.1222000",
+    "pop": 283172,
+    "id": "1942"
+  },
+  {
+    "name": "Baguio",
+    "country": "PH",
+    "lat": "16.4163900",
+    "lon": "120.5930600",
+    "pop": 272714,
+    "id": "2018"
+  },
+  {
+    "name": "Malolos",
+    "country": "PH",
+    "lat": "14.8443000",
+    "lon": "120.8103900",
+    "pop": 269809,
+    "id": "2039"
+  },
+  {
+    "name": "Mantampay",
+    "country": "PH",
+    "lat": "8.1666700",
+    "lon": "124.2166700",
+    "pop": 265032,
+    "id": "2078"
+  },
+  {
+    "name": "Bagong Silang",
+    "country": "PH",
+    "lat": "14.7783000",
+    "lon": "121.0448700",
+    "pop": 261729,
+    "id": "2106"
+  },
+  {
+    "name": "Marawi City",
+    "country": "PH",
+    "lat": "8.0034000",
+    "lon": "124.2839500",
+    "pop": 259993,
+    "id": "2123"
+  },
+  {
+    "name": "San Fernando",
+    "country": "PH",
+    "lat": "15.0342500",
+    "lon": "120.6844500",
+    "pop": 251248,
+    "id": "2207"
+  },
+  {
+    "name": "Libertad",
+    "country": "PH",
+    "lat": "8.9441700",
+    "lon": "125.5019400",
+    "pop": 250353,
+    "id": "2217"
+  },
+  {
+    "name": "Navotas",
+    "country": "PH",
+    "lat": "14.6666700",
+    "lon": "120.9500000",
+    "pop": 249463,
+    "id": "2227"
+  },
+  {
+    "name": "Ormoc",
+    "country": "PH",
+    "lat": "11.0063900",
+    "lon": "124.6075000",
+    "pop": 238545,
+    "id": "2328"
+  },
+  {
+    "name": "Batangas",
+    "country": "PH",
+    "lat": "13.7567000",
+    "lon": "121.0584000",
+    "pop": 237370,
+    "id": "2343"
+  },
+  {
+    "name": "Magugpo Poblacion",
+    "country": "PH",
+    "lat": "7.4475000",
+    "lon": "125.8046000",
+    "pop": 233254,
+    "id": "2392"
+  },
+  {
+    "name": "Taytay",
+    "country": "PH",
+    "lat": "14.5588300",
+    "lon": "121.1328500",
+    "pop": 231460,
+    "id": "2400"
+  },
+  {
+    "name": "Lucena",
+    "country": "PH",
+    "lat": "13.9313900",
+    "lon": "121.6172200",
+    "pop": 228758,
+    "id": "2422"
+  },
+  {
+    "name": "Meycauayan",
+    "country": "PH",
+    "lat": "14.7369400",
+    "lon": "120.9608300",
+    "pop": 228023,
+    "id": "2429"
+  },
+  {
+    "name": "NIA Valencia",
+    "country": "PH",
+    "lat": "7.9063900",
+    "lon": "125.0941700",
+    "pop": 223620,
+    "id": "2487"
+  },
+  {
+    "name": "Puerto Princesa",
+    "country": "PH",
+    "lat": "9.7391700",
+    "lon": "118.7352800",
+    "pop": 222673,
+    "id": "2497"
+  },
+  {
+    "name": "Olongapo",
+    "country": "PH",
+    "lat": "14.8291700",
+    "lon": "120.2827800",
+    "pop": 221178,
+    "id": "2517"
+  },
+  {
+    "name": "Binangonan",
+    "country": "PH",
+    "lat": "14.4646000",
+    "lon": "121.1929000",
+    "pop": 219204,
+    "id": "2537"
+  },
+  {
+    "name": "Santa Rosa",
+    "country": "PH",
+    "lat": "14.3122200",
+    "lon": "121.1113900",
+    "pop": 216650,
+    "id": "2563"
+  },
+  {
+    "name": "Lipa City",
+    "country": "PH",
+    "lat": "13.9411000",
+    "lon": "121.1631000",
+    "pop": 212287,
+    "id": "2617"
+  },
+  {
+    "name": "Panabo",
+    "country": "PH",
+    "lat": "7.3080600",
+    "lon": "125.6841700",
+    "pop": 211242,
+    "id": "2631"
+  },
+  {
+    "name": "Kabankalan",
+    "country": "PH",
+    "lat": "9.9839000",
+    "lon": "122.8142300",
+    "pop": 210893,
+    "id": "2635"
+  },
+  {
+    "name": "Pagadian",
+    "country": "PH",
+    "lat": "7.8257000",
+    "lon": "123.4370000",
+    "pop": 206483,
+    "id": "2688"
+  },
+  {
+    "name": "Koronadal",
+    "country": "PH",
+    "lat": "6.5030600",
+    "lon": "124.8469400",
+    "pop": 201844,
+    "id": "2747"
+  },
+  {
+    "name": "Mabalacat City",
+    "country": "PH",
+    "lat": "15.2230300",
+    "lon": "120.5711700",
+    "pop": 188050,
+    "id": "2969"
+  },
+  {
+    "name": "Sorsogon",
+    "country": "PH",
+    "lat": "12.9738900",
+    "lon": "123.9933300",
+    "pop": 187670,
+    "id": "2975"
+  },
+  {
+    "name": "Roxas City",
+    "country": "PH",
+    "lat": "11.5852800",
+    "lon": "122.7511100",
+    "pop": 185236,
+    "id": "3013"
+  },
+  {
+    "name": "Legaspi",
+    "country": "PH",
+    "lat": "13.1412500",
+    "lon": "123.7407300",
+    "pop": 179481,
+    "id": "3096"
+  },
+  {
+    "name": "Concepcion",
+    "country": "PH",
+    "lat": "15.3254600",
+    "lon": "120.6572300",
+    "pop": 178549,
+    "id": "3121"
+  },
+  {
+    "name": "Naga",
+    "country": "PH",
+    "lat": "13.6191700",
+    "lon": "123.1813900",
+    "pop": 174931,
+    "id": "3174"
+  },
+  {
+    "name": "Dagupan",
+    "country": "PH",
+    "lat": "16.0431300",
+    "lon": "120.3332500",
+    "pop": 171271,
+    "id": "3230"
+  },
+  {
+    "name": "Tuguegarao",
+    "country": "PH",
+    "lat": "17.6157700",
+    "lon": "121.7228500",
+    "pop": 167297,
+    "id": "3302"
+  },
+  {
+    "name": "Ilagan",
+    "country": "PH",
+    "lat": "17.1485400",
+    "lon": "121.8892400",
+    "pop": 164020,
+    "id": "3361"
+  },
+  {
+    "name": "Pandi",
+    "country": "PH",
+    "lat": "14.8650000",
+    "lon": "120.9572200",
+    "pop": 162725,
+    "id": "3389"
+  },
+  {
+    "name": "Capas",
+    "country": "PH",
+    "lat": "15.3311700",
+    "lon": "120.5898000",
+    "pop": 162724,
+    "id": "3390"
+  },
+  {
+    "name": "Guyong",
+    "country": "PH",
+    "lat": "14.8361000",
+    "lon": "120.9784400",
+    "pop": 155391,
+    "id": "3542"
+  },
+  {
+    "name": "Urdaneta",
+    "country": "PH",
+    "lat": "15.9761100",
+    "lon": "120.5711100",
+    "pop": 145935,
+    "id": "3748"
+  },
+  {
+    "name": "San Jose",
+    "country": "PH",
+    "lat": "12.3527500",
+    "lon": "121.0676100",
+    "pop": 143495,
+    "id": "3812"
+  },
+  {
+    "name": "La Trinidad",
+    "country": "PH",
+    "lat": "16.4550000",
+    "lon": "120.5875000",
+    "pop": 142925,
+    "id": "3831"
+  },
+  {
+    "name": "Norzagaray",
+    "country": "PH",
+    "lat": "14.9109000",
+    "lon": "121.0493000",
+    "pop": 140697,
+    "id": "3904"
+  },
+  {
+    "name": "Gingoog",
+    "country": "PH",
+    "lat": "8.8277800",
+    "lon": "125.0997200",
+    "pop": 138895,
+    "id": "3958"
+  },
+  {
+    "name": "Naga",
+    "country": "PH",
+    "lat": "10.2089800",
+    "lon": "123.7580000",
+    "pop": 138727,
+    "id": "3962"
+  },
+  {
+    "name": "Candelaria",
+    "country": "PH",
+    "lat": "13.9311100",
+    "lon": "121.4233300",
+    "pop": 137933,
+    "id": "3978"
+  },
+  {
+    "name": "Baliuag",
+    "country": "PH",
+    "lat": "14.9547200",
+    "lon": "120.8969400",
+    "pop": 135679,
+    "id": "4040"
+  },
+  {
+    "name": "Angono",
+    "country": "PH",
+    "lat": "14.5266000",
+    "lon": "121.1536000",
+    "pop": 134975,
+    "id": "4060"
+  },
+  {
+    "name": "Rodriguez",
+    "country": "PH",
+    "lat": "14.7601100",
+    "lon": "121.1999300",
+    "pop": 134432,
+    "id": "4067"
+  },
+  {
+    "name": "San Mateo",
+    "country": "PH",
+    "lat": "14.6982000",
+    "lon": "121.1236000",
+    "pop": 134327,
+    "id": "4071"
+  },
+  {
+    "name": "San Juan",
+    "country": "PH",
+    "lat": "14.6000000",
+    "lon": "121.0333000",
+    "pop": 134312,
+    "id": "4073"
+  },
+  {
+    "name": "Muricay",
+    "country": "PH",
+    "lat": "7.8275000",
+    "lon": "123.4782000",
+    "pop": 132094,
+    "id": "4147"
+  },
+  {
+    "name": "Bulaon",
+    "country": "PH",
+    "lat": "15.0826200",
+    "lon": "120.6628800",
+    "pop": 131818,
+    "id": "4158"
+  },
+  {
+    "name": "Gapan",
+    "country": "PH",
+    "lat": "15.3072000",
+    "lon": "120.9464000",
+    "pop": 129610,
+    "id": "4234"
+  },
+  {
+    "name": "Bayambang",
+    "country": "PH",
+    "lat": "15.8127000",
+    "lon": "120.4557000",
+    "pop": 129506,
+    "id": "4236"
+  },
+  {
+    "name": "Cadiz",
+    "country": "PH",
+    "lat": "10.9465000",
+    "lon": "123.2880000",
+    "pop": 129053,
+    "id": "4259"
+  },
+  {
+    "name": "Pulong Santa Cruz",
+    "country": "PH",
+    "lat": "14.2732400",
+    "lon": "121.0764300",
+    "pop": 126844,
+    "id": "4330"
+  },
+  {
+    "name": "Bayawan",
+    "country": "PH",
+    "lat": "9.3649000",
+    "lon": "122.8040000",
+    "pop": 126744,
+    "id": "4335"
+  },
+  {
+    "name": "Sultan Kudarat",
+    "country": "PH",
+    "lat": "7.2288900",
+    "lon": "124.2577800",
+    "pop": 124965,
+    "id": "4407"
+  },
+  {
+    "name": "Hagonoy",
+    "country": "PH",
+    "lat": "14.8341300",
+    "lon": "120.7327100",
+    "pop": 123531,
+    "id": "4450"
+  },
+  {
+    "name": "Tabuk",
+    "country": "PH",
+    "lat": "17.4084000",
+    "lon": "121.2785000",
+    "pop": 122771,
+    "id": "4473"
+  },
+  {
+    "name": "Tabuk",
+    "country": "PH",
+    "lat": "17.4737800",
+    "lon": "121.4679900",
+    "pop": 122771,
+    "id": "4474"
+  },
+  {
+    "name": "Calumpit",
+    "country": "PH",
+    "lat": "14.9163900",
+    "lon": "120.7658300",
+    "pop": 122187,
+    "id": "4500"
+  },
+  {
+    "name": "Apalit",
+    "country": "PH",
+    "lat": "14.9533300",
+    "lon": "120.7700000",
+    "pop": 121057,
+    "id": "4539"
+  },
+  {
+    "name": "Plaridel",
+    "country": "PH",
+    "lat": "14.8872200",
+    "lon": "120.8572200",
+    "pop": 120939,
+    "id": "4547"
+  },
+  {
+    "name": "Silang",
+    "country": "PH",
+    "lat": "14.2156700",
+    "lon": "120.9713700",
+    "pop": 119475,
+    "id": "4602"
+  },
+  {
+    "name": "Guiguinto",
+    "country": "PH",
+    "lat": "14.8333300",
+    "lon": "120.8833300",
+    "pop": 118173,
+    "id": "4653"
+  },
+  {
+    "name": "Manolo Fortich",
+    "country": "PH",
+    "lat": "8.3697200",
+    "lon": "124.8644400",
+    "pop": 118075,
+    "id": "4659"
+  },
+  {
+    "name": "Midsayap",
+    "country": "PH",
+    "lat": "7.1908300",
+    "lon": "124.5302800",
+    "pop": 117365,
+    "id": "4699"
+  },
+  {
+    "name": "Himamaylan",
+    "country": "PH",
+    "lat": "10.0988900",
+    "lon": "122.8705600",
+    "pop": 117286,
+    "id": "4702"
+  },
+  {
+    "name": "Los Ba\u00f1os",
+    "country": "PH",
+    "lat": "14.1702500",
+    "lon": "121.2418100",
+    "pop": 117030,
+    "id": "4716"
+  },
+  {
+    "name": "Tacurong",
+    "country": "PH",
+    "lat": "6.6925000",
+    "lon": "124.6763900",
+    "pop": 116945,
+    "id": "4724"
+  },
+  {
+    "name": "Dinaig",
+    "country": "PH",
+    "lat": "7.1698500",
+    "lon": "124.2083600",
+    "pop": 116768,
+    "id": "4732"
+  },
+  {
+    "name": "Digos",
+    "country": "PH",
+    "lat": "6.7497200",
+    "lon": "125.3572200",
+    "pop": 116122,
+    "id": "4761"
+  },
+  {
+    "name": "Tayabas",
+    "country": "PH",
+    "lat": "14.0259000",
+    "lon": "121.5929000",
+    "pop": 115318,
+    "id": "4801"
+  },
+  {
+    "name": "Iriga City",
+    "country": "PH",
+    "lat": "13.4324000",
+    "lon": "123.4115000",
+    "pop": 115306,
+    "id": "4803"
+  },
+  {
+    "name": "Quezon",
+    "country": "PH",
+    "lat": "7.7302800",
+    "lon": "125.0988900",
+    "pop": 114521,
+    "id": "4826"
+  },
+  {
+    "name": "Dumaguete",
+    "country": "PH",
+    "lat": "9.3064600",
+    "lon": "123.3076900",
+    "pop": 113541,
+    "id": "4866"
+  },
+  {
+    "name": "Carmona",
+    "country": "PH",
+    "lat": "14.3132000",
+    "lon": "121.0576000",
+    "pop": 112140,
+    "id": "4922"
+  },
+  {
+    "name": "Laoag",
+    "country": "PH",
+    "lat": "18.1978000",
+    "lon": "120.5957000",
+    "pop": 112117,
+    "id": "4923"
+  },
+  {
+    "name": "Pulilan",
+    "country": "PH",
+    "lat": "14.9016700",
+    "lon": "120.8491700",
+    "pop": 111384,
+    "id": "4967"
+  },
+  {
+    "name": "Bayugan",
+    "country": "PH",
+    "lat": "8.7561100",
+    "lon": "125.7675000",
+    "pop": 110313,
+    "id": "5008"
+  },
+  {
+    "name": "Maramag",
+    "country": "PH",
+    "lat": "7.7633300",
+    "lon": "125.0052800",
+    "pop": 109864,
+    "id": "5033"
+  },
+  {
+    "name": "Talisay",
+    "country": "PH",
+    "lat": "10.7375000",
+    "lon": "122.9666000",
+    "pop": 109204,
+    "id": "5056"
+  },
+  {
+    "name": "Santiago",
+    "country": "PH",
+    "lat": "16.6880800",
+    "lon": "121.5487000",
+    "pop": 108414,
+    "id": "5089"
+  },
+  {
+    "name": "Santa Cruz",
+    "country": "PH",
+    "lat": "14.2814000",
+    "lon": "121.4161000",
+    "pop": 108145,
+    "id": "5100"
+  },
+  {
+    "name": "Catbalogan",
+    "country": "PH",
+    "lat": "11.7752800",
+    "lon": "124.8861100",
+    "pop": 107896,
+    "id": "5107"
+  },
+  {
+    "name": "Bagong Silangan",
+    "country": "PH",
+    "lat": "14.7060000",
+    "lon": "121.1080000",
+    "pop": 106886,
+    "id": "5149"
+  },
+  {
+    "name": "Paniqui",
+    "country": "PH",
+    "lat": "15.6689000",
+    "lon": "120.5806000",
+    "pop": 106190,
+    "id": "5172"
+  },
+  {
+    "name": "Mati",
+    "country": "PH",
+    "lat": "6.9550800",
+    "lon": "126.2165500",
+    "pop": 105908,
+    "id": "5185"
+  },
+  {
+    "name": "Tanza",
+    "country": "PH",
+    "lat": "14.6753000",
+    "lon": "120.9389000",
+    "pop": 105510,
+    "id": "5198"
+  },
+  {
+    "name": "Isulan",
+    "country": "PH",
+    "lat": "6.6294400",
+    "lon": "124.6050000",
+    "pop": 101455,
+    "id": "5426"
+  },
+  {
+    "name": "Jolo",
+    "country": "PH",
+    "lat": "6.0522200",
+    "lon": "121.0022200",
+    "pop": 101002,
+    "id": "5462"
+  },
+  {
+    "name": "Calasiao",
+    "country": "PH",
+    "lat": "16.0111000",
+    "lon": "120.3600000",
+    "pop": 100686,
+    "id": "5478"
+  },
+  {
+    "name": "Bislig",
+    "country": "PH",
+    "lat": "8.2152800",
+    "lon": "126.3163900",
+    "pop": 99872,
+    "id": "5537"
+  },
+  {
+    "name": "Bocaue",
+    "country": "PH",
+    "lat": "14.7983300",
+    "lon": "120.9261100",
+    "pop": 98649,
+    "id": "5605"
+  },
+  {
+    "name": "Catarman",
+    "country": "PH",
+    "lat": "12.4989000",
+    "lon": "124.6377000",
+    "pop": 97738,
+    "id": "5664"
+  },
+  {
+    "name": "Escalante",
+    "country": "PH",
+    "lat": "10.8402800",
+    "lon": "123.4991700",
+    "pop": 97050,
+    "id": "5702"
+  },
+  {
+    "name": "Monkayo",
+    "country": "PH",
+    "lat": "7.8152800",
+    "lon": "126.0544400",
+    "pop": 96405,
+    "id": "5739"
+  },
+  {
+    "name": "General Trias",
+    "country": "PH",
+    "lat": "14.3869400",
+    "lon": "120.8816700",
+    "pop": 96022,
+    "id": "5760"
+  },
+  {
+    "name": "Ozamiz City",
+    "country": "PH",
+    "lat": "8.1481000",
+    "lon": "123.8405000",
+    "pop": 93082,
+    "id": "5945"
+  },
+  {
+    "name": "Surallah",
+    "country": "PH",
+    "lat": "6.3752700",
+    "lon": "124.7452100",
+    "pop": 91412,
+    "id": "6061"
+  },
+  {
+    "name": "Prosperidad",
+    "country": "PH",
+    "lat": "8.5800000",
+    "lon": "125.8963900",
+    "pop": 90162,
+    "id": "6142"
+  },
+  {
+    "name": "Alabel",
+    "country": "PH",
+    "lat": "6.1017900",
+    "lon": "125.2904800",
+    "pop": 90120,
+    "id": "6144"
+  },
+  {
+    "name": "Calauan",
+    "country": "PH",
+    "lat": "14.1498900",
+    "lon": "121.3152000",
+    "pop": 89670,
+    "id": "6181"
+  },
+  {
+    "name": "Polangui",
+    "country": "PH",
+    "lat": "13.2923000",
+    "lon": "123.4855000",
+    "pop": 89176,
+    "id": "6205"
+  },
+  {
+    "name": "Kalibo (poblacion)",
+    "country": "PH",
+    "lat": "11.7061100",
+    "lon": "122.3644400",
+    "pop": 89127,
+    "id": "6209"
+  },
+  {
+    "name": "Calabanga",
+    "country": "PH",
+    "lat": "13.7068000",
+    "lon": "123.2087000",
+    "pop": 88918,
+    "id": "6225"
+  },
+  {
+    "name": "Mangaldan",
+    "country": "PH",
+    "lat": "16.0700000",
+    "lon": "120.4025000",
+    "pop": 88818,
+    "id": "6233"
+  },
+  {
+    "name": "Bais",
+    "country": "PH",
+    "lat": "9.5911100",
+    "lon": "123.1227800",
+    "pop": 88050,
+    "id": "6286"
+  },
+  {
+    "name": "Arayat",
+    "country": "PH",
+    "lat": "15.1505000",
+    "lon": "120.7697000",
+    "pop": 87987,
+    "id": "6291"
+  },
+  {
+    "name": "Tagaytay",
+    "country": "PH",
+    "lat": "14.0953200",
+    "lon": "120.9335500",
+    "pop": 87811,
+    "id": "6309"
+  },
+  {
+    "name": "Dapitan",
+    "country": "PH",
+    "lat": "8.6561000",
+    "lon": "123.4227000",
+    "pop": 87699,
+    "id": "6317"
+  },
+  {
+    "name": "Maco",
+    "country": "PH",
+    "lat": "7.3619400",
+    "lon": "125.8552800",
+    "pop": 87680,
+    "id": "6321"
+  },
+  {
+    "name": "Victorias",
+    "country": "PH",
+    "lat": "10.9015400",
+    "lon": "123.0705000",
+    "pop": 86510,
+    "id": "6418"
+  },
+  {
+    "name": "Mu\u00f1oz",
+    "country": "PH",
+    "lat": "15.7161100",
+    "lon": "120.9030600",
+    "pop": 85061,
+    "id": "6522"
+  },
+  {
+    "name": "Tanjay",
+    "country": "PH",
+    "lat": "9.5162000",
+    "lon": "123.1580000",
+    "pop": 84593,
+    "id": "6567"
+  },
+  {
+    "name": "Binonga",
+    "country": "PH",
+    "lat": "10.7719000",
+    "lon": "122.9817000",
+    "pop": 83980,
+    "id": "6615"
+  },
+  {
+    "name": "Marilao",
+    "country": "PH",
+    "lat": "14.7577800",
+    "lon": "120.9483300",
+    "pop": 83276,
+    "id": "6654"
+  },
+  {
+    "name": "Bulacan",
+    "country": "PH",
+    "lat": "14.7927800",
+    "lon": "120.8788900",
+    "pop": 83101,
+    "id": "6669"
+  },
+  {
+    "name": "San Fernando",
+    "country": "PH",
+    "lat": "16.6159100",
+    "lon": "120.3166300",
+    "pop": 83003,
+    "id": "6678"
+  },
+  {
+    "name": "Malapatan",
+    "country": "PH",
+    "lat": "5.9691700",
+    "lon": "125.2894400",
+    "pop": 82577,
+    "id": "6721"
+  },
+  {
+    "name": "Pagbilao",
+    "country": "PH",
+    "lat": "13.9668900",
+    "lon": "121.6983500",
+    "pop": 82132,
+    "id": "6768"
+  },
+  {
+    "name": "Lambayong",
+    "country": "PH",
+    "lat": "6.5194400",
+    "lon": "125.0444400",
+    "pop": 81288,
+    "id": "6836"
+  },
+  {
+    "name": "Bustos",
+    "country": "PH",
+    "lat": "14.9580600",
+    "lon": "120.9177800",
+    "pop": 80565,
+    "id": "6895"
+  },
+  {
+    "name": "San Francisco",
+    "country": "PH",
+    "lat": "8.5355600",
+    "lon": "125.9500000",
+    "pop": 79718,
+    "id": "6966"
+  },
+  {
+    "name": "Kidapawan",
+    "country": "PH",
+    "lat": "7.0083300",
+    "lon": "125.0894400",
+    "pop": 79652,
+    "id": "6969"
+  },
+  {
+    "name": "Tupi",
+    "country": "PH",
+    "lat": "6.3344400",
+    "lon": "124.9527800",
+    "pop": 78599,
+    "id": "7058"
+  },
+  {
+    "name": "Bamban",
+    "country": "PH",
+    "lat": "15.2738600",
+    "lon": "120.5668300",
+    "pop": 78260,
+    "id": "7089"
+  },
+  {
+    "name": "Daet",
+    "country": "PH",
+    "lat": "14.1122000",
+    "lon": "122.9553000",
+    "pop": 78142,
+    "id": "7100"
+  },
+  {
+    "name": "Bauang",
+    "country": "PH",
+    "lat": "16.5308300",
+    "lon": "120.3330600",
+    "pop": 77670,
+    "id": "7133"
+  },
+  {
+    "name": "Bagong Barrio",
+    "country": "PH",
+    "lat": "14.6663800",
+    "lon": "120.9932200",
+    "pop": 77490,
+    "id": "7157"
+  },
+  {
+    "name": "Brookes Point",
+    "country": "PH",
+    "lat": "8.7720100",
+    "lon": "117.8371000",
+    "pop": 76715,
+    "id": "7235"
+  },
+  {
+    "name": "Virac",
+    "country": "PH",
+    "lat": "13.5848000",
+    "lon": "124.2374000",
+    "pop": 75135,
+    "id": "7395"
+  },
+  {
+    "name": "Alicia",
+    "country": "PH",
+    "lat": "16.7793600",
+    "lon": "121.6973400",
+    "pop": 74699,
+    "id": "7447"
+  },
+  {
+    "name": "Don Carlos",
+    "country": "PH",
+    "lat": "7.6800000",
+    "lon": "125.0050000",
+    "pop": 73592,
+    "id": "7566"
+  },
+  {
+    "name": "Kawit",
+    "country": "PH",
+    "lat": "14.4442600",
+    "lon": "120.9016400",
+    "pop": 73210,
+    "id": "7604"
+  },
+  {
+    "name": "Balanga",
+    "country": "PH",
+    "lat": "14.6761100",
+    "lon": "120.5361100",
+    "pop": 72954,
+    "id": "7637"
+  },
+  {
+    "name": "Sagay",
+    "country": "PH",
+    "lat": "10.9447200",
+    "lon": "123.4241700",
+    "pop": 72153,
+    "id": "7711"
+  },
+  {
+    "name": "La Paz",
+    "country": "PH",
+    "lat": "15.4412500",
+    "lon": "120.7286300",
+    "pop": 71978,
+    "id": "7729"
+  },
+  {
+    "name": "Solana",
+    "country": "PH",
+    "lat": "17.6528000",
+    "lon": "121.6910000",
+    "pop": 71475,
+    "id": "7785"
+  },
+  {
+    "name": "Borongan",
+    "country": "PH",
+    "lat": "11.6080600",
+    "lon": "125.4319400",
+    "pop": 71431,
+    "id": "7794"
+  },
+  {
+    "name": "Oroquieta",
+    "country": "PH",
+    "lat": "8.4859000",
+    "lon": "123.8048000",
+    "pop": 71373,
+    "id": "7800"
+  },
+  {
+    "name": "Buenavista",
+    "country": "PH",
+    "lat": "8.9769400",
+    "lon": "125.4088900",
+    "pop": 70691,
+    "id": "7893"
+  },
+  {
+    "name": "Mariano",
+    "country": "PH",
+    "lat": "8.8333300",
+    "lon": "125.1166700",
+    "pop": 70516,
+    "id": "7910"
+  },
+  {
+    "name": "Danao",
+    "country": "PH",
+    "lat": "10.5208300",
+    "lon": "124.0272200",
+    "pop": 70270,
+    "id": "7943"
+  },
+  {
+    "name": "Mauban",
+    "country": "PH",
+    "lat": "14.1910000",
+    "lon": "121.7309000",
+    "pop": 70135,
+    "id": "7962"
+  },
+  {
+    "name": "Indang",
+    "country": "PH",
+    "lat": "14.1952800",
+    "lon": "120.8769400",
+    "pop": 70092,
+    "id": "7967"
+  },
+  {
+    "name": "Bongabon",
+    "country": "PH",
+    "lat": "15.6321000",
+    "lon": "121.1448000",
+    "pop": 69376,
+    "id": "8039"
+  },
+  {
+    "name": "San Leonardo",
+    "country": "PH",
+    "lat": "15.3630000",
+    "lon": "120.9639000",
+    "pop": 69180,
+    "id": "8057"
+  },
+  {
+    "name": "Calauag",
+    "country": "PH",
+    "lat": "13.9575000",
+    "lon": "122.2880000",
+    "pop": 68999,
+    "id": "8070"
+  },
+  {
+    "name": "Magalang",
+    "country": "PH",
+    "lat": "15.2151000",
+    "lon": "120.6596000",
+    "pop": 68988,
+    "id": "8074"
+  },
+  {
+    "name": "Libon",
+    "country": "PH",
+    "lat": "13.2997000",
+    "lon": "123.4386000",
+    "pop": 68846,
+    "id": "8086"
+  },
+  {
+    "name": "Tanauan",
+    "country": "PH",
+    "lat": "14.0862700",
+    "lon": "121.1497500",
+    "pop": 68456,
+    "id": "8123"
+  },
+  {
+    "name": "Aparri",
+    "country": "PH",
+    "lat": "18.3566000",
+    "lon": "121.6406000",
+    "pop": 68368,
+    "id": "8133"
+  },
+  {
+    "name": "Calbayog City",
+    "country": "PH",
+    "lat": "12.0668000",
+    "lon": "124.5962000",
+    "pop": 67921,
+    "id": "8186"
+  },
+  {
+    "name": "Angat",
+    "country": "PH",
+    "lat": "14.9285000",
+    "lon": "121.0300000",
+    "pop": 67862,
+    "id": "8197"
+  },
+  {
+    "name": "La Carlota",
+    "country": "PH",
+    "lat": "10.4242000",
+    "lon": "122.9212000",
+    "pop": 67740,
+    "id": "8221"
+  },
+  {
+    "name": "Subic",
+    "country": "PH",
+    "lat": "14.8787000",
+    "lon": "120.2319400",
+    "pop": 67664,
+    "id": "8232"
+  },
+  {
+    "name": "Rosales",
+    "country": "PH",
+    "lat": "15.8944400",
+    "lon": "120.6327800",
+    "pop": 67510,
+    "id": "8250"
+  },
+  {
+    "name": "Dinalupihan",
+    "country": "PH",
+    "lat": "14.8782700",
+    "lon": "120.4522100",
+    "pop": 66670,
+    "id": "8350"
+  },
+  {
+    "name": "Santa Cruz",
+    "country": "PH",
+    "lat": "15.7654000",
+    "lon": "119.9092000",
+    "pop": 66647,
+    "id": "8354"
+  },
+  {
+    "name": "Calapan",
+    "country": "PH",
+    "lat": "13.4117000",
+    "lon": "121.1803000",
+    "pop": 66008,
+    "id": "8446"
+  },
+  {
+    "name": "San Ildefonso",
+    "country": "PH",
+    "lat": "15.0809000",
+    "lon": "120.9410000",
+    "pop": 65669,
+    "id": "8496"
+  },
+  {
+    "name": "San Miguel",
+    "country": "PH",
+    "lat": "15.1423000",
+    "lon": "120.9756800",
+    "pop": 65661,
+    "id": "8497"
+  },
+  {
+    "name": "Villasis",
+    "country": "PH",
+    "lat": "15.9016700",
+    "lon": "120.5883300",
+    "pop": 65086,
+    "id": "8580"
+  },
+  {
+    "name": "Oas",
+    "country": "PH",
+    "lat": "13.2593000",
+    "lon": "123.4963000",
+    "pop": 64890,
+    "id": "8606"
+  },
+  {
+    "name": "Talavera",
+    "country": "PH",
+    "lat": "15.5883000",
+    "lon": "120.9192000",
+    "pop": 64610,
+    "id": "8646"
+  },
+  {
+    "name": "Polomolok",
+    "country": "PH",
+    "lat": "6.2216700",
+    "lon": "125.0639800",
+    "pop": 63987,
+    "id": "8730"
+  },
+  {
+    "name": "Pateros",
+    "country": "PH",
+    "lat": "14.5391000",
+    "lon": "121.0726000",
+    "pop": 63840,
+    "id": "8751"
+  },
+  {
+    "name": "Nasugbu",
+    "country": "PH",
+    "lat": "14.0669400",
+    "lon": "120.6318100",
+    "pop": 62857,
+    "id": "8887"
+  },
+  {
+    "name": "Tinongan",
+    "country": "PH",
+    "lat": "10.2150000",
+    "lon": "123.0352800",
+    "pop": 62146,
+    "id": "8974"
+  },
+  {
+    "name": "Minglanilla",
+    "country": "PH",
+    "lat": "10.2449800",
+    "lon": "123.7964000",
+    "pop": 62058,
+    "id": "8988"
+  },
+  {
+    "name": "Malaybalay",
+    "country": "PH",
+    "lat": "8.1575000",
+    "lon": "125.1277800",
+    "pop": 61524,
+    "id": "9090"
+  },
+  {
+    "name": "Tunasan",
+    "country": "PH",
+    "lat": "14.3791700",
+    "lon": "121.0525000",
+    "pop": 61374,
+    "id": "9117"
+  },
+  {
+    "name": "Gubat",
+    "country": "PH",
+    "lat": "12.9205600",
+    "lon": "124.1230600",
+    "pop": 61095,
+    "id": "9150"
+  },
+  {
+    "name": "Buluan",
+    "country": "PH",
+    "lat": "6.7202800",
+    "lon": "124.8019400",
+    "pop": 60931,
+    "id": "9187"
+  },
+  {
+    "name": "Ualog",
+    "country": "PH",
+    "lat": "10.5739600",
+    "lon": "123.3933000",
+    "pop": 60548,
+    "id": "9251"
+  },
+  {
+    "name": "Cogan",
+    "country": "PH",
+    "lat": "10.5930600",
+    "lon": "124.0177800",
+    "pop": 60230,
+    "id": "9296"
+  },
+  {
+    "name": "Bambang",
+    "country": "PH",
+    "lat": "16.3865000",
+    "lon": "121.1066000",
+    "pop": 60146,
+    "id": "9317"
+  },
+  {
+    "name": "Tanay",
+    "country": "PH",
+    "lat": "14.4968000",
+    "lon": "121.2846000",
+    "pop": 59950,
+    "id": "9357"
+  },
+  {
+    "name": "Obando",
+    "country": "PH",
+    "lat": "14.7098000",
+    "lon": "120.9362000",
+    "pop": 59929,
+    "id": "9359"
+  },
+  {
+    "name": "Balagtas",
+    "country": "PH",
+    "lat": "14.8166700",
+    "lon": "120.8666700",
+    "pop": 59826,
+    "id": "9385"
+  },
+  {
+    "name": "Itogon",
+    "country": "PH",
+    "lat": "16.3638900",
+    "lon": "120.6769400",
+    "pop": 59736,
+    "id": "9393"
+  },
+  {
+    "name": "Manaoag",
+    "country": "PH",
+    "lat": "16.0438000",
+    "lon": "120.4861000",
+    "pop": 59115,
+    "id": "9482"
+  },
+  {
+    "name": "Ba\u00f1ga",
+    "country": "PH",
+    "lat": "6.4238900",
+    "lon": "124.7783300",
+    "pop": 58855,
+    "id": "9533"
+  },
+  {
+    "name": "Paombong",
+    "country": "PH",
+    "lat": "14.8311100",
+    "lon": "120.7891700",
+    "pop": 58453,
+    "id": "9599"
+  },
+  {
+    "name": "Magsaysay",
+    "country": "PH",
+    "lat": "6.7666700",
+    "lon": "125.1833300",
+    "pop": 57936,
+    "id": "9674"
+  },
+  {
+    "name": "Tabaco",
+    "country": "PH",
+    "lat": "13.3586100",
+    "lon": "123.7336100",
+    "pop": 57860,
+    "id": "9688"
+  },
+  {
+    "name": "Santo Tomas",
+    "country": "PH",
+    "lat": "14.1079000",
+    "lon": "121.1413600",
+    "pop": 57438,
+    "id": "9740"
+  },
+  {
+    "name": "Batac City",
+    "country": "PH",
+    "lat": "18.0554000",
+    "lon": "120.5648900",
+    "pop": 56781,
+    "id": "9853"
+  },
+  {
+    "name": "Lingayen",
+    "country": "PH",
+    "lat": "16.0218200",
+    "lon": "120.2319400",
+    "pop": 56580,
+    "id": "9875"
+  },
+  {
+    "name": "Masinloc",
+    "country": "PH",
+    "lat": "15.5363000",
+    "lon": "119.9502000",
+    "pop": 56579,
+    "id": "9876"
+  },
+  {
+    "name": "Impasugong",
+    "country": "PH",
+    "lat": "8.3097200",
+    "lon": "125.0019400",
+    "pop": 55901,
+    "id": "9983"
+  },
+  {
+    "name": "Lubao",
+    "country": "PH",
+    "lat": "14.9405000",
+    "lon": "120.6011000",
+    "pop": 55645,
+    "id": "10018"
+  },
+  {
+    "name": "Naic",
+    "country": "PH",
+    "lat": "14.3181200",
+    "lon": "120.7660900",
+    "pop": 55195,
+    "id": "10120"
+  },
+  {
+    "name": "Estancia",
+    "country": "PH",
+    "lat": "11.4551000",
+    "lon": "123.1520000",
+    "pop": 54882,
+    "id": "10170"
+  },
+  {
+    "name": "Burauen",
+    "country": "PH",
+    "lat": "10.9755600",
+    "lon": "124.8927800",
+    "pop": 54635,
+    "id": "10207"
+  },
+  {
+    "name": "Sibonga",
+    "country": "PH",
+    "lat": "10.0168000",
+    "lon": "123.6171000",
+    "pop": 54610,
+    "id": "10213"
+  },
+  {
+    "name": "Zaragoza",
+    "country": "PH",
+    "lat": "15.4490300",
+    "lon": "120.7962700",
+    "pop": 53090,
+    "id": "10497"
+  },
+  {
+    "name": "Patuto",
+    "country": "PH",
+    "lat": "14.1166700",
+    "lon": "120.9666700",
+    "pop": 52883,
+    "id": "10529"
+  },
+  {
+    "name": "Kalamansig",
+    "country": "PH",
+    "lat": "6.5518700",
+    "lon": "124.0511100",
+    "pop": 52257,
+    "id": "10658"
+  },
+  {
+    "name": "Malu\u00f1gun",
+    "country": "PH",
+    "lat": "6.2791700",
+    "lon": "125.2816700",
+    "pop": 52248,
+    "id": "10662"
+  },
+  {
+    "name": "Victoria",
+    "country": "PH",
+    "lat": "13.1772200",
+    "lon": "121.2780600",
+    "pop": 52215,
+    "id": "10668"
+  },
+  {
+    "name": "Cardona",
+    "country": "PH",
+    "lat": "14.4864600",
+    "lon": "121.2275200",
+    "pop": 51493,
+    "id": "10800"
+  },
+  {
+    "name": "Siocon",
+    "country": "PH",
+    "lat": "7.7061100",
+    "lon": "122.1352800",
+    "pop": 51239,
+    "id": "10857"
+  },
+  {
+    "name": "Bunawan",
+    "country": "PH",
+    "lat": "8.1672200",
+    "lon": "125.9908300",
+    "pop": 50999,
+    "id": "10911"
+  },
+  {
+    "name": "Balayan",
+    "country": "PH",
+    "lat": "13.9371400",
+    "lon": "120.7322400",
+    "pop": 50115,
+    "id": "11068"
+  }
+]

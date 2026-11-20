@@ -1,0 +1,698 @@
+[
+  {
+    "name": "Buenos Aires",
+    "country": "AR",
+    "lat": "-34.6131500",
+    "lon": "-58.3772300",
+    "pop": 2891082,
+    "id": "119"
+  },
+  {
+    "name": "C\u00f3rdoba",
+    "country": "AR",
+    "lat": "-31.4064800",
+    "lon": "-64.1885300",
+    "pop": 2106734,
+    "id": "186"
+  },
+  {
+    "name": "Rosario",
+    "country": "AR",
+    "lat": "-32.9468200",
+    "lon": "-60.6393200",
+    "pop": 948312,
+    "id": "565"
+  },
+  {
+    "name": "Mar del Plata",
+    "country": "AR",
+    "lat": "-38.0004200",
+    "lon": "-57.5562000",
+    "pop": 593337,
+    "id": "906"
+  },
+  {
+    "name": "San Miguel de Tucum\u00e1n",
+    "country": "AR",
+    "lat": "-26.8160100",
+    "lon": "-65.2105100",
+    "pop": 548866,
+    "id": "985"
+  },
+  {
+    "name": "Salta",
+    "country": "AR",
+    "lat": "-24.8064500",
+    "lon": "-65.4199900",
+    "pop": 520683,
+    "id": "1047"
+  },
+  {
+    "name": "Santa Fe",
+    "country": "AR",
+    "lat": "-31.6488100",
+    "lon": "-60.7086800",
+    "pop": 391164,
+    "id": "1400"
+  },
+  {
+    "name": "Corrientes",
+    "country": "AR",
+    "lat": "-27.4678400",
+    "lon": "-58.8344000",
+    "pop": 346334,
+    "id": "1585"
+  },
+  {
+    "name": "Posadas",
+    "country": "AR",
+    "lat": "-27.3918400",
+    "lon": "-55.9237900",
+    "pop": 305874,
+    "id": "1796"
+  },
+  {
+    "name": "Bah\u00eda Blanca",
+    "country": "AR",
+    "lat": "-38.7176000",
+    "lon": "-62.2654500",
+    "pop": 299101,
+    "id": "1837"
+  },
+  {
+    "name": "Resistencia",
+    "country": "AR",
+    "lat": "-27.4636300",
+    "lon": "-58.9866500",
+    "pop": 290793,
+    "id": "1883"
+  },
+  {
+    "name": "Merlo",
+    "country": "AR",
+    "lat": "-34.6653600",
+    "lon": "-58.7274400",
+    "pop": 268961,
+    "id": "2045"
+  },
+  {
+    "name": "Quilmes",
+    "country": "AR",
+    "lat": "-34.7206500",
+    "lon": "-58.2545400",
+    "pop": 262379,
+    "id": "2102"
+  },
+  {
+    "name": "San Salvador de Jujuy",
+    "country": "AR",
+    "lat": "-24.1928000",
+    "lon": "-65.2934200",
+    "pop": 257970,
+    "id": "2139"
+  },
+  {
+    "name": "Santiago del Estero",
+    "country": "AR",
+    "lat": "-27.8004700",
+    "lon": "-64.2628500",
+    "pop": 252192,
+    "id": "2199"
+  },
+  {
+    "name": "Paran\u00e1",
+    "country": "AR",
+    "lat": "-31.7327100",
+    "lon": "-60.5289700",
+    "pop": 247139,
+    "id": "2245"
+  },
+  {
+    "name": "Neuqu\u00e9n",
+    "country": "AR",
+    "lat": "-38.9507800",
+    "lon": "-68.0592000",
+    "pop": 231198,
+    "id": "2401"
+  },
+  {
+    "name": "Jos\u00e9 C. Paz",
+    "country": "AR",
+    "lat": "-34.5154100",
+    "lon": "-58.7681300",
+    "pop": 230208,
+    "id": "2407"
+  },
+  {
+    "name": "Formosa",
+    "country": "AR",
+    "lat": "-26.1848900",
+    "lon": "-58.1731300",
+    "pop": 222226,
+    "id": "2501"
+  },
+  {
+    "name": "La Plata",
+    "country": "AR",
+    "lat": "-34.9212600",
+    "lon": "-57.9544200",
+    "pop": 195443,
+    "id": "2864"
+  },
+  {
+    "name": "Berazategui",
+    "country": "AR",
+    "lat": "-34.7653100",
+    "lon": "-58.2127800",
+    "pop": 180523,
+    "id": "3077"
+  },
+  {
+    "name": "La Rioja",
+    "country": "AR",
+    "lat": "-29.4132800",
+    "lon": "-66.8563700",
+    "pop": 178872,
+    "id": "3110"
+  },
+  {
+    "name": "San Luis",
+    "country": "AR",
+    "lat": "-33.2914000",
+    "lon": "-66.3246700",
+    "pop": 169947,
+    "id": "3256"
+  },
+  {
+    "name": "San Miguel",
+    "country": "AR",
+    "lat": "-34.5433500",
+    "lon": "-58.7122900",
+    "pop": 168762,
+    "id": "3271"
+  },
+  {
+    "name": "Ituzaing\u00f3",
+    "country": "AR",
+    "lat": "-27.5850400",
+    "lon": "-56.6870700",
+    "pop": 168419,
+    "id": "3283"
+  },
+  {
+    "name": "Catamarca",
+    "country": "AR",
+    "lat": "-28.4695700",
+    "lon": "-65.7852400",
+    "pop": 159139,
+    "id": "3466"
+  },
+  {
+    "name": "R\u00edo Cuarto",
+    "country": "AR",
+    "lat": "-33.1304400",
+    "lon": "-64.3527200",
+    "pop": 157010,
+    "id": "3501"
+  },
+  {
+    "name": "Concordia",
+    "country": "AR",
+    "lat": "-31.3919500",
+    "lon": "-58.0170600",
+    "pop": 145210,
+    "id": "3769"
+  },
+  {
+    "name": "Comodoro Rivadavia",
+    "country": "AR",
+    "lat": "-45.8625600",
+    "lon": "-67.4940000",
+    "pop": 140850,
+    "id": "3894"
+  },
+  {
+    "name": "San Nicol\u00e1s de los Arroyos",
+    "country": "AR",
+    "lat": "-33.3342500",
+    "lon": "-60.2108000",
+    "pop": 134217,
+    "id": "4079"
+  },
+  {
+    "name": "San Rafael",
+    "country": "AR",
+    "lat": "-34.6153100",
+    "lon": "-68.3323800",
+    "pop": 118009,
+    "id": "4662"
+  },
+  {
+    "name": "Tandil",
+    "country": "AR",
+    "lat": "-37.3287000",
+    "lon": "-59.1369000",
+    "pop": 115877,
+    "id": "4774"
+  },
+  {
+    "name": "Mendoza",
+    "country": "AR",
+    "lat": "-32.8894600",
+    "lon": "-68.8458200",
+    "pop": 114893,
+    "id": "4813"
+  },
+  {
+    "name": "Lomas de Zamora",
+    "country": "AR",
+    "lat": "-34.7574000",
+    "lon": "-58.4027900",
+    "pop": 111897,
+    "id": "4939"
+  },
+  {
+    "name": "San Juan",
+    "country": "AR",
+    "lat": "-31.5372600",
+    "lon": "-68.5256800",
+    "pop": 109123,
+    "id": "5057"
+  },
+  {
+    "name": "Castelar",
+    "country": "AR",
+    "lat": "-34.6514200",
+    "lon": "-58.6407400",
+    "pop": 107786,
+    "id": "5114"
+  },
+  {
+    "name": "Santa Rosa",
+    "country": "AR",
+    "lat": "-36.6161700",
+    "lon": "-64.2899100",
+    "pop": 102860,
+    "id": "5353"
+  },
+  {
+    "name": "Mor\u00f3n",
+    "country": "AR",
+    "lat": "-34.6511800",
+    "lon": "-58.6220500",
+    "pop": 99066,
+    "id": "5588"
+  },
+  {
+    "name": "Z\u00e1rate",
+    "country": "AR",
+    "lat": "-34.0958400",
+    "lon": "-59.0242300",
+    "pop": 99061,
+    "id": "5589"
+  },
+  {
+    "name": "Trelew",
+    "country": "AR",
+    "lat": "-43.2489500",
+    "lon": "-65.3050500",
+    "pop": 97915,
+    "id": "5653"
+  },
+  {
+    "name": "Luj\u00e1n",
+    "country": "AR",
+    "lat": "-34.5664000",
+    "lon": "-59.1147800",
+    "pop": 97363,
+    "id": "5686"
+  },
+  {
+    "name": "Villa Mercedes",
+    "country": "AR",
+    "lat": "-33.6757100",
+    "lon": "-65.4578300",
+    "pop": 96781,
+    "id": "5719"
+  },
+  {
+    "name": "San Carlos de Bariloche",
+    "country": "AR",
+    "lat": "-41.1455700",
+    "lon": "-71.3082200",
+    "pop": 95394,
+    "id": "5793"
+  },
+  {
+    "name": "Villa Mar\u00eda",
+    "country": "AR",
+    "lat": "-32.4075100",
+    "lon": "-63.2401600",
+    "pop": 92453,
+    "id": "5992"
+  },
+  {
+    "name": "Pergamino",
+    "country": "AR",
+    "lat": "-33.8910100",
+    "lon": "-60.5746200",
+    "pop": 91399,
+    "id": "6066"
+  },
+  {
+    "name": "Reconquista",
+    "country": "AR",
+    "lat": "-29.1500000",
+    "lon": "-59.6500000",
+    "pop": 90184,
+    "id": "6138"
+  },
+  {
+    "name": "Olavarr\u00eda",
+    "country": "AR",
+    "lat": "-36.8938400",
+    "lon": "-60.3231900",
+    "pop": 89721,
+    "id": "6178"
+  },
+  {
+    "name": "Rafaela",
+    "country": "AR",
+    "lat": "-31.2528500",
+    "lon": "-61.4907800",
+    "pop": 88713,
+    "id": "6240"
+  },
+  {
+    "name": "Jun\u00edn",
+    "country": "AR",
+    "lat": "-34.5939100",
+    "lon": "-60.9464400",
+    "pop": 87509,
+    "id": "6335"
+  },
+  {
+    "name": "Campana",
+    "country": "AR",
+    "lat": "-34.1632700",
+    "lon": "-58.9591900",
+    "pop": 86860,
+    "id": "6385"
+  },
+  {
+    "name": "San Mart\u00edn",
+    "country": "AR",
+    "lat": "-33.0833800",
+    "lon": "-68.4731200",
+    "pop": 82549,
+    "id": "6725"
+  },
+  {
+    "name": "Presidencia Roque S\u00e1enz Pe\u00f1a",
+    "country": "AR",
+    "lat": "-26.7909500",
+    "lon": "-60.4413200",
+    "pop": 81879,
+    "id": "6787"
+  },
+  {
+    "name": "Pilar",
+    "country": "AR",
+    "lat": "-34.4586700",
+    "lon": "-58.9139800",
+    "pop": 81120,
+    "id": "6854"
+  },
+  {
+    "name": "Bella Vista",
+    "country": "AR",
+    "lat": "-34.5651000",
+    "lon": "-58.6903400",
+    "pop": 79737,
+    "id": "6965"
+  },
+  {
+    "name": "Gualeguaych\u00fa",
+    "country": "AR",
+    "lat": "-33.0077700",
+    "lon": "-58.5183600",
+    "pop": 78676,
+    "id": "7048"
+  },
+  {
+    "name": "Cipolletti",
+    "country": "AR",
+    "lat": "-38.9339200",
+    "lon": "-67.9903200",
+    "pop": 75078,
+    "id": "7400"
+  },
+  {
+    "name": "Gobernador G\u00e1lvez",
+    "country": "AR",
+    "lat": "-33.0301600",
+    "lon": "-60.6404500",
+    "pop": 74650,
+    "id": "7452"
+  },
+  {
+    "name": "San Ram\u00f3n de la Nueva Or\u00e1n",
+    "country": "AR",
+    "lat": "-23.1370500",
+    "lon": "-64.3242600",
+    "pop": 74059,
+    "id": "7517"
+  },
+  {
+    "name": "Chimbas",
+    "country": "AR",
+    "lat": "-31.4931300",
+    "lon": "-68.5326300",
+    "pop": 73829,
+    "id": "7540"
+  },
+  {
+    "name": "Necochea",
+    "country": "AR",
+    "lat": "-38.5545000",
+    "lon": "-58.7396100",
+    "pop": 73557,
+    "id": "7572"
+  },
+  {
+    "name": "General Roca",
+    "country": "AR",
+    "lat": "-39.0333300",
+    "lon": "-67.5833300",
+    "pop": 73212,
+    "id": "7603"
+  },
+  {
+    "name": "Venado Tuerto",
+    "country": "AR",
+    "lat": "-33.7458500",
+    "lon": "-61.9671100",
+    "pop": 72340,
+    "id": "7692"
+  },
+  {
+    "name": "Don Torcuato",
+    "country": "AR",
+    "lat": "-34.4945900",
+    "lon": "-58.6272900",
+    "pop": 71356,
+    "id": "7803"
+  },
+  {
+    "name": "Goya",
+    "country": "AR",
+    "lat": "-29.1399500",
+    "lon": "-59.2634300",
+    "pop": 70245,
+    "id": "7947"
+  },
+  {
+    "name": "Villa Carlos Paz",
+    "country": "AR",
+    "lat": "-31.4183000",
+    "lon": "-64.4900800",
+    "pop": 69451,
+    "id": "8031"
+  },
+  {
+    "name": "Concepci\u00f3n del Uruguay",
+    "country": "AR",
+    "lat": "-32.4846300",
+    "lon": "-58.2321700",
+    "pop": 67895,
+    "id": "8195"
+  },
+  {
+    "name": "Puerto Madryn",
+    "country": "AR",
+    "lat": "-42.7684800",
+    "lon": "-65.0382700",
+    "pop": 64555,
+    "id": "8656"
+  },
+  {
+    "name": "Mercedes",
+    "country": "AR",
+    "lat": "-34.6507200",
+    "lon": "-59.4314300",
+    "pop": 63284,
+    "id": "8831"
+  },
+  {
+    "name": "Tartagal",
+    "country": "AR",
+    "lat": "-22.5168200",
+    "lon": "-63.8056000",
+    "pop": 60819,
+    "id": "9207"
+  },
+  {
+    "name": "Hurlingham",
+    "country": "AR",
+    "lat": "-34.5904000",
+    "lon": "-58.6290400",
+    "pop": 60000,
+    "id": "9346"
+  },
+  {
+    "name": "Santo Tom\u00e9",
+    "country": "AR",
+    "lat": "-31.6627400",
+    "lon": "-60.7653000",
+    "pop": 59072,
+    "id": "9492"
+  },
+  {
+    "name": "San Francisco",
+    "country": "AR",
+    "lat": "-31.4249700",
+    "lon": "-62.0840400",
+    "pop": 59062,
+    "id": "9495"
+  },
+  {
+    "name": "El Palomar",
+    "country": "AR",
+    "lat": "-34.6177100",
+    "lon": "-58.6015300",
+    "pop": 59031,
+    "id": "9507"
+  },
+  {
+    "name": "San Pedro de Jujuy",
+    "country": "AR",
+    "lat": "-24.2312700",
+    "lon": "-64.8661400",
+    "pop": 58430,
+    "id": "9605"
+  },
+  {
+    "name": "Col\u00f3n",
+    "country": "AR",
+    "lat": "-32.2231200",
+    "lon": "-58.1442600",
+    "pop": 58219,
+    "id": "9634"
+  },
+  {
+    "name": "Punta Alta",
+    "country": "AR",
+    "lat": "-38.8805000",
+    "lon": "-62.0750300",
+    "pop": 57209,
+    "id": "9776"
+  },
+  {
+    "name": "General Pico",
+    "country": "AR",
+    "lat": "-35.6593000",
+    "lon": "-63.7578700",
+    "pop": 57029,
+    "id": "9806"
+  },
+  {
+    "name": "Ushuaia",
+    "country": "AR",
+    "lat": "-54.8108400",
+    "lon": "-68.3159100",
+    "pop": 56825,
+    "id": "9842"
+  },
+  {
+    "name": "Ober\u00e1",
+    "country": "AR",
+    "lat": "-27.4868300",
+    "lon": "-55.1199400",
+    "pop": 56528,
+    "id": "9883"
+  },
+  {
+    "name": "Chivilcoy",
+    "country": "AR",
+    "lat": "-34.8969000",
+    "lon": "-60.0190900",
+    "pop": 54514,
+    "id": "10228"
+  },
+  {
+    "name": "Puerto Eldorado",
+    "country": "AR",
+    "lat": "-26.4084300",
+    "lon": "-54.6946300",
+    "pop": 54189,
+    "id": "10278"
+  },
+  {
+    "name": "Azul",
+    "country": "AR",
+    "lat": "-36.7780300",
+    "lon": "-59.8584800",
+    "pop": 53941,
+    "id": "10329"
+  },
+  {
+    "name": "R\u00edo Tercero",
+    "country": "AR",
+    "lat": "-32.1767500",
+    "lon": "-64.1129500",
+    "pop": 53389,
+    "id": "10434"
+  },
+  {
+    "name": "Los Polvorines",
+    "country": "AR",
+    "lat": "-34.5031600",
+    "lon": "-58.7059600",
+    "pop": 53354,
+    "id": "10441"
+  },
+  {
+    "name": "R\u00edo Grande",
+    "country": "AR",
+    "lat": "-53.7877300",
+    "lon": "-67.7097500",
+    "pop": 52681,
+    "id": "10568"
+  },
+  {
+    "name": "Barranqueras",
+    "country": "AR",
+    "lat": "-27.4813200",
+    "lon": "-58.9392500",
+    "pop": 50823,
+    "id": "10942"
+  },
+  {
+    "name": "Yerba Buena",
+    "country": "AR",
+    "lat": "-26.8129800",
+    "lon": "-65.2954300",
+    "pop": 50783,
+    "id": "10947"
+  }
+]

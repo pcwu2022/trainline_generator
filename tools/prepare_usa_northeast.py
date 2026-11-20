@@ -19,13 +19,14 @@ STATES = {'CT', 'ME', 'MA', 'NH', 'RI', 'VT', 'NJ', 'NY', 'PA'}
 NS = {'k': 'http://www.opengis.net/kml/2.2'}
 
 
-def prepare_states(raw, output):
+def prepare_states(raw, output, states=None):
+    states = STATES if states is None else set(states)
     with zipfile.ZipFile(io.BytesIO(raw)) as archive:
         root = ET.fromstring(archive.read('cb_2024_us_state_500k.kml'))
     features = []
     for place in root.findall('.//k:Placemark', NS):
         props = {v.attrib['name']: v.text for v in place.findall('.//k:SimpleData', NS)}
-        if props.get('STUSPS') not in STATES:
+        if props.get('STUSPS') not in states:
             continue
         polygons = []
         for item in place.findall('.//k:Polygon', NS):
@@ -37,8 +38,8 @@ def prepare_states(raw, output):
             polygons.append(Polygon(shell, holes))
         geometry = MultiPolygon(polygons)
         features.append(dict(type='Feature', properties=dict(state=props['STUSPS'], name=props['NAME']), geometry=mapping(geometry)))
-    if {f['properties']['state'] for f in features} != STATES:
-        raise ValueError('Expected exactly the nine Northeast states in Census KML')
+    if {f['properties']['state'] for f in features} != states:
+        raise ValueError('Census KML does not contain exactly the requested states')
     region = prep(unary_union([shape(f['geometry']) for f in features]))
     cities = [c for c in json.loads(Path('data/cities50000.json').read_text())
               if c['country'] == 'US' and region.covers(Point(float(c['lon']), float(c['lat'])))]
@@ -49,7 +50,7 @@ def prepare_states(raw, output):
     (output/'cities.json').write_text(json.dumps(cities, indent=2)+'\n')
     (output/'population.geojson').write_text(json.dumps(dict(type='FeatureCollection', features=cells), separators=(',', ':'))+'\n')
     (output/'source.json').write_text(json.dumps(dict(source=SOURCE, sha256=hashlib.sha256(raw).hexdigest(),
-        states=sorted(STATES), city_source='data/cities50000.json', population_source='data/north-america.geojson',
+        states=sorted(states), city_source='data/cities50000.json', population_source='data/north-america.geojson',
         cities=len(cities), population_cells=len(cells), selection='City coordinates and population-cell centroids covered by state polygons'), indent=2)+'\n')
     print(f'Prepared {len(cities)} cities and {len(cells)} population cells in {output}')
 

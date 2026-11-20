@@ -1,0 +1,26 @@
+{
+  "bbox": [
+    116.7,
+    4.8,
+    126.9,
+    21.1
+  ],
+  "countries": [
+    "PH"
+  ],
+  "cities_file": "data/philippines/cities.json",
+  "population_file": "data/philippines/population.geojson",
+  "boundaries_file": "data/philippines/boundaries.geojson",
+  "prep": {
+    "max_cities": 100
+  },
+  "search": {
+    "batch_accept_limit": 5
+  },
+  "reporting": {
+    "currency_code": "PHP",
+    "currency_symbol": "\u20b1",
+    "eur_to_local": 62,
+    "region_name": "Philippines"
+  }
+}

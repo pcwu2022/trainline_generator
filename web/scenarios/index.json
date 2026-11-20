@@ -2,9 +2,39 @@
   "default_profile": "france",
   "profiles": [
     {
+      "id": "argentina",
+      "label": "Argentina",
+      "path": "argentina"
+    },
+    {
+      "id": "australia",
+      "label": "Australia",
+      "path": "australia"
+    },
+    {
       "id": "benelux",
       "label": "Benelux",
       "path": "benelux"
+    },
+    {
+      "id": "brazil",
+      "label": "Brazil",
+      "path": "brazil"
+    },
+    {
+      "id": "california",
+      "label": "California",
+      "path": "california"
+    },
+    {
+      "id": "canada",
+      "label": "Canada",
+      "path": "canada"
+    },
+    {
+      "id": "china",
+      "label": "China",
+      "path": "china"
     },
     {
       "id": "france",
@@ -22,6 +52,11 @@
       "path": "india"
     },
     {
+      "id": "indonesia",
+      "label": "Indonesia",
+      "path": "indonesia"
+    },
+    {
       "id": "italy",
       "label": "Italy",
       "path": "italy"
@@ -32,6 +67,21 @@
       "path": "japan"
     },
     {
+      "id": "mexico",
+      "label": "Mexico",
+      "path": "mexico"
+    },
+    {
+      "id": "new_zealand",
+      "label": "New Zealand",
+      "path": "new_zealand"
+    },
+    {
+      "id": "philippines",
+      "label": "Philippines",
+      "path": "philippines"
+    },
+    {
       "id": "poland",
       "label": "Poland",
       "path": "poland"
@@ -40,6 +90,11 @@
       "id": "scandinavia",
       "label": "Scandinavia",
       "path": "scandinavia"
+    },
+    {
+      "id": "south_korea",
+      "label": "South Korea \u2014 Mainland",
+      "path": "south_korea"
     },
     {
       "id": "spain",
@@ -57,6 +112,16 @@
       "path": "taiwan"
     },
     {
+      "id": "texas",
+      "label": "Texas",
+      "path": "texas"
+    },
+    {
+      "id": "thailand",
+      "label": "Thailand",
+      "path": "thailand"
+    },
+    {
       "id": "uk",
       "label": "United Kingdom",
       "path": "uk"
@@ -70,6 +135,11 @@
       "id": "usa_northeast",
       "label": "United States \u2014 Northeast",
       "path": "usa_northeast"
+    },
+    {
+      "id": "vietnam",
+      "label": "Vietnam",
+      "path": "vietnam"
     }
   ]
 }

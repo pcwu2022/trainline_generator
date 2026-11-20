@@ -1,0 +1,25 @@
+{
+  "bbox": [
+    -106.7,
+    25.7,
+    -93.4,
+    36.6
+  ],
+  "countries": [
+    "US"
+  ],
+  "cities_file": "data/texas/cities.json",
+  "population_file": "data/texas/population.geojson",
+  "prep": {
+    "max_cities": 100
+  },
+  "search": {
+    "batch_accept_limit": 5
+  },
+  "reporting": {
+    "currency_code": "USD",
+    "currency_symbol": "$",
+    "eur_to_local": 1.1,
+    "region_name": "Texas"
+  }
+}

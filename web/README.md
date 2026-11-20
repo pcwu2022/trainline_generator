@@ -24,7 +24,7 @@ python -m tools.export_web --profile france --city-counts 4 8 12 20 50 100 --out
 To rebuild all bundled profiles:
 
 ```sh
-python -m tools.export_web --profiles france taiwan usa uk japan germany spain italy poland benelux switzerland india scandinavia usa_northeast --city-counts 4 8 12 20 50 100
+python -m tools.export_web --profiles france taiwan usa uk japan germany spain italy poland benelux switzerland india scandinavia usa_northeast california texas south_korea mexico canada brazil argentina australia new_zealand thailand vietnam philippines indonesia china --city-counts 4 8 12 20 50 100
 ```
 
 To add any other existing Python profile, for example Portugal:
@@ -41,7 +41,9 @@ for `--profile`, or a parent folder for `--profiles`.
 
 The profile selector offers France, Taiwan, United States (`usa` in the Python
 configs), United Kingdom, Japan, Germany, Spain, Italy, Poland, Benelux,
-Switzerland, India, Scandinavia and the northeastern United States. Each offers
+Switzerland, India, Scandinavia, the northeastern United States, California,
+Texas, mainland South Korea, Mexico, Canada, Brazil, Argentina, Australia,
+New Zealand, Thailand, Vietnam, Philippines, Indonesia and China. Each offers
 city limits of 4, 8, 12, 20, 50 and 100, with 12 km routing cells and the actual ETOPO
 raster. These are upper limits: population filtering and metropolitan catchment
 screening can retain fewer cities. The selector shows the available count when
@@ -53,6 +55,8 @@ Denmark, Norway and Sweden. India uses `data/asia.geojson`. `usa_northeast` uses
 the Census Bureau's nine Northeast states: CT, ME, MA, NH, RI, VT, NJ, NY and PA.
 See [`data/usa_northeast/README.md`](../data/usa_northeast/README.md) for boundary
 provenance, clipping rules and regeneration. Each count has a separate graph with its own population catchments and candidate routes.
+California and Texas also use state polygon clipping; regenerate their inputs with
+`python -m tools.prepare_usa_states`. See their respective `data/` READMEs for provenance.
 Common search, finance, demand, operating hours, load factor and fare settings have
 form controls; edits stay synchronized with the full JSON configuration. Switching
 city counts preserves these settings and clears results from the previous scenario.
@@ -123,3 +127,15 @@ Refresh existing browser images without changing prepared routes:
 ```sh
 python -m tools.export_web --background-only
 ```
+
+The `south_korea` profile uses only the mainland polygon for cities, population
+and the routing land boundary. Jeju and offshore islands are excluded. See
+[`data/south_korea/README.md`](../data/south_korea/README.md).
+
+Worldwide profiles also include Mexico, Canada, Brazil, Argentina, Australia,
+New Zealand, Thailand, Vietnam, Philippines, Indonesia and China. They use
+country-filtered inputs and country land boundaries. Australia includes Tasmania;
+New Zealand includes North, South, Stewart and nearby islands, excluding remote
+outlying islands. Other profiles include country islands within their bounds.
+Indonesia combines the Asia and Oceania sources; its bundled population coverage
+is sparse. See each `data/<profile>/README.md` for scope and currency assumptions.

@@ -70,10 +70,12 @@ def export(config, output, cache_dir, reuse=True):
 
 
 PROFILE_LABELS = {
+    'south_korea': 'South Korea — Mainland',
     'france': 'France', 'taiwan': 'Taiwan', 'usa': 'United States',
     'uk': 'United Kingdom', 'japan': 'Japan', 'germany': 'Germany',
     'spain': 'Spain', 'italy': 'Italy', 'poland': 'Poland', 'benelux': 'Benelux',
     'switzerland': 'Switzerland', 'india': 'India', 'scandinavia': 'Scandinavia',
+    'california': 'California', 'texas': 'Texas',
     'usa_northeast': 'United States — Northeast',
 }
 

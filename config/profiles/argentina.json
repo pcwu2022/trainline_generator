@@ -1,0 +1,26 @@
+{
+  "bbox": [
+    -73.8,
+    -55.2,
+    -53.4,
+    -21.6
+  ],
+  "countries": [
+    "AR"
+  ],
+  "cities_file": "data/argentina/cities.json",
+  "population_file": "data/argentina/population.geojson",
+  "boundaries_file": "data/argentina/boundaries.geojson",
+  "prep": {
+    "max_cities": 100
+  },
+  "search": {
+    "batch_accept_limit": 5
+  },
+  "reporting": {
+    "currency_code": "ARS",
+    "currency_symbol": "$",
+    "eur_to_local": 1200,
+    "region_name": "Argentina"
+  }
+}

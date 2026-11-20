@@ -1,0 +1,226 @@
+[
+  {
+    "name": "Sydney",
+    "country": "AU",
+    "lat": "-33.8678500",
+    "lon": "151.2073200",
+    "pop": 5557233,
+    "id": "48"
+  },
+  {
+    "name": "Melbourne",
+    "country": "AU",
+    "lat": "-37.8140000",
+    "lon": "144.9633200",
+    "pop": 5350705,
+    "id": "51"
+  },
+  {
+    "name": "Brisbane",
+    "country": "AU",
+    "lat": "-27.4679400",
+    "lon": "153.0280900",
+    "pop": 2780063,
+    "id": "127"
+  },
+  {
+    "name": "Perth",
+    "country": "AU",
+    "lat": "-31.9522400",
+    "lon": "115.8614000",
+    "pop": 2309338,
+    "id": "164"
+  },
+  {
+    "name": "Adelaide",
+    "country": "AU",
+    "lat": "-34.9286600",
+    "lon": "138.5986300",
+    "pop": 1469163,
+    "id": "317"
+  },
+  {
+    "name": "Gold Coast",
+    "country": "AU",
+    "lat": "-28.0002900",
+    "lon": "153.4308800",
+    "pop": 640778,
+    "id": "836"
+  },
+  {
+    "name": "Newcastle",
+    "country": "AU",
+    "lat": "-32.9295300",
+    "lon": "151.7801000",
+    "pop": 508437,
+    "id": "1084"
+  },
+  {
+    "name": "Canberra",
+    "country": "AU",
+    "lat": "-35.2834600",
+    "lon": "149.1280700",
+    "pop": 367752,
+    "id": "1478"
+  },
+  {
+    "name": "Sunshine Coast",
+    "country": "AU",
+    "lat": "-26.6568200",
+    "lon": "153.0795500",
+    "pop": 346522,
+    "id": "1584"
+  },
+  {
+    "name": "Logan City",
+    "country": "AU",
+    "lat": "-27.6391700",
+    "lon": "153.1094400",
+    "pop": 326615,
+    "id": "1679"
+  },
+  {
+    "name": "Wollongong",
+    "country": "AU",
+    "lat": "-34.4240000",
+    "lon": "150.8934500",
+    "pop": 280153,
+    "id": "1962"
+  },
+  {
+    "name": "Geelong",
+    "country": "AU",
+    "lat": "-38.1471100",
+    "lon": "144.3606900",
+    "pop": 268984,
+    "id": "2044"
+  },
+  {
+    "name": "Townsville",
+    "country": "AU",
+    "lat": "-19.2663900",
+    "lon": "146.8056900",
+    "pop": 180820,
+    "id": "3069"
+  },
+  {
+    "name": "Cairns",
+    "country": "AU",
+    "lat": "-16.9236600",
+    "lon": "145.7661300",
+    "pop": 153075,
+    "id": "3600"
+  },
+  {
+    "name": "Toowoomba",
+    "country": "AU",
+    "lat": "-27.5605600",
+    "lon": "151.9538600",
+    "pop": 140303,
+    "id": "3910"
+  },
+  {
+    "name": "Mackay",
+    "country": "AU",
+    "lat": "-21.1534500",
+    "lon": "149.1655400",
+    "pop": 121691,
+    "id": "4513"
+  },
+  {
+    "name": "Ballarat",
+    "country": "AU",
+    "lat": "-37.5662200",
+    "lon": "143.8495700",
+    "pop": 116201,
+    "id": "4758"
+  },
+  {
+    "name": "Bendigo",
+    "country": "AU",
+    "lat": "-36.7581800",
+    "lon": "144.2802400",
+    "pop": 103034,
+    "id": "5343"
+  },
+  {
+    "name": "Launceston",
+    "country": "AU",
+    "lat": "-41.4387600",
+    "lon": "147.1346700",
+    "pop": 90953,
+    "id": "6085"
+  },
+  {
+    "name": "Mandurah",
+    "country": "AU",
+    "lat": "-32.5269000",
+    "lon": "115.7217000",
+    "pop": 90306,
+    "id": "6128"
+  },
+  {
+    "name": "Maitland",
+    "country": "AU",
+    "lat": "-32.7330800",
+    "lon": "151.5574000",
+    "pop": 89597,
+    "id": "6186"
+  },
+  {
+    "name": "Tuggeranong Administrative District",
+    "country": "AU",
+    "lat": "-35.4164700",
+    "lon": "149.0695400",
+    "pop": 89461,
+    "id": "6189"
+  },
+  {
+    "name": "Rockhampton",
+    "country": "AU",
+    "lat": "-23.3803200",
+    "lon": "150.5059500",
+    "pop": 78592,
+    "id": "7060"
+  },
+  {
+    "name": "Bunbury",
+    "country": "AU",
+    "lat": "-33.3271100",
+    "lon": "115.6413700",
+    "pop": 76452,
+    "id": "7259"
+  },
+  {
+    "name": "Adelaide Hills",
+    "country": "AU",
+    "lat": "-34.9111900",
+    "lon": "138.7073500",
+    "pop": 60394,
+    "id": "9273"
+  },
+  {
+    "name": "Hervey Bay",
+    "country": "AU",
+    "lat": "-25.2876200",
+    "lon": "152.7693600",
+    "pop": 52230,
+    "id": "10665"
+  },
+  {
+    "name": "Shepparton",
+    "country": "AU",
+    "lat": "-36.3804700",
+    "lon": "145.3986700",
+    "pop": 51631,
+    "id": "10781"
+  },
+  {
+    "name": "Bundaberg",
+    "country": "AU",
+    "lat": "-24.8662100",
+    "lon": "152.3479000",
+    "pop": 50148,
+    "id": "11062"
+  }
+]

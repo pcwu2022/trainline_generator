@@ -62,8 +62,9 @@ saves a snapshot every iteration and uses 100 ms snapshot holds:
 
 Additional profiles work with the same CLI: `spain`, `italy`, `poland`,
 `benelux` (Belgium, Netherlands and Luxembourg), `switzerland`, `india`,
-`scandinavia` (Denmark, Norway and Sweden), and `usa_northeast` (the Census
-Bureau's nine Northeast states). India uses the Asia population data; the
+`scandinavia` (Denmark, Norway and Sweden), `usa_northeast` (the Census
+Bureau's nine Northeast states), `california`, `texas`, and `south_korea`
+(mainland only). India uses the Asia population data; the
 Northeast uses state-clipped US cities and population, with provenance in
 [`data/usa_northeast/README.md`](data/usa_northeast/README.md).
 
@@ -71,6 +72,8 @@ Northeast uses state-clipped US cities and population, with provenance in
 .venv/bin/python -m rail_gen run --profile benelux --output runs/benelux-live
 .venv/bin/python -m rail_gen run --profile india --max-cities 100 --output runs/india-live
 .venv/bin/python -m rail_gen run --profile usa_northeast --output runs/usa-northeast-live
+.venv/bin/python -m rail_gen run --profile california --output runs/california-live
+.venv/bin/python -m rail_gen run --profile texas --output runs/texas-live
 ```
 
 The web interface offers city limits of 4, 8, 12, 20, 50 and 100 for each prepared
@@ -273,3 +276,9 @@ scenario includes population catchments, terrain-priced routes, and a map image;
 visitors do not download the original elevation raster. See
 [`web/README.md`](web/README.md) for offline scenario generation, editable settings,
 local preview, and GitHub Pages setup.
+
+Additional worldwide profiles: `mexico`, `canada`, `brazil`, `argentina`,
+`australia`, `new_zealand`, `thailand`, `vietnam`, `philippines`, `indonesia`,
+and `china`. Each uses country-filtered cities, population and a country land
+boundary. Regenerate inputs with `python -m tools.prepare_country_profiles`.
+See each `data/<profile>/README.md` for coverage and fixed currency assumptions.
