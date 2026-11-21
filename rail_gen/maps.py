@@ -31,6 +31,11 @@ class MapBackground:
         self.evaluator = Evaluator(graph, config)
         self.elevation = elevation_hexagons(config, self.project)
         west, south, east, north = config['bbox']
+        uk_mainland = config['countries'] == ['GB']
+        if uk_mainland:
+            # Frame Great Britain and Northern Ireland, leaving Orkney and
+            # Shetland out of the map without changing the simulation region.
+            west, south, east, north = -8.3, 49.8, 1.9, 58.75
         self.country_lines = []
         region = None
         if config['boundaries_file']:
@@ -45,7 +50,8 @@ class MapBackground:
                 if e < west or w > east or n < south or s > north:
                     continue
                 polygons = geometry.geoms if geometry.geom_type == 'MultiPolygon' else [geometry]
-                self.country_lines.extend(self.project(np.asarray(p.exterior.coords)) for p in polygons)
+                self.country_lines.extend(self.project(np.asarray(p.exterior.coords)) for p in polygons
+                                          if not uk_mainland or p.bounds[1] <= north)
         self.polygons, densities = [], []
         features = json.loads(Path(config['population_file']).read_text())['features']
         for feature in features:
@@ -102,7 +108,7 @@ class MapBackground:
         # Reserve extra horizontal space only to the east for the overlays. A square
         # projected extent fills the canvas without stretching the geography.
         span = upper - lower
-        side = max(float(span[0]) / .75, float(span[1]) / .88, 10.)
+        side = max(float(span[0]) / .75, float(span[1]) / (.94 if uk_mainland else .88), 10.)
         left = float(lower[0])
         if config['countries'] == ['TW']:
             # Taiwan's tall shape leaves spare horizontal space on a square
@@ -112,10 +118,17 @@ class MapBackground:
                                 self.station_xy - radii, self.station_xy + radii])
             island_center = float((island[:, 0].min() + island[:, 0].max()) / 2)
             left = island_center - side * .375
+        # Keep every region's output square; reserve overlay space inside it.
+        self.right_trim = 0.
+        if uk_mainland:
+            # Balance the visible land between the canvas edge and the legend.
+            # Include the panel's rounded-box padding in its actual left edge.
+            land = np.vstack(self.polygons)
+            land_width = float(np.ptp(land[:, 0]))
+            side = max(side, land_width / .679)
+            margin = (.759 * side - land_width) / 2
+            left = float(land[:, 0].min()) - margin
         bottom = float((lower[1] + upper[1] - side) / 2)
-        # Japan's diagonal coastline leaves room to move the floating keys west.
-        # Trim the eastern strip while preserving map scale and overlay sizes.
-        self.right_trim = .15 if config['countries'] == ['JP'] else 0.
         width = side * (1 - self.right_trim)
         self.viewport = (left, left + width, bottom, bottom + side)
         square_size = map_figure_size(self.viewport)[0]

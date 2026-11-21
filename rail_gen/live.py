@@ -100,9 +100,10 @@ def cost_log(graph, result, iteration, phase):
 
 
 class LiveReporter:
-    def __init__(self, graph, config, output, calibration=None, resume=False):
+    def __init__(self, graph, config, output, calibration=None, resume=False, compact=False):
         from rail_gen.map_utils import ProgressVideo
         self.graph, self.config, self.output = graph, config, Path(output)
+        self.compact = compact
         self.output.mkdir(parents=True, exist_ok=True)
         self.evaluator = Evaluator(graph, config)
         from .maps import MapBackground
@@ -117,6 +118,8 @@ class LiveReporter:
         self.calibration = calibration or dict(status='not_calibrated', reason='No user-supplied observed backtest table')
         self.total_population = sum(city.population * city.kappa for city in graph.cities)
         self.unit = 'Network iteration' if config['search']['algorithm'] == 'incremental' else 'Population generation'
+        if compact:
+            return
         atomic_json(self.output / 'run_config.json', config)
         atomic_json(self.output / 'backtest.json', self.calibration)
         atomic_json(self.output / 'alignment_manifest.json', graph.metadata)
@@ -139,6 +142,9 @@ class LiveReporter:
             front_size=update.front_size, evaluations=update.evaluations,
             seconds=update.elapsed_seconds, metrics=metrics)
         row.update(update.metadata or {})
+        if self.compact:
+            for key in ('parent_genome', 'genome', 'services', 'track_counts', 'search_state'):
+                row.pop(key, None)
         self.history.append(row)
         with (self.output / 'history.jsonl').open('a', encoding='utf8') as stream:
             stream.write(json.dumps(row, allow_nan=False) + '\n')
@@ -158,7 +164,7 @@ class LiveReporter:
             map_temp.replace(self.output / 'latest.png')
             from .analysis import write_visual_analysis
             write_visual_analysis(self.graph, self.config, result, self.output,
-                                  self.background, title, evaluator=self.evaluator)
+                                  self.background, title, evaluator=self.evaluator, export_metrics=not self.compact)
             draw_progress(chart_temp, self.history, self.unit)
             chart_temp.replace(self.output / 'progress.png')
         finally:
@@ -166,6 +172,9 @@ class LiveReporter:
             chart_temp.unlink(missing_ok=True)
         self.animation.append(self.output / 'latest.png')
         self.snapshot += 1
+        if self.compact:
+            atomic_text(self.output / 'cost_breakdown.log', cost_log(self.graph, result, update.iteration, update.phase))
+            return
         data = dict(model_version=MODEL_VERSION, services=result.services, track_counts=result.track_counts.tolist(), iteration=update.iteration, iterations=update.iteration, iteration_unit=self.unit,
             phase=update.phase, algorithm=self.config['search']['algorithm'], snapshot=self.snapshot,
             animation_frames=self.animation.frames, feasible=result.feasible,
@@ -243,6 +252,12 @@ class LiveReporter:
             self.last_update.accepted, self.last_update.changes, self.last_update.parent_genome)
         # Always include the final state, even when it falls between snapshot steps.
         self.render(terminal)
+        if self.compact:
+            self.animation.state_path.unlink(missing_ok=True)
+            atomic_text(self.output / 'run.log',
+                        f'Status: {run.status}\nIterations: {terminal.iteration}\n'
+                        f'Evaluations: {run.evaluations}\nElapsed seconds: {run.elapsed_seconds:.2f}\n')
+            return
         self.manifest.update(status=run.status, iterations=terminal.iteration,
                              animation_frames=self.animation.frames)
         atomic_json(self.output / 'manifest.json', self.manifest)

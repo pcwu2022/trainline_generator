@@ -158,7 +158,7 @@ def write_analysis(graph, config, result, image_path, json_path=None, title='Cur
     return data
 
 
-def write_visual_analysis(graph, config, result, output, background, title, evaluator=None):
+def write_visual_analysis(graph, config, result, output, background, title, evaluator=None, *, export_metrics=True):
     """Publish complete images/metrics atomically at the regular snapshot cadence."""
     output = Path(output)
     output.mkdir(parents=True, exist_ok=True)
@@ -167,10 +167,11 @@ def write_visual_analysis(graph, config, result, output, background, title, eval
     metrics = output / '.analysis.tmp.json'
     try:
         background.draw(result, financial, title, color_by='revenue_cost', reevaluate=False)
-        data = write_analysis(graph, config, result, dashboard, metrics, title, evaluator, reevaluate=False)
+        data = write_analysis(graph, config, result, dashboard, metrics if export_metrics else None, title, evaluator, reevaluate=False)
         financial.replace(output / 'latest_revenue_cost.png')
         dashboard.replace(output / 'analysis.png')
-        metrics.replace(output / 'analysis.json')
+        if export_metrics:
+            metrics.replace(output / 'analysis.json')
     finally:
         for path in (financial, dashboard, metrics):
             path.unlink(missing_ok=True)

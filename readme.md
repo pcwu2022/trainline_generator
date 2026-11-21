@@ -282,3 +282,5 @@ Additional worldwide profiles: `mexico`, `canada`, `brazil`, `argentina`,
 and `china`. Each uses country-filtered cities, population and a country land
 boundary. Regenerate inputs with `python -m tools.prepare_country_profiles`.
 See each `data/<profile>/README.md` for coverage and fixed currency assumptions.
+
+Normal runs keep only network/analysis/progress images, `progress.mp4`, `history.jsonl`, `cost_breakdown.log`, and `run.log`. Add `--full-output` to also save data exports, Pareto alternatives, reports, and resumable checkpoints. Resuming a checkpoint retains full output.

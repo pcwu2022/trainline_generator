@@ -26,7 +26,9 @@ def run_browser(config_json, scenario_dir='/project/scenario'):
         raise ValueError('Sensitivity and backtest calibration are available through the Python CLI')
     folder = Path(scenario_dir)
     descriptor = json.loads((folder / 'graph.json').read_text())
-    original = descriptor['config']
+    # Saved bundles may predate new defaults or configuration migrations.
+    # Compare both configurations using the same current schema.
+    original = load_config(profile=None, overrides=descriptor['config'])
     editable = {'demand', 'operations', 'finance', 'constraints', 'search', 'reporting', 'rolling_stock', 'services'}
     for key in config:
         if key not in editable and config[key] != original[key]:

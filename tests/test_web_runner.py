@@ -59,6 +59,16 @@ class WebRunnerTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'prep is baked'):
             self.run_scenario(4,lambda c:c['prep'].update(max_cities=8))
 
+    def test_china_saved_config_runs_with_current_defaults(self):
+        messages = self.run_scenario(4, profile='china')
+        self.assertEqual(messages[-1]['type'], 'done')
+        self.assertEqual(messages[-1]['config']['countries'], ['CN'])
+
+    def test_changed_track_layout_still_requires_regeneration(self):
+        with self.assertRaisesRegex(ValueError, 'track_layouts is baked'):
+            self.run_scenario(4, lambda c: c['track_layouts']['double'].update(cost_multiplier=2),
+                              profile='china')
+
     def test_profile_catalog_and_default_graphs_match_their_region(self):
         catalog=json.loads((ROOT/'web/scenarios/index.json').read_text())
         expected={name:None for name in ('france','taiwan','usa','uk','japan','germany','spain','italy','poland','benelux','switzerland','india','scandinavia','usa_northeast')}

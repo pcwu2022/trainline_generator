@@ -27,6 +27,8 @@ def parser():
         sub = commands.add_parser(name, help=description, description=description,
                                   formatter_class=argparse.RawDescriptionHelpFormatter)
         if name == 'run':
+            sub.add_argument('--full-output', action='store_true',
+                             help='Also save data exports, Pareto alternatives and resumable checkpoints')
             sub.epilog = (                'Unspecified search and reporting options use the selected configuration/profile.\n'
                 'Incremental search evaluates up to 150 sampled proposals plus demand packages per update.\n'
                 'Objective weights change at 30% and 60% demand satisfaction.\n\n'
@@ -163,7 +165,8 @@ def main(argv=None):
         if args.resume:
             from .checkpoint import load_checkpoint
             resume = load_checkpoint(args.resume, graph, config)
-        reporter = LiveReporter(graph, config, args.output, calibration, resume=bool(resume))
+        args.full_output = args.full_output or bool(args.resume)
+        reporter = LiveReporter(graph, config, args.output, calibration, resume=bool(resume), compact=not args.full_output)
         interrupted = threading.Event()
         def stop(signum, frame):
             if interrupted.is_set():
@@ -176,6 +179,9 @@ def main(argv=None):
             reporter.finish(run)
         finally:
             signal.signal(signal.SIGINT, previous_handler)
+        if not args.full_output:
+            print(f'Search status: {run.status}\nImages, video and logs: {args.output}', flush=True)
+            return 0
         variations = (sensitivity(graph, config, run.genomes)
                       if config['search']['sensitivity'] and run.status != 'interrupted' else None)
         rows = write_report(graph, config, run, args.output / 'pareto', calibration, variations,

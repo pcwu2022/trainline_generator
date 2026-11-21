@@ -187,6 +187,23 @@ class LiveOutputTests(unittest.TestCase):
         self.assertEqual(lines[4], 'Cities served: 3/3')
         self.assertEqual(lines[5], f'Net profit: {result.metrics["net_eur"]*2/1e6:,.1f}M $/year')
 
+    def test_compact_output_keeps_only_visuals_and_logs(self):
+        c, g = incremental_config(), graph_fixture()
+        c['search']['generations'] = 1
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            reporter = LiveReporter(g, c, directory, compact=True)
+            run = search(g, c, progress=None, observer=reporter)
+            reporter.finish(run)
+            self.assertEqual({p.name for p in directory.iterdir()}, {
+                'latest.png', 'latest_revenue_cost.png', 'analysis.png',
+                'progress.png', 'progress.mp4', 'history.jsonl',
+                'cost_breakdown.log', 'run.log'})
+            self.assertIn(run.status, (directory / 'run.log').read_text())
+            history = [json.loads(line) for line in (directory / 'history.jsonl').read_text().splitlines()]
+            self.assertTrue(history)
+            self.assertNotIn('genome', history[-1])
+
     def test_live_map_video_cadence_and_final_snapshot_match_current_network(self):
         c, g = incremental_config(), graph_fixture()
         c['search']['generations'] = 5
