@@ -1,4 +1,5 @@
 import {fields, getValue, setValue} from './config-fields.js';
+import {mapNavigation} from './map-navigation.js';
 const $ = id => document.getElementById(id);
 let scenario, config, worker, busy=false, latest=null, completed=null, timer;
 let scenarioPath, choices=[], profiles=[], activeProfile, loading=false;
@@ -20,11 +21,15 @@ for(const section of [...new Set(fields.map(f=>f.section))]) {
  }
  $('common-configs').append(group);
 }
+const navigation=mapNavigation($('map'));
+$('zoom-in').onclick=()=>navigation.zoomIn();
+$('zoom-out').onclick=()=>navigation.zoomOut();
+$('map-reset').onclick=()=>navigation.fit();
 const ns='http://www.w3.org/2000/svg';
 function svg(tag, attrs, parent=$('map')) {const el=document.createElementNS(ns,tag); for(const [k,v] of Object.entries(attrs)) el.setAttribute(k,v); parent.append(el); return el;}
 function draw(network) {
   const [xmin,xmax,ymin,ymax]=scenario.viewport, width=xmax-xmin,height=ymax-ymin;
-  $('map').replaceChildren(); $('map').setAttribute('viewBox',`0 0 ${width} ${height}`);
+  $('map').replaceChildren();
   svg('image',{href:scenarioPath+'background.png',width,height});
   const xy=p=>[p[0]-xmin,ymax-p[1]];
   for(const f of network?.features || []) if(f.geometry.type==='LineString') {
@@ -65,6 +70,7 @@ async function loadScenario(choice, {preserve=false, profile=activeProfile, prof
   const response=await fetch(path+'scenario.json');if(!response.ok)throw Error(`HTTP ${response.status}`);
   const next=await response.json();
   if(edits){edits.prep.max_cities=next.config.prep.max_cities;config=edits;}else config=structuredClone(next.config);
+  navigation.reset(next.viewport[1]-next.viewport[0],next.viewport[3]-next.viewport[2]);
   scenario=next;scenarioPath=path;activeProfile=profile;choices=profileChoices;
   $('profile').value=profile.id;$('cities').replaceChildren();
   for(const choice of choices){const option=document.createElement('option');option.value=choice.city_count;option.textContent=choice.actual_city_count<choice.city_count?`${choice.city_count} city limit (${choice.actual_city_count} available)`:`${choice.city_count} cities`;$('cities').append(option);}

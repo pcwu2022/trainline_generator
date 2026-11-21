@@ -4,3 +4,5 @@ fieldset{margin:1rem 0;padding:1rem;border:1px solid #d1dce2;border-radius:6px;d
 .elevation-key{display:flex;align-items:center;gap:.7rem;flex-wrap:wrap;color:#526b79;font-size:.85rem;margin:.5rem 0 1rem}.elevation-ramp{display:inline-block;width:180px;height:12px;border:1px solid #bac3c8;border-radius:3px;background:linear-gradient(to right,#9ab960 0%,#b4c67b 7.5%,#d2c48c 17.5%,#bc995f 25%,#a17242 50%,#795436 75%,#503a29 100%)}
 
 footer{padding:1.5rem 4vw;text-align:center;border-top:1px solid #cbd6df;color:#507080;font-size:.85rem}
+
+#map{touch-action:none;cursor:grab;user-select:none}#map:active{cursor:grabbing}.map-controls{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin-bottom:.75rem}.map-controls span{font-size:.8rem;color:#587080}.map-controls button{padding:.4rem .7rem}
