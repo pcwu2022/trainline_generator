@@ -164,19 +164,18 @@ def write_visual_analysis(graph, config, result, output, background, title, eval
     """Publish complete images/metrics atomically at the regular snapshot cadence."""
     output = Path(output)
     output.mkdir(parents=True, exist_ok=True)
-    financial = output / '.latest_revenue_cost.tmp.png'
+    from .output_names import visual_names
+    names = visual_names(config)
     dashboard = output / '.analysis.tmp.png'
     metrics = output / '.analysis.tmp.json'
     try:
-        background.draw(result, financial, title, color_by='revenue_cost', reevaluate=False)
         data = write_analysis(graph, config, result, dashboard, metrics if export_metrics else None, title, evaluator, reevaluate=False)
-        financial.replace(output / 'latest_revenue_cost.png')
-        dashboard.replace(output / 'analysis.png')
-        analysis_financial_path(dashboard).replace(output / 'analysis_financial.png')
+        dashboard.replace(output / names['analysis1'])
+        analysis_financial_path(dashboard).replace(output / names['analysis2'])
         if export_metrics:
             metrics.replace(output / 'analysis.json')
     finally:
-        for path in (financial, dashboard, analysis_financial_path(dashboard), metrics):
+        for path in (dashboard, analysis_financial_path(dashboard), metrics):
             path.unlink(missing_ok=True)
     return data
 
@@ -186,7 +185,6 @@ def main():
     import argparse
     from .alignment import load_graph
     from .config import load_config
-    from .maps import MapBackground
     parser = argparse.ArgumentParser(description=main.__doc__)
     parser.add_argument('--run-dir', type=Path, required=True)
     parser.add_argument('--cache-dir', type=Path, default=Path('runs/railgen-cache'))
@@ -207,16 +205,17 @@ def main():
     result = evaluator.evaluate(genome, details=True, services=None if legacy else snapshot.get('services'), track_counts=counts)
     title = f"Snapshot {snapshot['snapshot']} · iteration {snapshot['iteration']} · {snapshot['phase'].replace('_', ' ')}"
     data = write_visual_analysis(graph, config, result, args.run_dir,
-                                MapBackground(graph, config), title, evaluator)
+                                None, title, evaluator)
+    from .output_names import migrate_visual_names
+    names = migrate_visual_names(args.run_dir, config)
     report = args.run_dir / 'report.md'
-    if report.exists() and 'latest_revenue_cost.png' not in report.read_text():
+    if report.exists() and names['analysis1'] not in report.read_text():
         with report.open('a') as stream:
-            stream.write('\n## Station and corridor analysis\n\n'
-                '![Revenue / annual cost map](latest_revenue_cost.png)\n\n'
-                '![Cities and demand rankings](analysis.png)\n\n'
-                '![Financial rankings](analysis_financial.png)\n\n'
-                '[Full station and corridor metrics](analysis.json)\n')
-    print(f"Generated {args.run_dir / 'latest_revenue_cost.png'} and {args.run_dir / 'analysis.png'} and {args.run_dir / 'analysis_financial.png'}")
+            stream.write(f"\n## Station and corridor analysis\n\n"
+                         f"![Cities and demand rankings]({names['analysis1']})\n\n"
+                         f"![Financial rankings]({names['analysis2']})\n\n"
+                         "[Full station and corridor metrics](analysis.json)\n")
+    print(f"Generated {args.run_dir / names['analysis1']} and {args.run_dir / names['analysis2']}")
     print(f"Annual allocated corridor costs: €{sum(r['annual_cost_eur'] for r in data['corridors'])/1e6:,.1f}M; "
           f"network: €{data['metrics']['annual_cost_eur']/1e6:,.1f}M")
 

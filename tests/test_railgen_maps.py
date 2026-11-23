@@ -49,6 +49,30 @@ class PopulationMapTests(unittest.TestCase):
             background.draw(empty, Path(temporary) / 'map.png', 'Empty network')
             self.assertTrue((Path(temporary) / 'map.png').exists())
 
+    def test_output_size_is_fixed_across_different_regions(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            c, graph, _ = self.prepare(temporary)
+            result = Evaluator(graph, c).evaluate([0, 0, 0])
+            for name, bbox, countries in [
+                ('Germany', [5.8, 47.2, 15.1, 55.1], ['DE']),
+                ('United Kingdom', [-8.3, 49.8, 1.9, 58.75], ['GB']),
+            ]:
+                # Reuse synthetic cells; differing map extents must not affect pixels.
+                regional = deepcopy(c)
+                regional.update(bbox=bbox, countries=countries)
+                population = Path(temporary) / f'{name}.geojson'
+                index = h3.latlng_to_cell((bbox[1] + bbox[3]) / 2, (bbox[0] + bbox[2]) / 2, 5)
+                population.write_text(json.dumps(dict(type='FeatureCollection', features=[dict(
+                    type='Feature', geometry=dict(type='Point', coordinates=[
+                        (bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2]),
+                    properties=dict(population=1000, h3Index=index))])))
+                regional['population_file'] = str(population)
+                path = Path(temporary) / f'{name}.png'
+                with matplotlib.rc_context({'savefig.bbox': 'tight'}):
+                    MapBackground(graph, regional).draw(result, path, name)
+                with Image.open(path) as image:
+                    self.assertEqual(image.size, (1080, 1080))
+
     def test_transfer_colors_use_potential_od_demand_on_both_legs(self):
         with tempfile.TemporaryDirectory() as temporary:
             c, graph, _ = self.prepare(temporary)

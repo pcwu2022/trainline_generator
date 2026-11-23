@@ -17,6 +17,7 @@ import numpy as np
 from .alignment import load_graph
 from .config import load_config
 from .maps import MapBackground
+from .map_utils import MAP_DPI
 from rail_gen.map_style import CITY_STYLE, population_collection
 from rail_gen.map_elevation import add_elevation
 
@@ -88,7 +89,7 @@ def main():
                            f'{len(graph.cities):,} cities · {len(selected):,} unique pairs · '
                            f'Range: {demand.min():,.0f}–{demand.max():,.0f} trips/year', fontsize=8, y=.005)
         with matplotlib.rc_context({'savefig.bbox': None}):
-            figure.savefig(stem.with_suffix('.png'), dpi=180)
+            figure.savefig(stem.with_suffix('.png'), dpi=MAP_DPI)
         print(f'Created {stem}.png and {stem}.csv; {len(selected)} unique pairs')
     finally:
         plt.close(figure)

@@ -196,8 +196,8 @@ class LiveOutputTests(unittest.TestCase):
             run = search(g, c, progress=None, observer=reporter)
             reporter.finish(run)
             self.assertEqual({p.name for p in directory.iterdir()}, {
-                'latest.png', 'latest_revenue_cost.png', 'analysis.png', 'analysis_financial.png',
-                'progress.png', 'progress.mp4', 'history.jsonl',
+                '_france_5_map.png', '_france_2_analysis1.png', '_france_3_analysis2.png',
+                '_france_4_progress.png', '_france_1_animation.mp4', 'history.jsonl',
                 'cost_breakdown.log', 'run.log'})
             self.assertIn(run.status, (directory / 'run.log').read_text())
             history = [json.loads(line) for line in (directory / 'history.jsonl').read_text().splitlines()]
@@ -236,7 +236,7 @@ class LiveOutputTests(unittest.TestCase):
                                    latest['metrics']['annual_cost_eur'] / 1e6)
             self.assertGreater(expected.metrics['passengers'], 0)
             import imageio_ffmpeg
-            reader = imageio_ffmpeg.read_frames(str(directory / 'progress.mp4'), pix_fmt='rgb24')
+            reader = imageio_ffmpeg.read_frames(str(directory / '_france_1_animation.mp4'), pix_fmt='rgb24')
             metadata = next(reader)
             self.assertEqual(metadata['fps'], 30)
             self.assertEqual(metadata['size'][0], metadata['size'][1])
@@ -247,11 +247,11 @@ class LiveOutputTests(unittest.TestCase):
             self.assertLess(np.abs(first - held).mean(), 1.)
             self.assertNotEqual(frames[0], frames[-1])
             from rail_gen.map_utils import ProgressVideo
-            resumed = ProgressVideo(directory / 'progress.mp4', 300)
+            resumed = ProgressVideo(directory / '_france_1_animation.mp4', 300)
             self.assertEqual(resumed.frames, 4)
-            resumed.append(directory / 'latest.png')
+            resumed.append(directory / '_france_5_map.png')
             self.assertEqual(resumed.frames, 5)
-            self.assertEqual({p.name for p in directory.glob('*.png')}, {'latest.png', 'progress.png', 'latest_revenue_cost.png', 'analysis.png', 'analysis_financial.png'})
+            self.assertEqual({p.name for p in directory.glob('*.png')}, {'_france_5_map.png', '_france_4_progress.png', '_france_2_analysis1.png', '_france_3_analysis2.png'})
             self.assertEqual(list(directory.glob('*.tmp*')), [])
             self.assertEqual(list(directory.glob('.*.tmp*')), [])
             rows = [json.loads(line) for line in (directory / 'history.jsonl').read_text().splitlines()]
@@ -265,7 +265,7 @@ class LiveOutputTests(unittest.TestCase):
                 np.testing.assert_array_equal(restored.objectives, expected.objectives)
                 self.assertEqual(str(saved['model_version']), latest['model_version'])
             self.assertIn('Annual net:', (directory / 'cost_breakdown.log').read_text())
-            self.assertIn('latest.png', (directory / 'report.md').read_text())
+            self.assertIn('_france_5_map.png', (directory / 'report.md').read_text())
             self.assertIn('pareto/report.md', (directory / 'report.md').read_text())
             geo = json.loads((directory / 'latest.geojson').read_text())
             self.assertEqual(sum(f['geometry']['type'] == 'LineString' for f in geo['features']),

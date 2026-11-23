@@ -32,7 +32,8 @@ def parser():
             sub.epilog = (                'Unspecified search and reporting options use the selected configuration/profile.\n'
                 'Incremental search evaluates up to 150 sampled proposals plus demand packages per update.\n'
                 'Objective weights change at 30% and 60% demand satisfaction.\n\n'
-                'Outputs: latest.png/json/geojson, progress.mp4, progress.png, report.md,\n'
+                'Outputs: _<country>_1_animation.mp4, numbered analysis/progress/map PNGs,\n'
+                'latest.json/geojson, report.md,\n'
                 'cost_breakdown.log and pareto/ alternatives. Use an empty output directory\n'
                 'or --overwrite.\n\n'
                 'Example: python -m rail_gen run --profile france --iterations 200\n'
@@ -197,9 +198,11 @@ def main(argv=None):
                   else 'No acceptable move remains in the local neighbourhood.'
                   if run.status == 'neighbourhood_exhausted' else '')
         print(f'Search status: {run.status}' + (f' — {reason}' if reason else ''), flush=True)
-        print(f'Current map: {args.output / "latest.png"}\n'
-              f'Animation: {args.output / "progress.mp4"}\n'
-              f'Progress charts: {args.output / "progress.png"}\n'
+        from .output_names import visual_names
+        visuals = visual_names(config)
+        print(f'Current map: {args.output / visuals["map"]}\n'
+              f'Animation: {args.output / visuals["animation"]}\n'
+              f'Progress charts: {args.output / visuals["progress"]}\n'
               f'Report: {args.output / "report.md"}\n'
               f'Pareto alternatives: {len(rows)} designs in {args.output / "pareto"}', flush=True)
         if calibration is None:

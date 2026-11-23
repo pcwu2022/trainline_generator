@@ -1,5 +1,4 @@
 """Map projection, labels, framing and incremental MP4 output."""
-import math
 from pathlib import Path
 import numpy as np
 from .projection import regional_projection
@@ -23,14 +22,13 @@ def map_projector(config):
     return project
 
 
-def map_figure_size(viewport):
-    """Square canvas growing with sqrt of the longest projected span in km.
+MAP_PIXELS = 1080
+MAP_DPI = 90
 
-    A 1,000 km span uses 10 inches; an 8-inch floor keeps labels legible.
-    Use the fixed viewport so solution changes cannot resize animation frames.
-    """
-    xmin, xmax, ymin, ymax = viewport
-    side = max(8.0, 10.0 * math.sqrt(max(xmax-xmin, ymax-ymin) / 1000.0))
+
+def map_figure_size(viewport):
+    """Fixed square export canvas; geographic extent only controls map framing."""
+    side = MAP_PIXELS / MAP_DPI
     return side, side
 
 
@@ -50,7 +48,7 @@ class ProgressVideo:
         self.ffmpeg = imageio_ffmpeg.get_ffmpeg_exe()
         self.frames, self.size = 0, None
         self.repeat = max(1, round(duration_ms * self.fps / 1000))
-        self.state_path = self.path.with_suffix('.json')
+        self.state_path = self.path.parent / 'progress.json'
         if self.path.exists():
             import json
             state = json.loads(self.state_path.read_text())

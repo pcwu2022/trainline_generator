@@ -59,7 +59,7 @@ class NetworkAnalysisTests(unittest.TestCase):
             from PIL import Image
             for filename in ('analysis.png', 'analysis_financial.png'):
                 with Image.open(Path(temporary) / filename) as rendered:
-                    self.assertEqual(rendered.size, (1800, 1800))
+                    self.assertEqual(rendered.size, (1080, 1080))
             self.assertEqual(data['corridors'], [])
             self.assertEqual(json.loads(path.read_text())['genome'], [0, 0, 0])
             self.assertNotIn('NaN', path.read_text())

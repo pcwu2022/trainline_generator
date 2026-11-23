@@ -38,4 +38,4 @@ def save(fig, path):
     # Explicit bounds keep exports square even with user-wide tight-bbox settings.
     import matplotlib
     with matplotlib.rc_context({'savefig.bbox': None}):
-        fig.savefig(path, dpi=150, facecolor=fig.get_facecolor())
+        fig.savefig(path, dpi=90, facecolor=fig.get_facecolor())

@@ -9,7 +9,6 @@ import numpy as np
 from matplotlib.cm import ScalarMappable
 from matplotlib.patches import Circle, FancyBboxPatch
 from matplotlib.lines import Line2D
-from matplotlib import patheffects
 from matplotlib.image import BboxImage, imread
 from matplotlib.transforms import Bbox, TransformedBbox
 from shapely.geometry import Point, shape
@@ -18,7 +17,7 @@ from shapely.prepared import prep
 
 from rail_gen.map_style import (CITY_STYLE, STATION_STYLE, CATCHMENT_STYLE,
     population_collection, satisfaction_scale, track_style)
-from rail_gen.map_utils import city_label_indices, map_figure_size, map_projector
+from rail_gen.map_utils import MAP_DPI, city_label_indices, map_figure_size, map_projector
 from rail_gen.map_elevation import elevation_hexagons, add_elevation
 from .alignment import TRACKS
 from .track_layout import track_type
@@ -133,8 +132,7 @@ class MapBackground:
         bottom = float((lower[1] + upper[1] - side) / 2)
         width = side * (1 - self.right_trim)
         self.viewport = (left, left + width, bottom, bottom + side)
-        square_size = map_figure_size(self.viewport)[0]
-        self.figure_size = (square_size * (1 - self.right_trim), square_size)
+        self.figure_size = map_figure_size(self.viewport)
         self.labelled_cities = city_label_indices(
             [dict(population=city.population) for city in graph.cities])
 
@@ -168,30 +166,35 @@ class MapBackground:
         panel_scale = 1 / (1 - self.right_trim)
         # All map keys share one floating panel in the reserved eastern strip.
         panel = FancyBboxPatch((panel_x(.765), .16), .22 * panel_scale, .385, transform=figure.transFigure,
-            boxstyle='round,pad=0.006', facecolor='white', edgecolor='#bac3c8',
-            alpha=.94, linewidth=.7, zorder=8)
+            boxstyle='round,pad=0.006,rounding_size=0.012', facecolor='white', edgecolor='none',
+            alpha=.95, linewidth=0, zorder=8)
         figure.add_artist(panel)
         density_axis = figure.add_axes([panel_x(.785), .485, .177 * panel_scale, .012], zorder=9)
         ratio_axis = figure.add_axes([panel_x(.785), .415, .177 * panel_scale, .012], zorder=9)
+        font_scale = self.figure_size[0] / 10
+        ink, muted = '#173348', '#576b78'
+        def overlay_text(x, y, text, size=8, **kwargs):
+            return figure.text(panel_x(x), y, text, fontsize=size * font_scale,
+                fontfamily='DejaVu Sans', color=kwargs.pop('color', ink), zorder=10, **kwargs)
         try:
+            overlay_text(.785, .555, 'MAP KEY', size=9, weight='bold')
             ax.set_facecolor('#eef2f5')
             for coordinates in self.country_lines:
                 ax.plot(coordinates[:, 0], coordinates[:, 1], color='#c2c8c5', linewidth=.6, zorder=0)
             collection = population_collection(self.polygons, self.densities)
             ax.add_collection(collection)
-            figure.text(panel_x(.785), .51, 'Population / km²', fontsize=8, zorder=10)
+            overlay_text(.785, .51, 'Population per km²', weight='medium')
             figure.colorbar(collection, cax=density_axis, orientation='horizontal')
-            density_axis.tick_params(labelsize=7, length=2)
+            density_axis.tick_params(labelsize=7 * font_scale, length=0, pad=5, colors=muted)
             density_axis.minorticks_off()
-            figure.text(panel_x(.785), .44, 'Revenue / cost' if financial else 'Demand fulfillment',
-                        fontsize=8, zorder=10)
+            overlay_text(.785, .44, 'Revenue / annual cost' if financial else 'Travel demand carried', weight='medium')
             elevation = add_elevation(ax, self.elevation)
             if elevation is not None:
                 elevation_axis = figure.add_axes([panel_x(.785), .345, .177 * panel_scale, .012], zorder=9)
-                figure.text(panel_x(.785), .37, 'Elevation (m)', fontsize=7, zorder=10)
+                overlay_text(.785, .37, 'Elevation · metres', weight='medium')
                 figure.colorbar(elevation, cax=elevation_axis, orientation='horizontal',
                                 ticks=[0, 1000, 2000, 3000, 4000], extend='both')
-                elevation_axis.tick_params(labelsize=7, length=2)
+                elevation_axis.tick_params(labelsize=7 * font_scale, length=0, pad=5, colors=muted)
             if financial:
                 from matplotlib.colors import LinearSegmentedColormap, Normalize
                 cmap = LinearSegmentedColormap.from_list('cost_recovery', ['#ad3035', '#edca79', '#124625'])
@@ -205,7 +208,9 @@ class MapBackground:
                                 orientation='horizontal', ticks=[0, .5, 1])
                 from matplotlib.ticker import PercentFormatter
                 ratio_axis.xaxis.set_major_formatter(PercentFormatter(xmax=1, decimals=0))
-            ratio_axis.tick_params(labelsize=7, length=2)
+            ratio_axis.tick_params(labelsize=7 * font_scale, length=0, pad=5, colors=muted)
+            for scale_axis in figure.axes[1:]:
+                scale_axis.spines[:].set_visible(False)
             for i, city in enumerate(self.graph.cities):
                 xy = self.node_xy[i]
                 ax.plot(*xy, **CITY_STYLE)
@@ -240,23 +245,41 @@ class MapBackground:
             watermark.set_data(imread(
                 Path(__file__).resolve().parents[1] / 'assets/images/rail_gen_master.png'))
             ax.add_artist(watermark)
-            ax.text(.025, .975,
-                    f'{self.config["reporting"]["region_name"]} Rail Network Generation',
-                    transform=ax.transAxes, fontsize=14, fontweight='bold',
-                    color='#16334a', va='top', linespacing=1.3, zorder=10,
-                    path_effects=[patheffects.withStroke(linewidth=3, foreground='white')])
-            ax.text(.975, .975, title, transform=ax.transAxes, fontsize=10,
-                    ha='right', va='top', multialignment='left', linespacing=1.5, zorder=10,
-                    bbox=dict(boxstyle='round,pad=.5', facecolor='white', alpha=.9,
-                              edgecolor='#bac3c8', linewidth=.7))
-            handles = [Line2D([], [], label=f'Every {60 / frequency:g} mins',
+            overlay_text(.025, .972, 'RAIL NETWORK GENERATION', size=8,
+                         weight='bold', color=muted, va='top')
+            overlay_text(.025, .946, self.config['reporting']['region_name'],
+                         size=24, weight='bold', va='top')
+            lines = title.splitlines()
+            fields = [line.split(': ', 1) for line in lines if ': ' in line]
+            if fields and lines and ': ' in lines[0]:
+                info = FancyBboxPatch((panel_x(.765), .735), .22 * panel_scale, .245,
+                    transform=figure.transFigure, boxstyle='round,pad=0.006,rounding_size=0.012',
+                    facecolor='white', edgecolor='none', alpha=.95, zorder=8)
+                figure.add_artist(info)
+                overlay_text(.785, .956, lines[0].upper(), size=8, weight='bold')
+                phase = next((line for line in lines[1:] if ': ' not in line), '')
+                overlay_text(.785, .93, phase, size=10, weight='medium')
+                names = {'Ridership': 'Passenger trips / year', 'Need satisfaction': 'Demand carried',
+                         'Cities served': 'Stations served', 'Net profit': 'Annual net result'}
+                for j, (label, value) in enumerate(fields[1:]):
+                    y = .895 - j * .043
+                    overlay_text(.785, y, names.get(label, label), size=7, color=muted)
+                    value = value.replace(' trips/year', '').replace('/year', '')
+                    overlay_text(.963, y - .019, value, size=10, weight='bold', ha='right')
+            else:
+                overlay_text(.97, .969, title, size=9, ha='right', va='top',
+                             bbox=dict(boxstyle='round,pad=.6', facecolor='white',
+                                       edgecolor='none', alpha=.95))
+            overlay_text(.97, .025, 'rail_gen_master', size=8, color=muted, ha='right')
+            handles = [Line2D([], [], label=f'Every {60 / frequency:g} min',
                        **track_style(frequency, 'CR', 1)) for frequency in (1, 2, 4, 8)]
-            handles += [Line2D([], [], label='High Speed Rail', **track_style(4, 'HSR', 1)),
-                Line2D([], [], color='#7936ac', linestyle=':', label='Hybrid'),
+            handles += [Line2D([], [], label='High-speed rail', **track_style(4, 'HSR', 1)),
+                Line2D([], [], color='#7936ac', linestyle=':', label='Mixed train / track'),
                 Line2D([], [], label='Station', linestyle='none', **STATION_STYLE)]
             legend = figure.legend(handles=handles, loc='upper left',
-                bbox_to_anchor=(panel_x(.775), .30 if elevation is not None else .38), fontsize=7, frameon=False,
-                handlelength=2.5, labelspacing=.7, borderaxespad=0)
+                bbox_to_anchor=(panel_x(.775), .30 if elevation is not None else .38), fontsize=7 * font_scale, frameon=False,
+                title='TRAINS · PER DIRECTION', title_fontsize=7 * font_scale,
+                labelcolor=ink, handlelength=2.8, labelspacing=.85, borderaxespad=0)
             legend.set_zorder(10)
             # Text sizes are in points while the canvas varies by region.
             # Measure the legend so its last row always has panel padding.
@@ -264,7 +287,7 @@ class MapBackground:
             legend_bottom = legend.get_window_extent(
                 figure.canvas.get_renderer()).transformed(figure.transFigure.inverted()).y0
             panel_bottom = min(.16, legend_bottom - .012)
-            panel.set_bounds(panel_x(.765), panel_bottom, .22 * panel_scale, .545 - panel_bottom)
+            panel.set_bounds(panel_x(.765), panel_bottom, .22 * panel_scale, .58 - panel_bottom)
             # Overlay train types only where they differ from infrastructure.
             for service in result.services:
                 for edge_id in service['edge_ids']:
@@ -275,6 +298,6 @@ class MapBackground:
                         ax.plot(coordinates[:, 0], coordinates[:, 1], color=color,
                                 linestyle=':', linewidth=1.1, zorder=4.5)
             with matplotlib.rc_context({'savefig.bbox': None}):
-                figure.savefig(path, dpi=130)
+                figure.savefig(path, dpi=MAP_DPI)
         finally:
             plt.close(figure)

@@ -150,8 +150,10 @@ class LiveReporter:
         self.evaluator = Evaluator(graph, config)
         from .maps import MapBackground
         self.background = MapBackground(graph, config)
+        from .output_names import migrate_visual_names
+        self.visuals = migrate_visual_names(self.output, config)
         self.every = config['reporting']['snapshot_every']
-        self.animation = ProgressVideo(self.output / 'progress.mp4', config['reporting']['snapshot_hold_ms'])
+        self.animation = ProgressVideo(self.output / self.visuals['animation'], config['reporting']['snapshot_hold_ms'])
         self.history = []
         if resume and (self.output / 'history.jsonl').exists():
             self.history = [json.loads(line) for line in (self.output / 'history.jsonl').read_text().splitlines() if line.strip()]
@@ -203,16 +205,16 @@ class LiveReporter:
         chart_temp = self.output / '.progress.tmp.png'
         try:
             plot_map(self.graph, result, map_temp, title, self.config, background=self.background)
-            map_temp.replace(self.output / 'latest.png')
+            map_temp.replace(self.output / self.visuals['map'])
             from .analysis import write_visual_analysis
             write_visual_analysis(self.graph, self.config, result, self.output,
                                   self.background, title, evaluator=self.evaluator, export_metrics=not self.compact)
             draw_progress(chart_temp, self.history, self.unit, self.config['reporting']['region_name'])
-            chart_temp.replace(self.output / 'progress.png')
+            chart_temp.replace(self.output / self.visuals['progress'])
         finally:
             map_temp.unlink(missing_ok=True)
             chart_temp.unlink(missing_ok=True)
-        self.animation.append(self.output / 'latest.png')
+        self.animation.append(self.output / self.visuals['map'])
         self.snapshot += 1
         if self.compact:
             atomic_text(self.output / 'cost_breakdown.log', cost_log(self.graph, result, update.iteration, update.phase))
@@ -248,19 +250,18 @@ class LiveReporter:
         lines = ['# Railway network evolution', '',
             f'Algorithm: **{data["algorithm"]}** · {self.unit.lower()} **{data["iteration"]}** · **{data["phase"]}**.', '',
             f'Calibration: **{self.calibration["status"]}**. Parameters and bundled city populations remain unverified unless separately sourced.', '',
-            '![Current network](latest.png)', '',
+            f'![Current network]({self.visuals["map"]})', '',
             f'{m["active_stations"]} stations, {m["active_edges"]} corridors, {m["track_km"]:,.1f} km; '
             f'{m["passengers"]/1e6:.2f} million carried trips/year; net EUR {m["net_eur"]/1e6:.1f} million/year.', '',
             f'Demand fulfillment: **{m["need_satisfaction_ratio"]:.2%}** ' +
             ('(carried / eligible annual trips: candidate potential for connected pairs, reference rail trips for unreachable pairs).'
              if self.config['demand']['model'] == 'reference_elasticity' else
              '(carried trips / fixed two-way annual capturable gravity demand across all candidate OD pairs).'), '',
-            '[Animated evolution](progress.mp4) · [Current GeoJSON](latest.geojson) · [Current metrics](latest.json) · [Cost breakdown](cost_breakdown.log)', '',
-            '![Revenue / annual cost map](latest_revenue_cost.png)', '',
-            '![Cities and demand rankings](analysis.png)', '',
-            '![Financial rankings](analysis_financial.png)', '',
+            f'[Animated evolution]({self.visuals["animation"]}) · [Current GeoJSON](latest.geojson) · [Current metrics](latest.json) · [Cost breakdown](cost_breakdown.log)', '',
+            f'![Cities and demand rankings]({self.visuals["analysis1"]})', '',
+            f'![Financial rankings]({self.visuals["analysis2"]})', '',
             '[Full station and corridor metrics](analysis.json)', '',
-            '![Progress over iterations](progress.png)', '',
+            f'![Progress over iterations]({self.visuals["progress"]})', '',
             'The live network is the accepted state carried between iterations. '
             'Rejected proposals leave it unchanged. Growth and integration aim to serve all candidate cities in one component '
             'before cost consolidation with a fixed service baseline. Satisfaction controls the objective weights. '
