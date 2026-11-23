@@ -1,0 +1,253 @@
+CINEMATIC NETWORK VIDEO — PROJECT SPECIFICATION
+Status: proposed design; commands and formats below are not implemented.
+
+1. Intended result
+
+Render the generator's evolving railway network on a dark, geographically
+accurate 3D Earth. The camera sweeps across the country like an airplane,
+accompanies selected construction events, then climbs into space and settles
+into an overhead view centered on the country. Preserve the complete final
+network and allow time to read it before the film ends.
+
+Land is charcoal with subtle directional lighting that reveals terrain relief.
+Oceans and sky are nearly black. Terrain remains visible without competing
+with the network. Country boundaries are optional, dim, and unobtrusive.
+Avoid bright satellite imagery, ordinary road labels, and a daylight basemap.
+
+Cities appear as red luminous dots with small soft halos. Dot emission is
+proportional to local population density, not total city population. Export
+density explicitly in people/km² using the same prepared density sampling
+used for city catchments; record the source and smoothing method. Keep dot
+size mostly constant in screen space within configured limits. Use a fixed
+country-wide normalization and exposure so brightness does not change as the
+camera moves. Default emission = gain * density; tone mapping may compress
+display brightness. An optional logarithmic artistic mode must be explicitly
+identified as non-proportional. Missing density must be reported, never silently
+replaced by total population. Cities are visible before rail construction.
+
+Rail lines have a thin white core and faint ice-blue glow. A new line draws
+from one endpoint to the other along its geographic alignment. Existing lines
+remain visible. Geometry replacements morph where practical; otherwise fade
+the old geometry out, then draw the replacement, within one line's event slot.
+Deletions fade away; frequency and track changes receive a restrained pulse
+and transition. Keep glow subtle enough to distinguish neighboring corridors.
+
+2. Independent stages and proposed CLI
+
+Generation, render preparation, and rendering are separate processes with
+durable outputs. Video styling or camera changes never require optimization
+to run again. The pipeline command calls the same stages in sequence and
+stops on failure, preserving completed artifacts for restart.
+
+Proposed commands:
+
+  python -m rail_gen run --profile france --output runs/france-film \
+    --export-replay --no-progress-video
+
+  python -m rail_gen prepare-video --input runs/france-film/replay \
+    --output runs/france-film/scene --preset cinematic-dark --order-seed 42
+
+  python -m rail_gen render-video --input runs/france-film/scene \
+    --output runs/france-film/film.mp4 --width 1920 --height 1080 --fps 30
+
+  python -m rail_gen pipeline --profile france --output runs/france-film \
+    --preset cinematic-dark --order-seed 42 --width 1920 --height 1080 --fps 30
+
+Keep the existing run command and reporting behavior compatible. Replay export
+must work independently of --full-output and compact reporting. The pipeline
+defaults to skipping the old 2D progress video to avoid unnecessary work.
+Generation seed and presentation order seed are independent. Pipeline restart
+reuses stages only when their input hashes and relevant settings match; changed
+inputs invalidate downstream stages. Never silently overwrite unrelated runs.
+
+3. Generator-to-renderer interchange: replay bundle v1
+
+The renderer consumes this bundle without importing or re-running the evaluator.
+All coordinates are WGS84 longitude/latitude in degrees. Distances and heights
+declare their units; render heights use meters with a documented datum.
+
+  replay/
+    manifest.json       Schema/model versions, run ID, profile, bounds,
+                        configuration hash, seeds, generator revision, units,
+                        asset hashes, completion status and final state hash.
+    geography.geojson   Country outline and city points with stable IDs, names,
+                        population, explicit density and density provenance.
+    alignments.jsonl    Deduplicated immutable line geometries indexed by stable
+                        edge ID plus geometry version; endpoint IDs, length,
+                        infrastructure type and relevant crossing metadata.
+    initial-state.json Initial active edges, track attributes and service plan.
+    updates.jsonl       Ordered accepted state transitions, one per optimizer
+                        update, with before/after edge values and service plans.
+    final-state.json   Authoritative final network for validation.
+
+Each update includes sequence, iteration, batch ID, elapsed generation time,
+added/removed/modified edge IDs, geometry references, track counts, directional
+frequencies, and services (stable ID, ordered directed route, train type,
+frequency, and segment running times). Export finite JSON numbers only.
+Geometry changes must be captured even when an edge ID stays the same.
+Rejected proposals do not become construction events. An accepted no-op may
+be retained as metadata but creates no visual slot.
+
+Store state differences derived from consecutive authoritative states rather
+than trusting proposal descriptions alone. Include all accepted updates,
+independent of snapshot_every. Append records only after acceptance; publish
+the complete manifest atomically when export finishes. Resumption must avoid
+duplicate sequence numbers and preserve the previous replay prefix.
+
+Existing latest.geojson already supplies alignments, frequencies and city
+population, but overwrites history and does not export city density. Existing
+history.jsonl supplies useful changes and states, but compact mode strips state
+and services. Neither alone is the proposed replay contract. Old runs without
+enough history can support a clearly labeled final-network reveal, not a claim
+to reconstruct the original generation process.
+
+4. One-at-a-time presentation of batches
+
+Definition: a line is one generator infrastructure edge between city nodes.
+Passenger services can span several edges; they are represented separately.
+
+For every accepted update, compare before and after states and make one visual
+event for each changed edge. Combine simultaneous geometry, frequency and
+track changes to the same edge into a single event. Shuffle these events using
+the presentation seed, persist the resulting order, and finish the entire batch
+before starting the next update. Random order changes the presentation only.
+
+Each event owns a non-overlapping interval of integer video frames. At every
+frame, at most one edge may be appearing, disappearing, pulsing, or otherwise
+transitioning. At interval boundaries, complete the previous event before
+starting the next. All unselected edges retain their current appearance.
+Empty intervals, camera-only shots and final holds are allowed.
+
+Train dots may continue moving on many established lines simultaneously;
+"one line being modified" refers to network transitions, not ordinary traffic.
+For service changes affecting multiple edges, transition each edge's displayed
+traffic rate in its own slot. Intermediate displayed states are cinematic
+interpolations, not independently evaluated feasible networks. At each batch
+boundary, the displayed network and service plan must match the authoritative
+accepted state exactly. Do not interpolate trains across missing edges: fade
+affected particles and restart valid journeys as their route becomes available.
+
+Persist the schedule in scene/timeline.json with event IDs, frame ranges,
+before/after values, batch boundaries, seed and camera cues. Reusing a prepared
+scene produces identical event ordering regardless of capture speed.
+
+5. Traffic animation
+
+Use service routes for continuous journeys across edges; avoid counting both
+service traffic and aggregate edge traffic. Frequencies are trains/hour in
+each direction. With S simulated seconds per video second, departures per
+video second = frequency * S / 3600, independently for each direction.
+Dot speed follows exported running times using the same time scale. Increasing
+frequency increases departure rate, not train speed. Zero frequency means no
+dots. Stable seeded phases prevent every service departing together.
+
+Prefer aggregate segment running times for interpolation along arc length;
+these are a visualization approximation, not a microscopic train simulation.
+Dots use bright white-blue heads and short restrained trails. Fade them in
+after a line is drawn. At distant views, retain readable screen-space sizes.
+Any particle limit or artistic frequency scaling must be explicit in the render
+configuration and report, since clipping can break frequency proportionality.
+
+6. Terrain, globe and camera
+
+Recommended starting engine: CesiumJS with a custom dark globe appearance,
+terrain-aware lines, custom particle rendering and a scripted timeline. Validate
+the visual treatment in a short prototype before committing the full renderer.
+Pin engine dependencies. Asset sources and required attribution remain visible
+where required and are recorded in the render manifest.
+
+Use a curved Earth from the start so the final pullback needs no flat-map/globe
+swap. Use coarse terrain globally and finer terrain near flyover corridors.
+Existing analysis DEMs may serve distant views; close shots need higher detail.
+Preflight and cache the terrain/assets needed by the planned camera path.
+Do not depend on tile downloads keeping pace with a frame capture.
+
+Sample line heights against terrain and add a small visual offset to avoid
+z-fighting. Treat the network as a cartographic overlay: bridge and tunnel
+segments remain legible rather than disappearing underground. Terrain draping
+does not claim to reconstruct engineered rail elevations. Exaggeration is an
+explicit setting applied consistently to terrain, lines and city markers.
+
+Plan smooth camera paths from event clusters and country bounds. Sweep across
+regions, hold a useful oblique angle, and maintain terrain clearance. Avoid a
+flight to every edge when it would cause abrupt cross-country jumps. Reveal
+events should be in or near the frame; permit pauses or wider framing for
+scattered batches. Optimize framing without changing persisted event order.
+End with a continuous climb, easing the pitch toward an overhead view centered
+on the country, then hold the completed network. Use country-aware bounds,
+including antimeridian handling. Large countries may need a more distant view.
+
+7. Deterministic video output and recovery
+
+Drive every animated property from frame index / fps, never wall-clock time.
+Render an image sequence and encode it with FFmpeg. Cache warmup and asset
+readiness checks precede capture; a missing terrain tile must produce a retry
+or explicit failure, not a silently degraded final frame. Preserve frames and
+a capture checkpoint so interrupted rendering can resume.
+
+The scene bundle contains timeline.json, camera.json, render-config.json,
+terrain/asset references with hashes, and a manifest linking to the replay hash.
+Keep the replay immutable. Keep replay validation and scene preparation usable
+without a GPU. Final output includes MP4 plus a manifest listing resolution,
+fps, duration, versions, seeds, time scale and asset provenance. Target 1080p30
+first; measure a representative sequence before estimating 4K render cost.
+Determinism covers timing and state; bit-identical pixels across GPU drivers
+are not an initial requirement.
+
+8. Implementation sequence
+
+A. Replay exporter and validator
+   Add an independent recorder to accepted-update handling. Export density and
+   service timing explicitly. Verify full state reconstruction against the final
+   state, including removals, geometry replacements, batching and resumed runs.
+
+B. Visual proof of concept
+   Render a 20–30 second scene with mountains, several red city dots at known
+   densities, 5–10 edges, white-blue glow, opposing traffic and an airplane sweep
+   ending in the space pullback. Establish terrain source, appearance and GPU
+   budget here before building a general camera planner.
+
+C. Timeline compiler
+   Implement seeded batch shuffling, per-edge frame slots, traffic transitions
+   and state validation at batch boundaries. Provide an inspectable timeline
+   report and duration estimate before expensive capture.
+
+D. General scene and camera preparation
+   Support country bounds, camera clearance, detailed terrain preparation,
+   route-continuous particles and final framing. Make density normalization,
+   glow, event durations, traffic time scale and camera speed configurable.
+
+E. Capture and command orchestration
+   Add deterministic frame capture, encoding, resume and stage manifests.
+   Implement separate commands first, then the pipeline as their thin wrapper.
+   Document installation, terrain preparation and a complete country example.
+
+9. Acceptance criteria
+
+- Generation can finish without starting a renderer or requiring graphics.
+- A saved replay can be rendered repeatedly with different styling/cameras.
+- Pipeline output is equivalent to running its stages separately with the same
+  inputs; renderer failure does not discard the completed generator output.
+- Replay reconstruction matches the final state and accepted batch boundaries.
+- A seeded order is reproducible; a different seed can reorder multi-edge
+  batches without changing their final network or optimizer chronology.
+- Automated schedule checks prove no frame has two network transitions.
+- Red city emission uses density with a fixed normalization; known synthetic
+  densities verify proportional input emission before tone mapping.
+- At a fixed time scale, a 6 trains/hour service has twice the departure rate
+  of a 3 trains/hour service, with appropriate finite-window tolerance.
+- Visual review finds readable terrain, faint blue-white line glow, visible
+  red cities, no floating/buried overlays, no distracting tile changes, smooth
+  flights and a legible completed-country overhead ending.
+- A representative interrupted capture resumes with no missing or duplicate
+  frames; final duration and frame count agree with the compiled schedule.
+
+10. Initial scope boundaries and open production choices
+
+First release targets offline video of a completed incremental run, not live
+optimization streaming, manual editing software or detailed rolling stock.
+Other search algorithms need an explicit policy for selecting successive
+representative networks before they can claim the same evolution semantics.
+Select the first country, terrain provider and final film length during the
+prototype. Do not promise a runtime until representative terrain, particles,
+glow and capture have been benchmarked together.

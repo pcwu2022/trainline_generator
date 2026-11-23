@@ -196,7 +196,7 @@ class LiveOutputTests(unittest.TestCase):
             run = search(g, c, progress=None, observer=reporter)
             reporter.finish(run)
             self.assertEqual({p.name for p in directory.iterdir()}, {
-                'latest.png', 'latest_revenue_cost.png', 'analysis.png',
+                'latest.png', 'latest_revenue_cost.png', 'analysis.png', 'analysis_financial.png',
                 'progress.png', 'progress.mp4', 'history.jsonl',
                 'cost_breakdown.log', 'run.log'})
             self.assertIn(run.status, (directory / 'run.log').read_text())
@@ -251,7 +251,7 @@ class LiveOutputTests(unittest.TestCase):
             self.assertEqual(resumed.frames, 4)
             resumed.append(directory / 'latest.png')
             self.assertEqual(resumed.frames, 5)
-            self.assertEqual({p.name for p in directory.glob('*.png')}, {'latest.png', 'progress.png', 'latest_revenue_cost.png', 'analysis.png'})
+            self.assertEqual({p.name for p in directory.glob('*.png')}, {'latest.png', 'progress.png', 'latest_revenue_cost.png', 'analysis.png', 'analysis_financial.png'})
             self.assertEqual(list(directory.glob('*.tmp*')), [])
             self.assertEqual(list(directory.glob('.*.tmp*')), [])
             rows = [json.loads(line) for line in (directory / 'history.jsonl').read_text().splitlines()]

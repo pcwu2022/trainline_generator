@@ -172,11 +172,12 @@ def write_report(graph, config, run, directory, calibration=None, sensitivity_re
         financial_name = f'design_{i:04d}_revenue_cost.png'
         analysis_name = f'design_{i:04d}_analysis.png'
         plot_map(graph, result, directory / financial_name, title, config, background=map_background, color_by='revenue_cost')
-        from .analysis import write_analysis
+        from .analysis import write_analysis, analysis_financial_path
         write_analysis(graph, config, result, directory / analysis_name,
             directory / f'design_{i:04d}_analysis.json', title=f'Design {i}', evaluator=evaluator, reevaluate=False)
         lines += ['', f'### Design {i}', '', f'![Map]({map_name})', '', f'![Revenue/cost map]({financial_name})', '',
-                  f'![Station and corridor rankings]({analysis_name})', '',
+                  f'![Cities and demand rankings]({analysis_name})', '',
+                  f'![Financial rankings]({analysis_financial_path(analysis_name).name})', '',
                   '| Corridor | Type | km | Capex EUR M | Directional annual load | Trains/h/dir | Allocated net EUR M/y |',
                   '| --- | --- | ---: | ---: | ---: | ---: | ---: |']
         for edge_id in np.flatnonzero(result.genome):

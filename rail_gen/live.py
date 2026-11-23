@@ -38,29 +38,71 @@ def atomic_json(path, value):
     atomic_text(path, json.dumps(value, indent=2, allow_nan=False) + '\n')
 
 
-def draw_progress(path, history, unit):
+def draw_progress(path, history, unit, region_name=''):
+    from matplotlib.ticker import FuncFormatter, MaxNLocator
+    from .social_charts import canvas, card, footer, save, INK, MUTED, BLUE, GREEN, RED, GOLD
     plt = _plotting()
-    fig, axes = plt.subplots(3, 2, figsize=(12, 10), layout='constrained')
+    latest = history[-1]['metrics'] if history else {}
     panels = [
-        ('Network size', 'Count', [('active_stations', 'Stations', 1), ('active_edges', 'Corridors', 1)]),
-        ('Passengers', 'Million trips/year', [('passengers', 'Carried trips', 1e6)]),
-        ('Population and connectivity', 'Percent', [('population_percent', 'Capturable population served', 1),
-                                                   ('component_percent', 'Active nodes in largest component', 1)]),
-        ('Infrastructure and fleet', 'km / trainsets', [('track_km', 'Track km', 1), ('fleet', 'Fleet', 1)]),
-        ('Upfront capital', 'EUR million', [('upfront_eur', 'Upfront capital', 1e6)]),
-        ('Annual finances', 'EUR million/year', [('annual_cost_eur', 'Total cost', 1e6),
-            ('revenue_eur', 'Revenue', 1e6), ('net_eur', 'Net', 1e6)]),
+        ('How big is the network?', 'Stations and city-to-city infrastructure links', 'Count',
+         [('active_stations', 'Stations', 1, BLUE), ('active_edges', 'Links', 1, GOLD)]),
+        ('How many trips does rail carry?', 'Passenger journeys in both directions each year', 'Million trips / year',
+         [('passengers', 'Passenger trips', 1e6, BLUE)]),
+        ('Who can use the network?', 'Population in catchments; stations in main component', 'Percent',
+         [('population_percent', 'Population served', 1, BLUE), ('component_percent', 'Connected stations', 1, GREEN)]),
+        ('How much track and rolling stock?', 'Track length and train units use separate scales', 'Track km',
+         [('track_km', 'Track km · left', 1, BLUE), ('fleet', 'Train units · right', 1, GOLD)]),
+        ('How much investment is needed?', 'One-time infrastructure, stations and fleet capital', '€ billion upfront',
+         [('upfront_eur', 'Initial investment', 1e9, GOLD)]),
+        ('Does annual revenue cover costs?', 'Net = revenue − cost; below zero means a loss', '€ billion / year',
+         [('annual_cost_eur', 'Cost', 1e9, RED), ('revenue_eur', 'Revenue', 1e9, BLUE), ('net_eur', 'Net', 1e9, GREEN)]),
     ]
+    fig = canvas(plt, f'{region_name + " · " if region_name else ""}Building a rail network',
+        'Read left to right: each step is an optimization update, not a calendar year.',
+        [(f"{latest.get('passengers', 0)/1e6:,.1f}M", 'latest passenger trips / year'),
+         (str(latest.get('active_stations', 0)), 'latest active stations'),
+         (f"€{latest.get('net_eur', 0)/1e9:+,.2f}B", 'latest annual net result')])
     try:
         iterations = [row['iteration'] for row in history]
-        for ax, (title, ylabel, series) in zip(axes.flat, panels):
-            for key, label, scale in series:
-                ax.plot(iterations, [row['metrics'][key] / scale for row in history], label=label)
-            ax.set(title=title, xlabel=unit, ylabel=ylabel)
-            ax.grid(alpha=.2)
-            ax.legend(fontsize=8)
-        fig.suptitle('Evolution of the current railway network')
-        fig.savefig(path, dpi=110)
+        for i, (heading, description, ylabel, series) in enumerate(panels):
+            x, y, w, h = .045 + (i % 2) * .475, .562 - (i // 2) * .232, .435, .217
+            card(fig, x, y, w, h, heading, description)
+            ax = fig.add_axes([x + .057, y + .038, w - (.115 if i == 3 else .075), .105])
+            axes, handles = [ax], []
+            for j, (key, label, scale, color) in enumerate(series):
+                target = ax
+                if i == 3 and j == 1:
+                    target = ax.twinx()
+                    axes.append(target)
+                    target.set_ylabel('Train units', color=GOLD, fontsize=9)
+                    target.tick_params(axis='y', labelcolor=GOLD)
+                values = [row['metrics'][key] / scale for row in history]
+                line, = target.plot(iterations, values, color=color, linewidth=2.3,
+                                    linestyle='--' if j == 1 else '-', label=label)
+                if values:
+                    target.plot(iterations[-1], values[-1], 'o', color=color, markersize=4)
+                handles.append(line)
+            for target in axes:
+                target.spines[['top', 'right']].set_visible(False)
+                target.spines['left'].set_color('#c6d1d8')
+                target.spines['bottom'].set_color('#c6d1d8')
+                target.tick_params(labelsize=9, colors=MUTED)
+                target.yaxis.set_major_locator(MaxNLocator(nbins=4))
+                target.yaxis.set_major_formatter(FuncFormatter(lambda v, _: f'{v:,.0f}' if abs(v) >= 100 else f'{v:g}'))
+            ax.set_ylabel(ylabel, fontsize=9, color=MUTED)
+            ax.set_xlabel('Design step' if unit == 'Network iteration' else unit, fontsize=9, color=MUTED, labelpad=3)
+            ax.xaxis.set_major_locator(MaxNLocator(nbins=5, integer=True))
+            ax.grid(axis='y', color='#e2e9ee', linewidth=.8)
+            if i == 2:
+                ax.set_ylim(0, 105)
+            if i == 5:
+                ax.axhline(0, color=MUTED, linewidth=.8, linestyle=':')
+            ax.legend(handles=handles, loc='lower left', bbox_to_anchor=(-.03, 1.01),
+                      ncol=len(series), fontsize=9, frameon=False, handlelength=1.4,
+                      columnspacing=1, borderaxespad=0)
+        footer(fig, 'Each point shows one modelled design. Annual figures describe a full year of operation at that design.\n'
+               'Population served = people in station catchments. Connected stations = share in the largest connected group.')
+        save(fig, path)
     finally:
         plt.close(fig)
 
@@ -165,7 +207,7 @@ class LiveReporter:
             from .analysis import write_visual_analysis
             write_visual_analysis(self.graph, self.config, result, self.output,
                                   self.background, title, evaluator=self.evaluator, export_metrics=not self.compact)
-            draw_progress(chart_temp, self.history, self.unit)
+            draw_progress(chart_temp, self.history, self.unit, self.config['reporting']['region_name'])
             chart_temp.replace(self.output / 'progress.png')
         finally:
             map_temp.unlink(missing_ok=True)
@@ -215,7 +257,8 @@ class LiveReporter:
              '(carried trips / fixed two-way annual capturable gravity demand across all candidate OD pairs).'), '',
             '[Animated evolution](progress.mp4) · [Current GeoJSON](latest.geojson) · [Current metrics](latest.json) · [Cost breakdown](cost_breakdown.log)', '',
             '![Revenue / annual cost map](latest_revenue_cost.png)', '',
-            '![Station and corridor rankings](analysis.png)', '',
+            '![Cities and demand rankings](analysis.png)', '',
+            '![Financial rankings](analysis_financial.png)', '',
             '[Full station and corridor metrics](analysis.json)', '',
             '![Progress over iterations](progress.png)', '',
             'The live network is the accepted state carried between iterations. '

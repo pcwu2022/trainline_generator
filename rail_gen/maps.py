@@ -10,6 +10,8 @@ from matplotlib.cm import ScalarMappable
 from matplotlib.patches import Circle, FancyBboxPatch
 from matplotlib.lines import Line2D
 from matplotlib import patheffects
+from matplotlib.image import BboxImage, imread
+from matplotlib.transforms import Bbox, TransformedBbox
 from shapely.geometry import Point, shape
 from shapely.ops import unary_union
 from shapely.prepared import prep
@@ -232,9 +234,12 @@ class MapBackground:
             ax.set(xlim=(xmin, xmax), ylim=(ymin, ymax))
             ax.set_aspect('equal')
             ax.set_axis_off()
-            ax.text(.5, .5, '@maps.az', transform=ax.transAxes,
-                    ha='center', va='center', fontsize=32, fontweight='bold',
-                    color='#c4c4c4', alpha=.2, zorder=7)
+            watermark = BboxImage(
+                TransformedBbox(Bbox.from_bounds(.35, .35, .3, .3), ax.transAxes),
+                interpolation='lanczos', alpha=.1, zorder=7)
+            watermark.set_data(imread(
+                Path(__file__).resolve().parents[1] / 'assets/images/rail_gen_master.png'))
+            ax.add_artist(watermark)
             ax.text(.025, .975,
                     f'{self.config["reporting"]["region_name"]} Rail Network Generation',
                     transform=ax.transAxes, fontsize=14, fontweight='bold',

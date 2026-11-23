@@ -61,7 +61,7 @@ def network_analysis(graph, config, result, evaluator=None, *, reevaluate=True):
         modal_shift_change=float(result.shift_change[j]), induced_demand_change=float(result.induced_change[j]))
         for j, (a, b) in enumerate(zip(e.origins, e.destinations))
         if config['demand']['model'] == 'reference_elasticity']
-    return dict(model_version=MODEL_VERSION, od_demand=od_demand, services=result.services, track_counts=result.track_counts.tolist(), genome=result.genome.tolist(), metrics=result.metrics, stations=stations, corridors=corridors,
+    return dict(region_name=config['reporting']['region_name'], model_version=MODEL_VERSION, od_demand=od_demand, services=result.services, track_counts=result.track_counts.tolist(), genome=result.genome.tolist(), metrics=result.metrics, stations=stations, corridors=corridors,
         definitions=dict(station_satisfaction='Carried two-way annual endpoint trips / eligible demand, including unserved destinations; transfers excluded. Elasticity mode uses candidate potential for connected pairs and reference rail trips otherwise; legacy mode uses fixed gravity markets.',
             corridor_satisfaction='Carried two-way annual leg trips / potential OD demand assigned to that corridor (fixed gravity markets in legacy mode); transfers included; same as map.',
             demand_changes='Signed changes before capacity spill; reference + modal shift + induced change = potential trips. All pairs use identical elasticities; reference is synthetic and fixed for the run. Breakdown is only available in reference_elasticity mode.',
@@ -74,79 +74,81 @@ def _count(value):
     return f'{value/1e6:,.2f}M' if abs(value) >= 1e6 else f'{value/1e3:,.1f}k' if abs(value) >= 1000 else f'{value:,.0f}'
 
 
-def draw_analysis(path, analysis, title='Current network', limit=10):
+def analysis_financial_path(path):
+    path = Path(path)
+    return path.with_name(f'{path.stem}_financial{path.suffix}')
+
+
+def draw_analysis(path, analysis, title='Current network', limit=6):
+    """Square social dashboard; complete rankings remain in analysis.json."""
     import matplotlib
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
-    from textwrap import fill
+    from textwrap import shorten
+    from .social_charts import canvas, card, footer, save, INK, MUTED, BLUE, GREEN, RED, GOLD
 
     m = analysis['metrics']
-    stations = [row for row in analysis['stations'] if row['served']]
+    stations = [r for r in analysis['stations'] if r['served']]
     corridors = analysis['corridors']
     panels = [
-        ('Stations · highest satisfaction', stations, 'satisfaction', 100, 'Eligible endpoint demand carried (%)', '#217c55',
-         lambda r: f"{r['satisfaction']:.1%} · {_count(r['carried_trips'])} / {_count(r['eligible_trips'])}"),
-        ('Stations · most endpoint trips', stations, 'carried_trips', 1e-6, 'Million endpoint trips / year', '#286a92',
-         lambda r: _count(r['carried_trips'])),
-        ('Corridors · highest satisfaction', corridors, 'satisfaction', 100, 'Assigned potential demand carried (%)', '#217c55',
-         lambda r: f"{r['satisfaction']:.1%} · {_count(r['carried_trips'])} / {_count(r['eligible_trips'])}"),
-        ('Corridors · best revenue / cost', corridors, 'revenue_cost_ratio', 1, 'Annual revenue / annual allocated cost · 1 = break-even', '#79632b',
-         lambda r: f"{r['revenue_cost_ratio']:.2f}×"),
-        ('Corridors · highest annual cost', corridors, 'annual_cost_eur', 1e-6, 'EUR million / year', '#aa7648',
-         lambda r: f"€{r['annual_cost_eur']/1e6:,.1f}M"),
-        ('Corridors · highest annual revenue', corridors, 'revenue_eur', 1e-6, 'EUR million / year', '#286a92',
-         lambda r: f"€{r['revenue_eur']/1e6:,.1f}M"),
-        ('Corridors · best annual net results', corridors, 'annual_net_eur', 1e-6, 'EUR million / year · negative = loss', None,
-         lambda r: f"€{r['annual_net_eur']/1e6:+,.1f}M"),
-        ('Corridors · largest annual losses', [r for r in corridors if r['annual_net_eur'] < 0], 'annual_net_eur', -1e-6,
-         'Allocated loss · EUR million / year', '#ae403b', lambda r: f"€{-r['annual_net_eur']/1e6:,.1f}M"),
+        ('Which cities meet the most demand?', 'Share of eligible trips carried · higher is better', stations,
+         'satisfaction', 100, GREEN, lambda r: f"{r['satisfaction']:.1%}"),
+        ('Which cities handle the most trips?', 'Annual trips starting or ending at each city', stations,
+         'carried_trips', 1e-6, BLUE, lambda r: _count(r['carried_trips'])),
+        ('Which links meet the most demand?', 'Share of assigned trips carried · higher is better', corridors,
+         'satisfaction', 100, GREEN, lambda r: f"{r['satisfaction']:.1%}"),
+        ('Which links cover their costs?', 'Annual revenue ÷ cost · 1× means break-even', corridors,
+         'revenue_cost_ratio', 1, GOLD, lambda r: f"{r['revenue_cost_ratio']:.2f}×"),
+        ('Which links cost the most?', 'Allocated annual cost · € millions', corridors,
+         'annual_cost_eur', 1e-6, GOLD, lambda r: f"€{r['annual_cost_eur']/1e6:,.1f}M"),
+        ('Which links earn the most revenue?', 'Annual ticket revenue · € millions', corridors,
+         'revenue_eur', 1e-6, BLUE, lambda r: f"€{r['revenue_eur']/1e6:,.1f}M"),
+        ('Which links have the best net result?', 'Revenue minus annual cost · negative means loss', corridors,
+         'annual_net_eur', 1e-6, None, lambda r: f"€{r['annual_net_eur']/1e6:+,.1f}M"),
+        ('Which links lose the most money?', 'Annual allocated loss · € millions',
+         [r for r in corridors if r['annual_net_eur'] < 0],
+         'annual_net_eur', -1e-6, RED, lambda r: f"€{-r['annual_net_eur']/1e6:,.1f}M"),
     ]
-    figure, axes = plt.subplots(4, 2, figsize=(22, 21), layout='constrained')
-    figure.set_facecolor('#f6f7f5')
-    try:
-        for ax, (heading, rows, key, scale, xlabel, color, label) in zip(axes.flat, panels):
-            rows = [r for r in rows if r[key] is not None and np.isfinite(r[key])]
-            rows = sorted(rows, key=lambda r: (-r[key] * scale, r['name']))[:limit]
-            ax.set_title(heading, loc='left', fontsize=13, fontweight='bold', pad=12)
-            ax.set_xlabel(xlabel, fontsize=9)
-            ax.spines[['top', 'right', 'left']].set_visible(False)
-            ax.set_axisbelow(True)
-            ax.grid(axis='x', alpha=.16)
-            if not rows:
-                ax.text(.5, .5, 'No qualifying stations / corridors', ha='center', va='center', transform=ax.transAxes)
-                ax.set_yticks([])
-                continue
-            values = np.array([r[key] * scale for r in rows])
-            colors = color or ['#217c55' if r[key] >= 0 else '#ae403b' for r in rows]
-            bars = ax.barh(np.arange(len(rows)), values, color=colors, height=.64)
-            names = [fill(f'{i+1}. ' + r['name'] + (f" [{r['track']}]" if 'track' in r else ''), 32)
-                     for i, r in enumerate(rows)]
-            ax.set_yticks(np.arange(len(rows)), labels=names, fontsize=8)
-            ax.tick_params(axis='y', length=0)
-            ax.invert_yaxis()
-            ax.bar_label(bars, labels=[label(r) for r in rows], padding=5, fontsize=8)
-            # Reserve room for numeric labels, including negative-net bars.
-            low, high = min(0, values.min()), max(0, values.max())
-            span = max(high-low, 1)
-            ax.set_xlim(low - span * (.40 if low < 0 else .01), high + span * .60)
-            ax.axvline(0, color='#a1a6a1', linewidth=.7)
-            if key == 'revenue_cost_ratio':
-                ax.axvline(1, color='#555555', linewidth=.8, linestyle='--')
-        ratio = m['revenue_eur'] / m['annual_cost_eur'] if m['annual_cost_eur'] > 0 else None
-        ratio_label = f'{ratio:.2f}×' if ratio is not None else 'n/a'
-        figure.suptitle(f'Network station & corridor analysis · {title}\n'
-            f"{m['active_stations']} active stations · {m['active_edges']} corridors · {_count(m['passengers'])} trips/year · "
-            f"Demand fulfillment {m['need_satisfaction_ratio']:.1%}\n"
-            f"Annual revenue €{m['revenue_eur']/1e6:,.1f}M · Cost €{m['annual_cost_eur']/1e6:,.1f}M · "
-            f"Net €{m['net_eur']/1e6:+,.1f}M · Revenue/cost {ratio_label}", fontsize=16)
-        figure.supxlabel('Top 10 per panel · Numbers on satisfaction bars: carried / eligible two-way annual trips. '
-            'Station endpoint counts include a trip at both ends; corridor counts include transfer legs.\n'
-            'Station satisfaction includes unserved destinations. Corridors use the satisfaction map’s assigned markets. '
-            'Costs include allocated annualized capital, maintenance, operations, stations and fleet.\n'
-            'Lines represent modeled city-pair corridors. Annual net is revenue minus annual cost; allocations are not independent route-closure savings.', fontsize=10)
-        figure.savefig(path, dpi=140)
-    finally:
-        plt.close(figure)
+    region = analysis.get('region_name', '')
+    for page, page_path in enumerate((Path(path), analysis_financial_path(path))):
+        fig = canvas(plt, f'{region + " · " if region else ""}Inside the rail network',
+            f'{page + 1} / 2 · Top {limit} in each ranking · ' + ('Cities & demand' if page == 0 else 'Revenue & costs'),
+            [(_count(m['passengers']), 'passenger trips / year'),
+             (f"{m['need_satisfaction_ratio']:.1%}", 'eligible travel demand carried'),
+             (str(m['active_stations']), 'active stations')])
+        try:
+            for i, (heading, description, rows, key, scale, color, label) in enumerate(panels[page * 4:(page + 1) * 4]):
+                x, y, w, h = .045 + (i % 2) * .475, .45 - (i // 2) * .355, .435, .33
+                card(fig, x, y, w, h, heading, description)
+                ax = fig.add_axes([x + .015, y + .009, w - .03, .258])
+                rows = sorted([r for r in rows if r[key] is not None and np.isfinite(r[key])],
+                              key=lambda r: (-r[key] * scale, r['name']))[:limit]
+                ax.set_axis_off()
+                if not rows:
+                    ax.text(0, .5, 'No qualifying cities or links yet', color=MUTED, fontsize=11)
+                    continue
+                values = np.array([r[key] * scale for r in rows])
+                # A short diverging bar sits below each label; values stay in a fixed right column.
+                low, high = min(0, values.min()), max(0, values.max())
+                span = max(high - low, 1)
+                ax.set(xlim=(low, high if high > low else low + span), ylim=(0, len(rows)))
+                ax.invert_yaxis()
+                ax.barh(np.arange(len(rows)) + .80, values, height=.15,
+                        color=color or [GREEN if v >= 0 else RED for v in values], alpha=.8)
+                for j, row in enumerate(rows):
+                    ax.text(0, 1 - (j + .08) / len(rows),
+                            shorten(row['name'], width=40, placeholder='…'),
+                            transform=ax.transAxes, fontsize=11, color=INK, va='top')
+                    ax.text(1, 1 - (j + .08) / len(rows), label(row),
+                            transform=ax.transAxes, fontsize=11, color=INK, weight='bold', ha='right', va='top',
+                            bbox=dict(facecolor='white', edgecolor='none', pad=1))
+                if low < 0:
+                    ax.axvline(0, color=MUTED, linewidth=.6)
+            footer(fig, 'Trips count both directions; city totals count each journey at both ends. Link totals include transfer legs.\n'
+                   'Costs include operations, maintenance and annualized capital. Allocated net results are not route-closure savings.')
+            save(fig, page_path)
+        finally:
+            plt.close(fig)
 
 
 def write_analysis(graph, config, result, image_path, json_path=None, title='Current network', evaluator=None, *, reevaluate=True):
@@ -170,10 +172,11 @@ def write_visual_analysis(graph, config, result, output, background, title, eval
         data = write_analysis(graph, config, result, dashboard, metrics if export_metrics else None, title, evaluator, reevaluate=False)
         financial.replace(output / 'latest_revenue_cost.png')
         dashboard.replace(output / 'analysis.png')
+        analysis_financial_path(dashboard).replace(output / 'analysis_financial.png')
         if export_metrics:
             metrics.replace(output / 'analysis.json')
     finally:
-        for path in (financial, dashboard, metrics):
+        for path in (financial, dashboard, analysis_financial_path(dashboard), metrics):
             path.unlink(missing_ok=True)
     return data
 
@@ -210,9 +213,10 @@ def main():
         with report.open('a') as stream:
             stream.write('\n## Station and corridor analysis\n\n'
                 '![Revenue / annual cost map](latest_revenue_cost.png)\n\n'
-                '![Station and corridor rankings](analysis.png)\n\n'
+                '![Cities and demand rankings](analysis.png)\n\n'
+                '![Financial rankings](analysis_financial.png)\n\n'
                 '[Full station and corridor metrics](analysis.json)\n')
-    print(f"Generated {args.run_dir / 'latest_revenue_cost.png'} and {args.run_dir / 'analysis.png'}")
+    print(f"Generated {args.run_dir / 'latest_revenue_cost.png'} and {args.run_dir / 'analysis.png'} and {args.run_dir / 'analysis_financial.png'}")
     print(f"Annual allocated corridor costs: €{sum(r['annual_cost_eur'] for r in data['corridors'])/1e6:,.1f}M; "
           f"network: €{data['metrics']['annual_cost_eur']/1e6:,.1f}M")
 

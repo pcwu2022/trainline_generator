@@ -56,6 +56,10 @@ class NetworkAnalysisTests(unittest.TestCase):
             image, path = Path(temporary) / 'analysis.png', Path(temporary) / 'analysis.json'
             data = write_analysis(self.graph, self.config, result, image, path, evaluator=self.evaluator)
             self.assertTrue(image.exists())
+            from PIL import Image
+            for filename in ('analysis.png', 'analysis_financial.png'):
+                with Image.open(Path(temporary) / filename) as rendered:
+                    self.assertEqual(rendered.size, (1800, 1800))
             self.assertEqual(data['corridors'], [])
             self.assertEqual(json.loads(path.read_text())['genome'], [0, 0, 0])
             self.assertNotIn('NaN', path.read_text())
