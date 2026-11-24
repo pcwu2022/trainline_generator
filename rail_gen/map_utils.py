@@ -39,6 +39,7 @@ class ProgressVideo:
     Each append leaves a playable MP4, including when a run is interrupted.
     """
     fps = 30
+    audio_path = Path(__file__).resolve().parent.parent / 'assets' / 'audio' / 'bgm.mp3'
 
     def __init__(self, path, duration_ms=500):
         import imageio_ffmpeg
@@ -81,10 +82,17 @@ class ProgressVideo:
                 listing = directory / 'concat.txt'
                 listing.write_text("file 'previous.mp4'\nfile 'segment.mp4'\n")
                 run(['-f', 'concat', '-safe', '0', '-i', str(listing),
-                     '-c', 'copy', '-movflags', '+faststart', str(merged)])
+                     '-map', '0:v:0', '-c:v', 'copy',
+                     '-movflags', '+faststart', str(merged)])
             else:
                 segment.rename(merged)
-            merged.replace(self.path)
+            # Rebuild the soundtrack from the start on every append so resumed
+            # videos play continuously, even across snapshot boundaries.
+            with_audio = directory / 'with-audio.mp4'
+            run(['-i', str(merged), '-stream_loop', '-1', '-i', str(self.audio_path),
+                 '-map', '0:v:0', '-map', '1:a:0', '-c:v', 'copy',
+                 '-c:a', 'aac', '-shortest', '-movflags', '+faststart', str(with_audio)])
+            with_audio.replace(self.path)
         self.frames += 1
         self.size = size
         temporary = self.state_path.with_suffix('.json.tmp')

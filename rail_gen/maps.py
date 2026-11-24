@@ -33,6 +33,11 @@ class MapBackground:
         self.elevation = elevation_hexagons(config, self.project)
         west, south, east, north = config['bbox']
         uk_mainland = config['countries'] == ['GB']
+        france_mainland = config['countries'] == ['FR']
+        if france_mainland:
+            # Display bounds for continental France; retain Corsica in the
+            # simulation without letting it shrink the mainland on the canvas.
+            west, south, east, north = -5.2, 42.2, 8.4, 51.2
         if uk_mainland:
             # Frame Great Britain and Northern Ireland, leaving Orkney and
             # Shetland out of the map without changing the simulation region.
@@ -130,6 +135,15 @@ class MapBackground:
             margin = (.759 * side - land_width) / 2
             left = float(land[:, 0].min()) - margin
         bottom = float((lower[1] + upper[1] - side) / 2)
+        if france_mainland:
+            # The legend's padded left edge is at .759 of the square canvas.
+            # Fit the mainland between it and the left edge with small margins.
+            mainland = np.vstack(self.polygons)
+            lower, upper = mainland.min(axis=0), mainland.max(axis=0)
+            span = upper - lower
+            side = max(float(span[0]) / .70, float(span[1]) / .84)
+            left = float(lower[0]) - .03 * side
+            bottom = float((lower[1] + upper[1] - side) / 2)
         width = side * (1 - self.right_trim)
         self.viewport = (left, left + width, bottom, bottom + side)
         self.figure_size = map_figure_size(self.viewport)
