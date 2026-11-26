@@ -9,7 +9,7 @@
     "HU"
   ],
   "prep": {
-    "max_cities": 15
+    "max_cities": 100
   },
   "reporting": {
     "currency_code": "HUF",

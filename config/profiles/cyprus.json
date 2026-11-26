@@ -9,7 +9,7 @@
     "CY"
   ],
   "prep": {
-    "max_cities": 3
+    "max_cities": 50
   },
   "reporting": {
     "currency_code": "EUR",

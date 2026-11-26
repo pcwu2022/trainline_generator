@@ -15,7 +15,7 @@ import numpy as np
 from scipy import sparse
 from scipy.spatial import cKDTree
 
-from .prep import City
+from .prep import City, cities_path
 from .projection import regional_projection, project_cities
 
 CACHE_VERSION = 12
@@ -110,7 +110,8 @@ def fingerprint(config):
     digest.update(str(CACHE_VERSION).encode())
     for key in keys:
         if key.endswith('_file') and config[key]:
-            with Path(config[key]).open('rb') as stream:
+            path = cities_path(config) if key == 'cities_file' else Path(config[key])
+            with path.open('rb') as stream:
                 for block in iter(lambda: stream.read(1024 * 1024), b''):
                     digest.update(block)
     return digest.hexdigest()

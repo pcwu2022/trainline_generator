@@ -9,7 +9,7 @@
     "GR"
   ],
   "prep": {
-    "max_cities": 35
+    "max_cities": 100
   },
   "reporting": {
     "currency_code": "EUR",

@@ -9,7 +9,7 @@
     "AL"
   ],
   "prep": {
-    "max_cities": 8
+    "max_cities": 50
   },
   "reporting": {
     "currency_code": "ALL",

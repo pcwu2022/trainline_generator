@@ -9,7 +9,7 @@
     "DE"
   ],
   "prep": {
-    "max_cities": 150
+    "max_cities": 200
   },
   "reporting": {
     "currency_code": "EUR",

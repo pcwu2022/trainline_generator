@@ -11,7 +11,7 @@
     "SE"
   ],
   "prep": {
-    "max_cities": 100
+    "max_cities": 200
   },
   "reporting": {
     "currency_code": "EUR",

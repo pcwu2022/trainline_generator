@@ -9,7 +9,7 @@
     "XK"
   ],
   "prep": {
-    "max_cities": 7
+    "max_cities": 50
   },
   "reporting": {
     "currency_code": "EUR",

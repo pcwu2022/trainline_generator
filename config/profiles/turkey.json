@@ -9,7 +9,7 @@
     "TR"
   ],
   "prep": {
-    "max_cities": 135
+    "max_cities": 300
   },
   "reporting": {
     "currency_code": "TRY",

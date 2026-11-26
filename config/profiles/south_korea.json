@@ -14,7 +14,7 @@
   "terrain_file": "data/ETOPO_2022_v1_60s_N90W180_bed.tif",
   "terrain_dem_file": "",
   "prep": {
-    "max_cities": 100
+    "max_cities": 150
   },
   "search": {
     "batch_accept_limit": 5

@@ -9,7 +9,7 @@
     "MC"
   ],
   "prep": {
-    "max_cities": 2
+    "max_cities": 50
   },
   "reporting": {
     "currency_code": "EUR",

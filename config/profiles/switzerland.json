@@ -9,7 +9,7 @@
     "CH"
   ],
   "prep": {
-    "max_cities": 8
+    "max_cities": 100
   },
   "reporting": {
     "currency_code": "CHF",

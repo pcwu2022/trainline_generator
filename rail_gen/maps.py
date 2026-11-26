@@ -116,9 +116,9 @@ class MapBackground:
         span = upper - lower
         side = max(float(span[0]) / .75, float(span[1]) / (.94 if uk_mainland else .88), 10.)
         left = float(lower[0])
-        if config['countries'] == ['TW']:
-            # Taiwan's tall shape leaves spare horizontal space on a square
-            # canvas. Center the island in the area west of the legend rather
+        if config['countries'] in (['TW'], ['PT']):
+            # Tall regions leave spare horizontal space on a square
+            # canvas. Center the land in the area west of the legend rather
             # than anchoring it to the western edge of the sampling bounds.
             island = np.vstack([*self.polygons, *self.edge_xy.values(),
                                 self.station_xy - radii, self.station_xy + radii])
@@ -161,7 +161,7 @@ class MapBackground:
         from .analysis import corridor_satisfaction
         return corridor_satisfaction(self.evaluator, result)[0]
 
-    def draw(self, result, path, title, color_by='satisfaction', *, reevaluate=True):
+    def draw(self, result, path, title, color_by='satisfaction', *, reevaluate=True, highlight=None):
         if color_by not in {'satisfaction', 'revenue_cost'}:
             raise ValueError('Unknown map coloring: ' + color_by)
         financial = color_by == 'revenue_cost'
@@ -245,6 +245,13 @@ class MapBackground:
                     style['color'] = cmap(norm(ratios[i])) if np.isfinite(ratios[i]) else '#777777'
                 ax.plot(coordinates[:, 0], coordinates[:, 1], **style)
                 served.update((edge.a, edge.b))
+            if highlight is not None:
+                edge_id, old, new = highlight
+                coordinates = self.edge_xy[edge_id, track_type(new or old)]
+                color = '#ff3030' if new == 0 else '#ffe600'
+                for width, alpha in ((15, .10), (10, .20), (6, .45), (2.8, 1.0)):
+                    ax.plot(coordinates[:, 0], coordinates[:, 1], color=color,
+                            linewidth=width, alpha=alpha, solid_capstyle='round', zorder=6)
             for i in sorted(served):
                 xy = self.station_xy[i]
                 ax.add_patch(Circle(xy, self.graph.cities[i].radius_km, **CATCHMENT_STYLE))

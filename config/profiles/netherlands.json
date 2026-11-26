@@ -9,7 +9,7 @@
     "NL"
   ],
   "prep": {
-    "max_cities": 45
+    "max_cities": 100
   },
   "reporting": {
     "currency_code": "EUR",

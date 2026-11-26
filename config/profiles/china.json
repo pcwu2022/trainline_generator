@@ -12,7 +12,7 @@
   "population_file": "data/china/population.geojson",
   "boundaries_file": "data/china/boundaries.geojson",
   "prep": {
-    "max_cities": 100
+    "max_cities": 500
   },
   "search": {
     "batch_accept_limit": 5

@@ -9,7 +9,7 @@
     "UA"
   ],
   "prep": {
-    "max_cities": 70
+    "max_cities": 200
   },
   "reporting": {
     "currency_code": "UAH",

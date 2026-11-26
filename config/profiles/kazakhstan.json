@@ -9,7 +9,7 @@
     "KZ"
   ],
   "prep": {
-    "max_cities": 25
+    "max_cities": 300
   },
   "reporting": {
     "currency_code": "KZT",

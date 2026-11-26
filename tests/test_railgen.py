@@ -15,7 +15,7 @@ from rail_gen.config import load_config, merge, validate
 from rail_gen.projection import regional_projection, project_cities
 from rail_gen.demand import fare, rail_share, reference_demand, elastic_demand
 from rail_gen.evaluator import Evaluator, capital_recovery_factor
-from rail_gen.prep import City, candidate_pairs, distances, read_cities, station_capture, neighborhood_densities
+from rail_gen.prep import City, candidate_pairs, cities_path, distances, read_cities, station_capture, neighborhood_densities
 from rail_gen.search import bridge_components, nondominated, representative_indices, search
 
 
@@ -71,6 +71,28 @@ class ConfigTests(unittest.TestCase):
 
 
 class PreparationTests(unittest.TestCase):
+    def test_optional_smaller_city_catalogue_and_cache(self):
+        c = config()
+        with tempfile.TemporaryDirectory() as temporary:
+            large = Path(temporary) / 'cities50000.json'
+            small = large.with_name('cities5000.json')
+            large.write_text('[]')
+            c['cities_file'] = str(large)
+            for key in c:
+                if key.endswith('_file') and key != 'cities_file':
+                    c[key] = ''
+            c['prep']['minimum_population'] = 49999
+            self.assertEqual(cities_path(c), large)
+            fallback_key = fingerprint(c)
+            small.write_text('[{}]')
+            self.assertEqual(cities_path(c), small)
+            self.assertNotEqual(fingerprint(c), fallback_key)
+            c['prep']['minimum_population'] = 50000
+            self.assertEqual(cities_path(c), large)
+            c['prep']['minimum_population'] = 0
+            c['cities_file'] = str(large.with_name('custom.json'))
+            self.assertEqual(cities_path(c), Path(c['cities_file']))
+
     def test_catchment_population_is_exclusive_and_can_exceed_city_proper(self):
         c = config()
         cities = graph_fixture().cities

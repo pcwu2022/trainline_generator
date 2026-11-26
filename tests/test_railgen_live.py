@@ -241,16 +241,21 @@ class LiveOutputTests(unittest.TestCase):
             self.assertEqual(metadata['fps'], 30)
             self.assertEqual(metadata['size'][0], metadata['size'][1])
             frames = list(reader)
-            self.assertEqual(len(frames), 4 * 9)  # 300 ms at 30 fps per snapshot
+            expected_frames = 2 + sum(len(row['changes']) for row in reporter.history)
+            self.assertEqual(len(frames), expected_frames * 9)  # 300 ms per line edit, plus endpoints
             first = np.frombuffer(frames[0], dtype=np.uint8).astype(float)
             held = np.frombuffer(frames[8], dtype=np.uint8).astype(float)
             self.assertLess(np.abs(first - held).mean(), 1.)
             self.assertNotEqual(frames[0], frames[-1])
+            with Image.open(directory / '_france_5_map.png') as clean:
+                expected_image = np.asarray(clean.convert('RGB').resize(metadata['size']), dtype=float)
+            final_image = np.frombuffer(frames[-1], dtype=np.uint8).reshape(expected_image.shape)
+            self.assertLess(np.abs(final_image.astype(float) - expected_image).mean(), 4.)
             from rail_gen.map_utils import ProgressVideo
             resumed = ProgressVideo(directory / '_france_1_animation.mp4', 300)
-            self.assertEqual(resumed.frames, 4)
+            self.assertEqual(resumed.frames, expected_frames)
             resumed.append(directory / '_france_5_map.png')
-            self.assertEqual(resumed.frames, 5)
+            self.assertEqual(resumed.frames, expected_frames + 1)
             self.assertEqual({p.name for p in directory.glob('*.png')}, {'_france_5_map.png', '_france_4_progress.png', '_france_2_analysis1.png', '_france_3_analysis2.png'})
             self.assertEqual(list(directory.glob('*.tmp*')), [])
             self.assertEqual(list(directory.glob('.*.tmp*')), [])
@@ -270,6 +275,42 @@ class LiveOutputTests(unittest.TestCase):
             geo = json.loads((directory / 'latest.geojson').read_text())
             self.assertEqual(sum(f['geometry']['type'] == 'LineString' for f in geo['features']),
                              np.count_nonzero(run.current_genome))
+
+    def test_animation_reveals_mixed_batch_edits_one_at_a_time(self):
+        from rail_gen.search import SearchUpdate
+        c, g = incremental_config(), graph_fixture()
+        evaluator = Evaluator(g, c)
+        parent = np.array([1, 1, 0])
+        target = evaluator.evaluate([0, 2, 1])
+        update = SearchUpdate(1, 'growth', target, 1, 1, 0, True,
+                              ((0, 1, 0), (1, 1, 2), (2, 0, 1)), parent)
+        with tempfile.TemporaryDirectory() as temporary:
+            reporter = LiveReporter(g, c, temporary, compact=True)
+            reporter.animation = unittest.mock.Mock(frames=1)
+            captured = []
+            def capture(graph, result, path, title, config, **kwargs):
+                captured.append((result.genome.copy(), kwargs['highlight']))
+            with patch('rail_gen.live.plot_map', side_effect=capture):
+                reporter.animate_update(update)
+            self.assertEqual(len(captured), 3)
+            self.assertEqual(reporter.animation.append.call_count, 3)
+            previous = parent
+            for genome, (edge, old, new) in captured:
+                self.assertEqual(np.count_nonzero(previous != genome), 1)
+                self.assertEqual(previous[edge], old)
+                self.assertEqual(genome[edge], new)
+                previous = genome
+            np.testing.assert_array_equal(previous, target.genome)
+            np.testing.assert_array_equal(parent, [1, 1, 0])
+            self.assertEqual({c[1] for c in captured}, set(update.changes))
+            # Population updates lack parent_genome; use the last displayed state.
+            next_result = evaluator.evaluate([1, 2, 1])
+            next_update = SearchUpdate(2, 'evolving_population', next_result, 1, 2, 0)
+            captured.clear()
+            with patch('rail_gen.live.plot_map', side_effect=capture):
+                reporter.animate_update(next_update)
+            self.assertEqual(len(captured), 1)
+            self.assertEqual(captured[0][1], (0, 0, 1))
 
     def test_invalid_reporting_parameters_are_rejected(self):
         for override in [{'reporting': {'snapshot_every': 0}},

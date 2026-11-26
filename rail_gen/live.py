@@ -159,6 +159,7 @@ class LiveReporter:
             self.history = [json.loads(line) for line in (self.output / 'history.jsonl').read_text().splitlines() if line.strip()]
         self.snapshot = 0
         self.last_update = None
+        self._video_genome = None
         self.calibration = calibration or dict(status='not_calibrated', reason='No user-supplied observed backtest table')
         self.total_population = sum(city.population * city.kappa for city in graph.cities)
         self.unit = 'Network iteration' if config['search']['algorithm'] == 'incremental' else 'Population generation'
@@ -192,9 +193,45 @@ class LiveReporter:
         self.history.append(row)
         with (self.output / 'history.jsonl').open('a', encoding='utf8') as stream:
             stream.write(json.dumps(row, allow_nan=False) + '\n')
+        self.animate_update(update)
         # Initial frame contains the real region and city nodes, never a blank canvas.
         if update.iteration == 0 or update.iteration % self.every == 0:
             self.render(update)
+
+    def animate_update(self, update):
+        """Reveal every changed corridor, independently of report snapshot cadence."""
+        parent = update.parent_genome if update.parent_genome is not None else self._video_genome
+        if parent is None:
+            changes = []
+        else:
+            changes = [(int(i), int(parent[i]), int(update.result.genome[i]))
+                       for i in np.flatnonzero(parent != update.result.genome)]
+        # Search changes are indexed by corridor, not ordered chronologically.
+        rng = np.random.default_rng([self.config['search']['seed'], update.iteration])
+        rng.shuffle(changes)
+        if not changes and self.animation.frames:
+            self._video_genome = update.result.genome.copy()
+            return
+        genome = parent.copy() if parent is not None else update.result.genome.copy()
+        frames = changes or [None]
+        temporary = self.output / '.animation.tmp.png'
+        try:
+            for position, change in enumerate(frames, 1):
+                if change is not None:
+                    genome[change[0]] = change[2]
+                result = (update.result if np.array_equal(genome, update.result.genome)
+                          else self.evaluator.evaluate(genome))
+                title = snapshot_stats(result, self.config, len(self.graph.cities),
+                                       self.unit, update.iteration, update.phase)
+                if change is not None:
+                    action = 'Removed' if change[2] == 0 else ('Added' if change[1] == 0 else 'Edited')
+                    title = title.replace('\n', f'\n{action} line {position}/{len(changes)} · ', 1)
+                plot_map(self.graph, result, temporary, title, self.config,
+                         background=self.background, highlight=change)
+                self.animation.append(temporary)
+            self._video_genome = update.result.genome.copy()
+        finally:
+            temporary.unlink(missing_ok=True)
 
     def render(self, update):
         # Search updates already contain complete assignments and allocations.
@@ -214,7 +251,6 @@ class LiveReporter:
         finally:
             map_temp.unlink(missing_ok=True)
             chart_temp.unlink(missing_ok=True)
-        self.animation.append(self.output / self.visuals['map'])
         self.snapshot += 1
         if self.compact:
             atomic_text(self.output / 'cost_breakdown.log', cost_log(self.graph, result, update.iteration, update.phase))
@@ -296,6 +332,12 @@ class LiveReporter:
             self.last_update.accepted, self.last_update.changes, self.last_update.parent_genome)
         # Always include the final state, even when it falls between snapshot steps.
         self.render(terminal)
+        self.animation.append(self.output / self.visuals['map'])
+        if not self.compact:
+            latest_path = self.output / 'latest.json'
+            latest = json.loads(latest_path.read_text())
+            latest['animation_frames'] = self.animation.frames
+            atomic_json(latest_path, latest)
         if self.compact:
             self.animation.state_path.unlink(missing_ok=True)
             atomic_text(self.output / 'run.log',

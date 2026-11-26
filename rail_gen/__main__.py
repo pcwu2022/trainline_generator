@@ -70,8 +70,8 @@ def parser():
             sub.add_argument('--algorithm', choices=['incremental', 'nsga2', 'nsga3'],
                              help='Persistent network edits or NSGA population evolution (bundled default: incremental)')
             sub.add_argument('--time-limit', type=float, help='Positive search time limit in seconds, excluding geography preparation')
-            sub.add_argument('--snapshot-every', type=int, help='Positive number of updates/generations between live map/video snapshots; final state always saved')
-            sub.add_argument('--snapshot-hold-ms', '--gif-frame-ms', dest='snapshot_hold_ms', type=int, help='Snapshot hold duration in milliseconds (34..655350); video runs at 30 fps')
+            sub.add_argument('--snapshot-every', type=int, help='Positive number of updates/generations between map/chart snapshots; video shows every line edit; final state always saved')
+            sub.add_argument('--snapshot-hold-ms', '--gif-frame-ms', dest='snapshot_hold_ms', type=int, help='Per-line video update hold in milliseconds (34..655350); video runs at 30 fps')
         if name == 'benchmark':
             sub.add_argument('--evaluations', type=int, default=200,
                              help='Timed random designs, excluding 5 warmup evaluations (default: 200)')

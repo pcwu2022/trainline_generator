@@ -11,7 +11,7 @@
   "cities_file": "data/california/cities.json",
   "population_file": "data/california/population.geojson",
   "prep": {
-    "max_cities": 100
+    "max_cities": 150
   },
   "search": {
     "batch_accept_limit": 5

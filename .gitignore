@@ -49,6 +49,9 @@ data/slope_trial/
 # Raw Taiwan elevation source (keep locally; exceeds GitHub file limit)
 /data/taiwan/taiwan_dem_30m.tif
 
+# Optional smaller-city catalogue
+/data/cities5000.json
+
 # Local elevation rasters and downloaded DEM archives
 /data/**/*.tif
 /data/**/*.tiff

@@ -12,7 +12,7 @@
   "population_file": "data/australia/population.geojson",
   "boundaries_file": "data/australia/boundaries.geojson",
   "prep": {
-    "max_cities": 100
+    "max_cities": 300
   },
   "search": {
     "batch_accept_limit": 5

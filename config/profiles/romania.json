@@ -9,7 +9,7 @@
     "RO"
   ],
   "prep": {
-    "max_cities": 30
+    "max_cities": 150
   },
   "reporting": {
     "currency_code": "RON",

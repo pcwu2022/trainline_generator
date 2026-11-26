@@ -90,10 +90,24 @@ from 60% onward. The original service and topology protections still apply.
 The `--profit` and `--restarts` options are removed: each invocation grows one network,
 with the original iteration/exhaustion stopping rules and no ten-failure cutoff.
 
-Watch `latest.png` for the evolving network, `progress.png` for its metrics, and
-`progress.mp4` for the 30 fps H.264 animation. `--snapshot-hold-ms` (or
-`reporting.snapshot_hold_ms`) sets how long each snapshot stays on screen, rounded
-to the nearest video frame. `--snapshot-every` controls simulation sampling.
+Watch `_<country>_5_map.png` for the evolving network,
+`_<country>_4_progress.png` for its metrics, and `_<country>_1_animation.mp4`
+for the 30 fps H.264 animation. `--snapshot-hold-ms` (or
+`reporting.snapshot_hold_ms`) sets how long each line edit stays on screen, rounded
+to the nearest video frame. Batched changes appear one corridor at a time in a
+reproducibly shuffled order. Additions and edits glow yellow; removals glow red
+before disappearing. The video ends with the complete map without highlights.
+`--snapshot-every` controls map/chart snapshots; the video includes every line edit.
+
+To render an existing Germany run without rerunning the search:
+
+```bash
+python -m tools.render_video runs/germany_production --profile germany
+```
+
+This saves the video and clean final map in `runs/germany_production_line_updates`.
+The output directory must be empty. Compact histories are reconstructed from their
+recorded corridor changes; use the original profile/config and geography cache.
 Legacy `gif_frame_ms` configuration keys are migrated automatically. Maps use the original population-density
 background, green demand-satisfaction colors and frequency-scaled widths.
 Infrastructure symbols distinguish CR and HSR track; dotted overlays identify

@@ -47,10 +47,10 @@ def geojson(graph, result):
     return dict(type='FeatureCollection', model_version=MODEL_VERSION, services=result.services, features=features)
 
 
-def plot_map(graph, result, path, title, config, background=None, color_by='satisfaction'):
+def plot_map(graph, result, path, title, config, background=None, color_by='satisfaction', *, highlight=None):
     from .maps import MapBackground
     background = background if background is not None else MapBackground(graph, config)
-    background.draw(result, path, title, color_by=color_by, reevaluate=False)
+    background.draw(result, path, title, color_by=color_by, reevaluate=False, highlight=highlight)
 
 
 def sensitivity(graph, config, baseline, progress=print):

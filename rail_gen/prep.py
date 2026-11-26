@@ -58,9 +58,19 @@ def distances(cities):
     return 12742.0176 * np.arcsin(np.sqrt(np.clip(h, 0, 1)))
 
 
+def cities_path(config):
+    """Prefer the optional smaller-city catalogue below 50,000 people."""
+    path = Path(config['cities_file'])
+    if path.name == 'cities50000.json' and config['prep']['minimum_population'] < 50000:
+        smaller = path.with_name('cities5000.json')
+        if smaller.is_file():
+            return smaller
+    return path
+
+
 def read_cities(config, samples=None):
     projection = regional_projection(config)
-    path = Path(config['cities_file'])
+    path = cities_path(config)
     if path.suffix.lower() == '.csv':
         with path.open(newline='') as stream:
             records = list(csv.DictReader(stream))

@@ -9,7 +9,7 @@
     "HR"
   ],
   "prep": {
-    "max_cities": 5
+    "max_cities": 50
   },
   "reporting": {
     "currency_code": "EUR",

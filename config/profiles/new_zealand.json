@@ -12,7 +12,7 @@
   "population_file": "data/new_zealand/population.geojson",
   "boundaries_file": "data/new_zealand/boundaries.geojson",
   "prep": {
-    "max_cities": 100
+    "max_cities": 150
   },
   "search": {
     "batch_accept_limit": 5

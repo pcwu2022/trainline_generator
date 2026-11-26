@@ -9,7 +9,7 @@
     "DK"
   ],
   "prep": {
-    "max_cities": 10
+    "max_cities": 50
   },
   "reporting": {
     "currency_code": "DKK",

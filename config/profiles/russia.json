@@ -9,7 +9,7 @@
     "RU"
   ],
   "prep": {
-    "max_cities": 265
+    "max_cities": 500
   },
   "reporting": {
     "currency_code": "RUB",

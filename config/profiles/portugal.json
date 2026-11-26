@@ -1,7 +1,7 @@
 {
   "bbox": [
-    -31.4,
-    30.1,
+    -9.6,
+    36.8,
     -6.1,
     42.2
   ],
@@ -9,7 +9,7 @@
     "PT"
   ],
   "prep": {
-    "max_cities": 15
+    "max_cities": 100
   },
   "reporting": {
     "currency_code": "EUR",

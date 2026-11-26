@@ -9,7 +9,7 @@
     "NO"
   ],
   "prep": {
-    "max_cities": 10
+    "max_cities": 100
   },
   "reporting": {
     "currency_code": "NOK",

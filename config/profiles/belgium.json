@@ -9,7 +9,7 @@
     "BE"
   ],
   "prep": {
-    "max_cities": 25
+    "max_cities": 100
   },
   "reporting": {
     "currency_code": "EUR",

@@ -9,7 +9,7 @@
     "ES"
   ],
   "prep": {
-    "max_cities": 115
+    "max_cities": 200
   },
   "reporting": {
     "currency_code": "EUR",
